@@ -2,7 +2,8 @@ import { CalendarClock, Flag } from 'lucide-react';
 import { memo, type CSSProperties, type HTMLAttributes, type Ref } from 'react';
 import { relativeDateLabel, toISODate } from '@/core/dates';
 import { ColorDot } from '@/ui/data/ColorDot';
-import { useUpdateTask } from '../hooks';
+import { handleRowKeyDown } from '@/ui/data/row-keys';
+import { useDeleteTask, useUpdateTask } from '../hooks';
 import { taskDateLabel, type TaskItem } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
@@ -39,6 +40,7 @@ export const TaskRow = memo(function TaskRow({
   dragging = false,
 }: TaskRowProps) {
   const update = useUpdateTask();
+  const deleteTask = useDeleteTask();
   const openTask = useTaskSheet((state) => state.openTask);
   const done = task.status === 'done';
   const date = taskDateLabel(task, today);
@@ -50,15 +52,11 @@ export const TaskRow = memo(function TaskRow({
       style={style}
       role="button"
       tabIndex={0}
+      data-row
       onClick={() => openTask(task.id)}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) return;
-        if (event.key === 'Enter') openTask(task.id);
-        if (event.key === ' ') {
-          event.preventDefault();
-          toggle();
-        }
-      }}
+      onKeyDown={(event) =>
+        handleRowKeyDown(event, { open: () => openTask(task.id), toggle, remove: () => deleteTask.mutate(task) })
+      }
       {...dragProps}
       className={
         '-mx-2.5 grid min-h-11 cursor-default grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-md px-2.5 outline-none ' +

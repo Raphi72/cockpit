@@ -66,6 +66,7 @@ export function useCorrectBalance() {
       toast(`Solde corrigé : ajustement de ${formatSignedMoney(difference)}.`, {
         action: {
           label: 'Annuler',
+          undo: true,
           onClick: () => void db.batch([deleteTransactionStatement({ id })]).then(invalidate),
         },
       });

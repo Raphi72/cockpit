@@ -1,5 +1,6 @@
 import initSqlJs, { type Database, type SqlValue as SqlJsValue } from 'sql.js';
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
+import { withoutFts5 } from './fts-fallback';
 import type { DbDriver, Row, SqlValue, Statement } from './types';
 
 /**
@@ -19,7 +20,7 @@ function open(): Promise<Database> {
   database ??= initSqlJs({ locateFile: () => wasmUrl }).then((SQL) => {
     const db = new SQL.Database();
     db.exec('PRAGMA foreign_keys = ON');
-    for (const path of Object.keys(migrations).sort()) db.exec(migrations[path]!);
+    for (const path of Object.keys(migrations).sort()) db.exec(withoutFts5(migrations[path]!));
     return db;
   });
   return database;

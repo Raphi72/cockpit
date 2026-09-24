@@ -117,6 +117,7 @@ export function useDeleteTask() {
       toast('Tâche supprimée.', {
         action: {
           label: 'Annuler',
+          undo: true,
           onClick: () => {
             void db
               .batch([restoreTaskStatement(task, nowTimestamp())])

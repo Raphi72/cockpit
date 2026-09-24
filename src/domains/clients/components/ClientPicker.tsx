@@ -2,16 +2,10 @@ import { Command } from 'cmdk';
 import { Plus, User } from 'lucide-react';
 import { Popover } from 'radix-ui';
 import { useState } from 'react';
+import { normalizeText as normalize } from '@/core/text';
 import { PropertyButton } from '@/ui/primitives/PropertyButton';
 import { useClients } from '../hooks';
 import type { ClientChoice } from '../model';
-
-/** Recherche sans tenir compte des majuscules ni des accents. */
-const normalize = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
 
 const itemClass =
   'flex h-8 cursor-default items-center gap-2.5 rounded-[6px] px-2 select-none data-[selected=true]:bg-hover';

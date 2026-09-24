@@ -45,7 +45,7 @@ function CategoryList({ kind, categories }: { kind: CategoryKind; categories: Ca
                 icon={Trash2}
                 aria-label={`Supprimer la catégorie ${category.name}`}
                 title="Supprimer"
-                onClick={() => deleteCategory.mutate(category.id)}
+                onClick={() => deleteCategory.mutate(category)}
                 className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               />
             ) : (

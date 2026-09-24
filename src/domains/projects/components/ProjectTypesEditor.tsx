@@ -85,7 +85,7 @@ export function ProjectTypesEditor() {
                 icon={Trash2}
                 aria-label={`Supprimer le type ${type.name}`}
                 title="Supprimer"
-                onClick={() => deleteType.mutate(type.id)}
+                onClick={() => deleteType.mutate(type)}
                 className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               />
             ) : (

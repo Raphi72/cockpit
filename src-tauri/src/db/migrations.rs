@@ -7,7 +7,10 @@ use std::path::Path;
 
 /// Une entrée par version du schéma, dans l'ordre. Ne jamais modifier une migration publiée :
 /// en ajouter une nouvelle.
-const MIGRATIONS: &[&str] = &[include_str!("../../migrations/0001_init.sql")];
+pub const MIGRATIONS: &[&str] = &[
+    include_str!("../../migrations/0001_init.sql"),
+    include_str!("../../migrations/0002_search.sql"),
+];
 
 pub fn run(conn: &mut Connection, backup_dir: &Path) -> Result<(), Box<dyn Error>> {
     let current = conn.pragma_query_value(None, "user_version", |row| row.get::<_, i64>(0))? as usize;

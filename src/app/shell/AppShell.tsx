@@ -1,16 +1,18 @@
 import { Outlet } from '@tanstack/react-router';
 import { CreateEventDialog } from '@/domains/agenda/components/CreateEventDialog';
 import { EventSheet } from '@/domains/agenda/components/EventSheet';
-import { CreateClientDialog } from '@/domains/clients/components/ClientDialog';
+import { ClientEditorDialog, CreateClientDialog } from '@/domains/clients/components/ClientDialog';
 import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/payments/components/PaymentDialog';
 import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
-import { CreateTransactionDialog } from '@/domains/finance/transactions/components/TransactionDialog';
+import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
 import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
+import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { useGlobalShortcuts } from '../shortcuts';
 import { useUiStore } from '../ui-store';
+import { ShortcutsDialog } from './ShortcutsDialog';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -40,8 +42,12 @@ export function AppShell() {
       <CreateTransactionDialog />
       <ReceivePaymentDialog />
       <PaymentEditorDialog />
+      <ClientEditorDialog />
+      <TransactionEditorDialog />
       <TaskSheet />
       <EventSheet />
+      <CommandPalette />
+      <ShortcutsDialog />
       <Toaster />
     </div>
   );

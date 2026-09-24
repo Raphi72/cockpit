@@ -82,6 +82,7 @@ export function useDeletePayment() {
         action: snapshot
           ? {
               label: 'Annuler',
+              undo: true,
               onClick: () => void db.batch(buildRestorePaymentBatch(snapshot, nowTimestamp())).then(invalidate),
             }
           : undefined,
@@ -106,6 +107,7 @@ export function useReceivePayment() {
         {
           action: {
             label: 'Annuler',
+            undo: true,
             onClick: () => void db.batch(buildUnreceivePaymentBatch(payment.id, batchContext(), previous)).then(invalidate),
           },
         },
@@ -129,6 +131,7 @@ export function useUnreceivePayment() {
         action: snapshot
           ? {
               label: 'Annuler',
+              undo: true,
               onClick: () => void db.batch(buildRestoreReceptionBatch(snapshot, nowTimestamp())).then(invalidate),
             }
           : undefined,

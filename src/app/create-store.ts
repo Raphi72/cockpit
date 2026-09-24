@@ -33,3 +33,10 @@ export function defaultsFromPath(pathname: string, today: string): CreateDefault
   const match = /^\/projects\/([^/]+)$/.exec(pathname);
   return match ? { projectId: match[1] ?? null, scheduledDate: null } : { projectId: null, scheduledDate: today };
 }
+
+/** Ces créations reprennent le projet de la fiche ouverte ; un projet ou un client part de zéro. */
+const PROJECT_AWARE: CreateKind[] = ['task', 'event', 'payment', 'transaction'];
+
+export function createDefaultsFor(kind: CreateKind, pathname: string, today: string): CreateDefaults {
+  return PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, today) : {};
+}

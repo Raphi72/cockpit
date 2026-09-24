@@ -1,6 +1,7 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { todayISO } from '@/core/dates';
+import { undoLatest } from '@/ui/overlays/toast';
 import { defaultsFromPath, useCreateStore } from './create-store';
 import { mainNav } from './navigation';
 import { useUiStore } from './ui-store';
@@ -26,21 +27,26 @@ function overlayOpen(): boolean {
 
 /** Vrai si l'utilisateur tape du texte ou si une fenêtre / un menu est ouvert. */
 function isBusy(target: EventTarget | null): boolean {
-  const element = target as HTMLElement | null;
-  if (element?.closest('input, textarea, select, [contenteditable="true"]')) return true;
-  return overlayOpen();
+  return isTyping(target) || overlayOpen();
+}
+
+/** Vrai si l'utilisateur tape du texte : ses propres raccourcis (Ctrl+Z…) passent avant les nôtres. */
+function isTyping(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]') !== null;
 }
 
 /**
  * Raccourcis disponibles partout :
- * Ctrl+1…6 pour les pages, Ctrl+B pour la barre latérale, N (ou Ctrl+N) pour une nouvelle tâche,
- * C pour le menu « Nouveau ».
+ * Ctrl+K pour la palette, Ctrl+1…6 pour les pages, Ctrl+B pour la barre latérale, Ctrl+Z pour annuler,
+ * N (ou Ctrl+N) pour une nouvelle tâche, C pour le menu « Nouveau », ? pour l'aide des raccourcis.
  */
 export function useGlobalShortcuts(): void {
   const navigate = useNavigate();
   const router = useRouter();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const setNewMenuOpen = useUiStore((state) => state.setNewMenuOpen);
+  const setPaletteOpen = useUiStore((state) => state.setPaletteOpen);
+  const setShortcutsOpen = useUiStore((state) => state.setShortcutsOpen);
   const openCreate = useCreateStore((state) => state.openCreate);
 
   useEffect(() => {
@@ -55,6 +61,18 @@ export function useGlobalShortcuts(): void {
           return;
         }
         const letter = event.key.toLowerCase();
+        // Ctrl+K : même en tapant du texte ; une seconde fois, il referme la palette.
+        if (!event.shiftKey && letter === 'k') {
+          event.preventDefault();
+          if (useUiStore.getState().paletteOpen) setPaletteOpen(false);
+          else if (!overlayOpen()) setPaletteOpen(true);
+          return;
+        }
+        // Ctrl+Z : annule la dernière suppression encore affichée, sauf pendant la saisie (annulation du texte).
+        if (!event.shiftKey && letter === 'z' && !isBusy(event.target)) {
+          if (undoLatest()) event.preventDefault();
+          return;
+        }
         if (!event.shiftKey && letter === 'b') {
           event.preventDefault();
           toggleSidebar();
@@ -64,6 +82,13 @@ export function useGlobalShortcuts(): void {
           event.preventDefault();
           if (!overlayOpen()) openCreate('task', defaultsFromPath(router.state.location.pathname, todayISO()));
         }
+        return;
+      }
+
+      // « ? » demande Maj sur la plupart des claviers (en AZERTY : Maj + virgule).
+      if (event.key === '?' && !event.altKey && !event.metaKey && !isBusy(event.target)) {
+        event.preventDefault();
+        setShortcutsOpen(true);
         return;
       }
 
@@ -82,7 +107,7 @@ export function useGlobalShortcuts(): void {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [navigate, router, toggleSidebar, setNewMenuOpen, openCreate]);
+  }, [navigate, router, toggleSidebar, setNewMenuOpen, setPaletteOpen, setShortcutsOpen, openCreate]);
 }
 
 /**

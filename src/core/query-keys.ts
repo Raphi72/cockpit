@@ -35,6 +35,7 @@ export const queryKeys = {
     list: (filter: object) => ['transactions', 'list', filter] as const,
     byProject: (projectId: string) => ['transactions', 'project', projectId] as const,
     group: (id: string) => ['transactions', 'group', id] as const,
+    detail: (id: string) => ['transactions', 'detail', id] as const,
   },
   /**
    * Calendrier : il agrège les événements, les projets, les tâches et les encaissements.
@@ -45,6 +46,11 @@ export const queryKeys = {
     range: (from: string, to: string) => ['agenda', 'range', from, to] as const,
     event: (id: string) => ['agenda', 'event', id] as const,
   },
+  /**
+   * Recherche globale (palette Ctrl+K) : elle lit tous les domaines, donc elle n'est jamais
+   * gardée en cache longtemps (staleTime 0) au lieu d'être invalidée par chaque écriture.
+   */
+  search: (text: string, today: string) => ['search', text, today] as const,
   /** Soldes, chiffres de l'en-tête et catégories. */
   finance: {
     all: ['finance'] as const,

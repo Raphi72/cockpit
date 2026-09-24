@@ -1,10 +1,11 @@
 import { useRouterState } from '@tanstack/react-router';
-import { ArrowRightLeft, CalendarPlus, FolderClosed, HandCoins, Plus, SquareCheck, User } from 'lucide-react';
+import { ArrowRightLeft, CalendarPlus, FolderClosed, HandCoins, Plus, Search, SquareCheck, User } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { todayISO } from '@/core/dates';
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
-import { defaultsFromPath, useCreateStore, type CreateKind } from '../create-store';
+import { Kbd } from '@/ui/primitives/Kbd';
+import { createDefaultsFor, useCreateStore, type CreateKind } from '../create-store';
 import { useUiStore } from '../ui-store';
 
 /** Lettres actives dans le menu « Nouveau » (C puis T, E, P, L, R ou D). */
@@ -17,9 +18,6 @@ const MENU_KEYS: Record<string, CreateKind> = {
   d: 'transaction',
 };
 
-/** Ces créations reprennent le projet de la fiche ouverte. */
-const PROJECT_AWARE: CreateKind[] = ['task', 'event', 'payment', 'transaction'];
-
 function NewMenu() {
   const open = useUiStore((state) => state.newMenuOpen);
   const setOpen = useUiStore((state) => state.setNewMenuOpen);
@@ -28,7 +26,7 @@ function NewMenu() {
 
   const create = (kind: CreateKind) => {
     setOpen(false);
-    openCreate(kind, PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, todayISO()) : {});
+    openCreate(kind, createDefaultsFor(kind, pathname, todayISO()));
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -71,10 +69,27 @@ function NewMenu() {
   );
 }
 
+/** Ouvre la palette Ctrl+K : la recherche reste visible sans occuper de place. */
+function SearchButton() {
+  const setPaletteOpen = useUiStore((state) => state.setPaletteOpen);
+  return (
+    <button
+      type="button"
+      onClick={() => setPaletteOpen(true)}
+      className="-ml-2.5 flex h-8 items-center gap-2.5 rounded-md px-2.5 text-ink-3 transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink-2"
+    >
+      <Search className="size-4" strokeWidth={1.75} />
+      <span>Rechercher</span>
+      <Kbd>Ctrl K</Kbd>
+    </button>
+  );
+}
+
 export function Topbar() {
   return (
     <header className="shrink-0 border-b border-line">
-      <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-end gap-2 px-12">
+      <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between gap-2 px-12">
+        <SearchButton />
         <NewMenu />
       </div>
     </header>

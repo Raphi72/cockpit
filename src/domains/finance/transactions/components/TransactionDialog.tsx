@@ -16,7 +16,8 @@ import { Input, Textarea } from '@/ui/primitives/Input';
 import { AccountMenu } from '../../accounts/components/AccountMenu';
 import { useAccounts } from '../../accounts/hooks';
 import { defaultAccountId, otherAccountId } from '../../accounts/model';
-import { useCreateTransaction, useDeleteTransaction, useUpdateTransaction } from '../hooks';
+import { useTransactionEditor } from '../editor-store';
+import { useCreateTransaction, useDeleteTransaction, useTransaction, useUpdateTransaction } from '../hooks';
 import {
   TRANSACTION_KIND_LABELS,
   inputFromTransaction,
@@ -271,6 +272,20 @@ export function TransactionDialog({ open, onOpenChange, transaction, defaults = 
         <TransactionForm transaction={transaction ?? undefined} defaults={defaults} onDone={() => onOpenChange(false)} />
       )}
     </Dialog>
+  );
+}
+
+/** Transaction ouverte par son identifiant (recherche Ctrl+K). */
+export function TransactionEditorDialog() {
+  const transactionId = useTransactionEditor((state) => state.transactionId);
+  const close = useTransactionEditor((state) => state.close);
+  const { data: transaction } = useTransaction(transactionId);
+  return (
+    <TransactionDialog
+      open={transactionId !== null && Boolean(transaction)}
+      onOpenChange={(next) => !next && close()}
+      transaction={transaction}
+    />
   );
 }
 

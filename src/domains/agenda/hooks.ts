@@ -76,6 +76,7 @@ export function useDeleteEvent() {
       toast('Événement supprimé.', {
         action: {
           label: 'Annuler',
+          undo: true,
           onClick: () => {
             void db.batch([restoreEventStatement(event, nowTimestamp())]).then(() => invalidateAgenda(queryClient));
           },

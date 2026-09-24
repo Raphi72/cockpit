@@ -1,12 +1,9 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { ArrowLeft, Ellipsis, Trash2 } from 'lucide-react';
 import { ProjectTasks } from '@/domains/tasks/components/ProjectTasks';
-import { useState } from 'react';
 import { useToday } from '@/core/use-today';
 import { PageContainer } from '@/ui/layout/Page';
-import { ConfirmDialog } from '@/ui/overlays/ConfirmDialog';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/ui/overlays/Menu';
-import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
 import { InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
 import { ProjectFinance } from '../components/ProjectFinance';
@@ -24,7 +21,6 @@ export function ProjectDetailPage() {
   const deleteProject = useDeleteProject();
   const navigate = useNavigate();
   const today = useToday();
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (isPending) return null;
   if (!project) {
@@ -38,15 +34,11 @@ export function ProjectDetailPage() {
     );
   }
 
+  // « Annuler » est dans le toast : pas de confirmation.
   const remove = () =>
     deleteProject.mutate(project.id, {
       onSuccess: (result) => {
-        if (result === 'has-received-payments') {
-          toast('Ce projet a déjà reçu des paiements : passe-le plutôt en Terminé ou Annulé.', { tone: 'danger' });
-          return;
-        }
-        toast('Projet supprimé.');
-        void navigate({ to: '/projects' });
+        if (result.status === 'deleted') void navigate({ to: '/projects' });
       },
     });
 
@@ -65,8 +57,8 @@ export function ProjectDetailPage() {
             <Button variant="ghost" icon={Ellipsis} aria-label="Actions du projet" />
           </MenuTrigger>
           <MenuContent align="end">
-            <MenuItem icon={Trash2} tone="danger" onSelect={() => setConfirmDelete(true)}>
-              Supprimer le projet…
+            <MenuItem icon={Trash2} tone="danger" onSelect={remove}>
+              Supprimer le projet
             </MenuItem>
           </MenuContent>
         </Menu>
@@ -114,15 +106,6 @@ export function ProjectDetailPage() {
           </div>
         </aside>
       </div>
-
-      <ConfirmDialog
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        title={`Supprimer « ${project.name} » ?`}
-        description="Ses tâches et ses échéances non reçues seront supprimées aussi. C’est définitif."
-        confirmLabel="Supprimer le projet"
-        onConfirm={remove}
-      />
     </PageContainer>
   );
 }

@@ -6,10 +6,11 @@ import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import { toast } from '@/ui/overlays/toast';
 import { useInvalidateMoney } from '../hooks';
-import type { CategoryKind, TransactionFilter, TransactionInput, TransactionListItem } from './model';
+import type { Category, CategoryKind, TransactionFilter, TransactionInput, TransactionListItem } from './model';
 import {
   deleteCategory,
   deleteTransactionStatement,
+  getTransaction,
   insertCategory,
   insertTransactionStatement,
   listCategories,
@@ -31,6 +32,14 @@ export function useProjectExpenses(projectId: string) {
   return useQuery({
     queryKey: queryKeys.transactions.byProject(projectId),
     queryFn: () => listProjectExpenses(db, projectId),
+  });
+}
+
+export function useTransaction(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.transactions.detail(id ?? ''),
+    queryFn: async () => (id ? ((await getTransaction(db, id)) ?? null) : null),
+    enabled: id !== null,
   });
 }
 
@@ -79,6 +88,7 @@ export function useDeleteTransaction() {
       toast(item.kind === 'transfer' ? 'Virement supprimé.' : 'Transaction supprimée.', {
         action: {
           label: 'Annuler',
+          undo: true,
           onClick: () => {
             const now = nowTimestamp();
             void db.batch(rows.map((row) => insertTransactionStatement(row, now))).then(invalidate);
@@ -115,7 +125,21 @@ export function useRenameCategory() {
   });
 }
 
+/** Seule une catégorie inutilisée se supprime : « Annuler » la remet telle quelle. */
 export function useDeleteCategory() {
-  const onSuccess = useInvalidateCategories();
-  return useMutation({ mutationFn: (id: string) => deleteCategory(db, id), onSuccess });
+  const invalidate = useInvalidateCategories();
+  return useMutation({
+    mutationFn: (category: Category) => deleteCategory(db, category.id),
+    onSuccess: (_result, category) => {
+      invalidate();
+      toast(`Catégorie « ${category.name} » supprimée.`, {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () =>
+            void insertCategory(db, { id: category.id, name: category.name, kind: category.kind }).then(invalidate),
+        },
+      });
+    },
+  });
 }

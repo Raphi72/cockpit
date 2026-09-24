@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore } from '@/app/create-store';
-import { ConfirmDialog } from '@/ui/overlays/ConfirmDialog';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
@@ -9,7 +8,8 @@ import { Input, Textarea } from '@/ui/primitives/Input';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { useProjects } from '@/domains/projects/hooks';
 import { PROJECT_STATUSES, STATUS_LABELS } from '@/domains/projects/model';
-import { useCreateClient, useDeleteClient, useUpdateClient } from '../hooks';
+import { useClientEditor } from '../editor-store';
+import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '../hooks';
 import { validateClient, type Client, type ClientInput } from '../model';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -52,7 +52,6 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
     notes: client?.notes ?? '',
   });
   const [submitted, setSubmitted] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -126,7 +125,11 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
 
       <DialogFooter>
         {client && (
-          <Button variant="ghost" className="mr-auto !text-danger" onClick={() => setConfirmDelete(true)}>
+          <Button
+            variant="ghost"
+            className="mr-auto !text-danger"
+            onClick={() => deleteClient.mutate(client.id, { onSuccess: onDone })}
+          >
             Supprimer
           </Button>
         )}
@@ -137,24 +140,6 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
           {client ? 'Enregistrer' : 'Créer le client'}
         </Button>
       </DialogFooter>
-
-      {client && (
-        <ConfirmDialog
-          open={confirmDelete}
-          onOpenChange={setConfirmDelete}
-          title={`Supprimer « ${client.name} » ?`}
-          description="Ses projets sont conservés, simplement sans client."
-          confirmLabel="Supprimer le client"
-          onConfirm={() =>
-            deleteClient.mutate(client.id, {
-              onSuccess: () => {
-                toast('Client supprimé.');
-                onDone();
-              },
-            })
-          }
-        />
-      )}
     </form>
   );
 }
@@ -172,6 +157,23 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
       {open && <ClientForm client={client} onDone={() => onOpenChange(false)} />}
     </Dialog>
   );
+}
+
+function ClientEditor({ clientId }: { clientId: string }) {
+  const close = useClientEditor((state) => state.close);
+  const { data: clients } = useClients();
+  const client = clients?.find((c) => c.id === clientId);
+  // Client introuvable (supprimé entre-temps) : rien ne doit rester en attente d'ouverture.
+  useEffect(() => {
+    if (clients && !client) close();
+  }, [clients, client, close]);
+  return <ClientDialog open={Boolean(client)} onOpenChange={(next) => !next && close()} client={client} />;
+}
+
+/** Client ouvert par son identifiant (recherche Ctrl+K). La liste n'est lue qu'à ce moment-là. */
+export function ClientEditorDialog() {
+  const clientId = useClientEditor((state) => state.clientId);
+  return clientId ? <ClientEditor clientId={clientId} /> : null;
 }
 
 /** Fenêtre de création globale (bouton « Nouveau »). */

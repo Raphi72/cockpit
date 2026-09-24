@@ -177,6 +177,76 @@ export async function countReceivedPayments(db: Db, projectId: string): Promise<
   return row?.count ?? 0;
 }
 
+// ─── Suppression et annulation ──────────────────────────────────────────────
+
+/** Ligne brute d'un projet, pour le réinsérer à l'identique. */
+export type ProjectRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  notes: string | null;
+  clientId: string | null;
+  typeId: string;
+  status: ProjectStatus;
+  priority: number;
+  startDate: string | null;
+  deadline: string | null;
+  budgetCents: number | null;
+  completedAt: string | null;
+  archivedAt: string | null;
+  createdAt: string;
+};
+
+export function getProjectRow(db: Db, id: string): Promise<ProjectRow | undefined> {
+  return db.queryOne<ProjectRow>(
+    `SELECT id, name, description, notes, client_id, type_id, status, priority, start_date, deadline,
+            budget_cents, completed_at, archived_at, created_at
+     FROM projects WHERE id = ?`,
+    [id],
+  );
+}
+
+export function restoreProjectStatement(row: ProjectRow, now: string): Statement {
+  return {
+    sql: `INSERT INTO projects
+            (id, name, description, notes, client_id, type_id, status, priority, start_date, deadline,
+             budget_cents, completed_at, archived_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    params: [
+      row.id,
+      row.name,
+      row.description,
+      row.notes,
+      row.clientId,
+      row.typeId,
+      row.status,
+      row.priority,
+      row.startDate,
+      row.deadline,
+      row.budgetCents,
+      row.completedAt,
+      row.archivedAt,
+      row.createdAt,
+      now,
+    ],
+  };
+}
+
+/** Événements et dépenses rattachés : supprimer le projet les garde, détachés (ON DELETE SET NULL). */
+export async function listProjectLinks(db: Db, projectId: string): Promise<{ eventIds: string[]; transactionIds: string[] }> {
+  const events = await db.query<{ id: string }>('SELECT id FROM events WHERE project_id = ?', [projectId]);
+  const transactions = await db.query<{ id: string }>('SELECT id FROM transactions WHERE project_id = ?', [projectId]);
+  return { eventIds: events.map((e) => e.id), transactionIds: transactions.map((t) => t.id) };
+}
+
+/** Rattache à nouveau des événements ou des transactions au projet restauré. */
+export function relinkToProjectStatement(table: 'events' | 'transactions', ids: string[], projectId: string): Statement {
+  return {
+    sql: `UPDATE ${table} SET project_id = ? WHERE id IN (SELECT value FROM json_each(?))`,
+    params: [projectId, JSON.stringify(ids)],
+  };
+}
+
 /** Supprime le projet et ses échéances non reçues (les tâches suivent par cascade). */
 export function deleteProjectStatements(projectId: string): Statement[] {
   return [

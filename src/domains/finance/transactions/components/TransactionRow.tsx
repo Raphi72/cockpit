@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { formatShortDate } from '@/core/dates';
 import { formatMoney, formatSignedMoney } from '@/core/money';
 import { ColorDot } from '@/ui/data/ColorDot';
+import { handleRowKeyDown } from '@/ui/data/row-keys';
+import { useDeleteTransaction } from '../hooks';
 import type { TransactionListItem } from '../model';
 
 type TransactionRowProps = {
@@ -35,15 +37,17 @@ export const TransactionRow = memo(function TransactionRow({ item, today, accoun
   const account = accountLabel(item, accountFiltered);
   // Un ajustement s'appelle déjà « Ajustement » ; « Solde initial » gagne à être précisé.
   const meta = item.kind === 'adjustment' ? (item.label === 'Ajustement' ? null : 'Ajustement de solde') : item.categoryName;
+  const deleteTransaction = useDeleteTransaction();
 
   return (
     <div
       role="button"
       tabIndex={0}
+      data-row
       onClick={() => onOpen(item)}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && event.key === 'Enter') onOpen(item);
-      }}
+      onKeyDown={(event) =>
+        handleRowKeyDown(event, { open: () => onOpen(item), remove: () => deleteTransaction.mutate(item) })
+      }
       className={
         '-mx-2.5 grid min-h-11 cursor-default grid-cols-[56px_minmax(0,1fr)_auto_110px] items-center gap-4 rounded-md px-2.5 outline-none ' +
         'transition-colors duration-[120ms] ease-soft hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-soft'

@@ -61,6 +61,15 @@ export function getPaymentRow(db: Db, id: string): Promise<PaymentRow | undefine
   );
 }
 
+/** Échéances non reçues d'un projet, lignes brutes : elles disparaissent avec lui. */
+export function listOpenProjectPaymentRows(db: Db, projectId: string): Promise<PaymentRow[]> {
+  return db.query<PaymentRow>(
+    `SELECT id, project_id, client_id, label, amount_cents, due_date, status, received_date, invoice_ref, notes, created_at
+     FROM payments WHERE project_id = ? AND status <> 'received'`,
+    [projectId],
+  );
+}
+
 export type NewPaymentRow = {
   id: string;
   projectId: string | null;

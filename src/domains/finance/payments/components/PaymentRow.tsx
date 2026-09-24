@@ -3,7 +3,8 @@ import { memo } from 'react';
 import { daysBetween, formatShortDate, relativeDateLabel } from '@/core/dates';
 import { formatMoney } from '@/core/money';
 import { ColorDot } from '@/ui/data/ColorDot';
-import { useUnreceivePayment } from '../hooks';
+import { handleRowKeyDown } from '@/ui/data/row-keys';
+import { useDeletePayment, useUnreceivePayment } from '../hooks';
 import { isPaymentLate, paymentContext, type PaymentListItem } from '../model';
 import { useReceiveDialog } from '../receive-store';
 
@@ -67,14 +68,16 @@ type PaymentRowProps = {
 /** Ligne d'encaissement : rond, libellé, projet ou client, date qui compte, montant. */
 export const PaymentRow = memo(function PaymentRow({ payment, today, onOpen }: PaymentRowProps) {
   const context = paymentContext(payment);
+  const deletePayment = useDeletePayment();
   return (
     <div
       role="button"
       tabIndex={0}
+      data-row
       onClick={() => onOpen(payment)}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && event.key === 'Enter') onOpen(payment);
-      }}
+      onKeyDown={(event) =>
+        handleRowKeyDown(event, { open: () => onOpen(payment), remove: () => deletePayment.mutate(payment) })
+      }
       className={
         '-mx-2.5 grid min-h-11 cursor-default grid-cols-[18px_minmax(0,1fr)_150px_110px] items-center gap-3.5 rounded-md px-2.5 outline-none ' +
         'transition-colors duration-[120ms] ease-soft hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-soft'

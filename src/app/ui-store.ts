@@ -11,6 +11,12 @@ type UiState = {
   toggleSidebar: () => void;
   newMenuOpen: boolean;
   setNewMenuOpen: (open: boolean) => void;
+  /** Palette Ctrl+K : recherche et commandes. */
+  paletteOpen: boolean;
+  setPaletteOpen: (open: boolean) => void;
+  /** Aide des raccourcis (touche ?). */
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
   /** Dernier type choisi à la création d'un projet, proposé par défaut la fois suivante. */
   lastProjectTypeId: string | null;
   setLastProjectTypeId: (id: string) => void;
@@ -35,6 +41,10 @@ export const useUiStore = create<UiState>()(
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       newMenuOpen: false,
       setNewMenuOpen: (open) => set({ newMenuOpen: open }),
+      paletteOpen: false,
+      setPaletteOpen: (open) => set({ paletteOpen: open }),
+      shortcutsOpen: false,
+      setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
       lastProjectTypeId: null,
       setLastProjectTypeId: (id) => set({ lastProjectTypeId: id }),
       projectTasksMode: 'list',

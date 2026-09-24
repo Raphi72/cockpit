@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 
-export type ToastAction = { label: string; onClick: () => void };
+export type ToastAction = {
+  label: string;
+  onClick: () => void;
+  /** Action « Annuler » : Ctrl+Z la déclenche aussi tant que le toast est affiché. */
+  undo?: boolean;
+};
 
 export type Toast = { id: number; message: string; tone: 'default' | 'danger'; action?: ToastAction };
 
@@ -26,4 +31,14 @@ export function toast(message: string, options: { tone?: Toast['tone']; action?:
   useToastStore.setState((state) => ({ toasts: [...state.toasts, { id, message, tone, action: options.action }] }));
   const duration = options.action ? 6000 : tone === 'danger' ? 6000 : 3500;
   setTimeout(() => useToastStore.getState().dismiss(id), duration);
+}
+
+/** Ctrl+Z : annule la dernière action encore affichée. Faux s'il n'y a rien à annuler. */
+export function undoLatest(): boolean {
+  const { toasts, dismiss } = useToastStore.getState();
+  const latest = toasts.findLast((t) => t.action?.undo);
+  if (!latest?.action) return false;
+  latest.action.onClick();
+  dismiss(latest.id);
+  return true;
 }

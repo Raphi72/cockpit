@@ -10,7 +10,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useState } from 'react';
-import { useUpdateTask } from '../hooks';
+import { handleRowKeyDown } from '@/ui/data/row-keys';
+import { useDeleteTask, useUpdateTask } from '../hooks';
 import { TASK_STATUSES, TASK_STATUS_LABELS, taskDateLabel, type TaskItem, type TaskStatus } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
@@ -50,14 +51,16 @@ function Card({ task, today, overlay = false }: { task: TaskItem; today: string;
 function DraggableCard({ task, today }: { task: TaskItem; today: string }) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: task.id });
   const openTask = useTaskSheet((state) => state.openTask);
+  const deleteTask = useDeleteTask();
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       role="button"
       tabIndex={0}
+      data-row
       onClick={() => openTask(task.id)}
-      onKeyDown={(e) => e.key === 'Enter' && openTask(task.id)}
+      onKeyDown={(event) => handleRowKeyDown(event, { open: () => openTask(task.id), remove: () => deleteTask.mutate(task) })}
       className={`cursor-default rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-accent-soft ${isDragging ? 'opacity-30' : ''}`}
     >
       <Card task={task} today={today} />
