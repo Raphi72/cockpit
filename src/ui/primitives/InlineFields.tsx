@@ -101,7 +101,7 @@ export function InlineAmount({ value, onSave, placeholder = 'Ajouter', ...aria }
     setFocused(false);
     const cents = parseMoneyInput(draft);
     if (cents === undefined) {
-      toast('Montant invalide : écris par exemple 1500 ou 1 234,50.', 'danger');
+      toast('Montant invalide : écris par exemple 1500 ou 1 234,50.', { tone: 'danger' });
       return;
     }
     if (cents !== value) onSave(cents);

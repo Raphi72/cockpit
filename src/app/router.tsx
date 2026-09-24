@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
 import { validateProjectsSearch } from '@/domains/projects/search';
+import { validateTasksSearch } from '@/domains/tasks/search';
 import { AppShell } from './shell/AppShell';
 import { ErrorScreen } from './shell/ErrorScreen';
 
@@ -29,6 +30,7 @@ const routes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/tasks',
+    validateSearch: validateTasksSearch,
     component: lazyRouteComponent(() => import('@/domains/tasks/pages/TasksPage'), 'TasksPage'),
   }),
   createRoute({

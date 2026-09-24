@@ -25,19 +25,33 @@ export function DeadlineLabel({ project, today }: { project: ProjectListItem; to
   );
 }
 
-/** Ligne de projet : pastille, nom, client, progression, deadline. Rien de plus. */
-export const ProjectRow = memo(function ProjectRow({ project, today }: { project: ProjectListItem; today: string }) {
+/**
+ * Ligne de projet : pastille, nom, client, progression, deadline. Rien de plus.
+ * `compact` (colonne étroite du dashboard) : sans le client, colonnes resserrées.
+ */
+export const ProjectRow = memo(function ProjectRow({
+  project,
+  today,
+  compact = false,
+}: {
+  project: ProjectListItem;
+  today: string;
+  compact?: boolean;
+}) {
   const progress = projectProgress(project);
   return (
     <Link
       to="/projects/$projectId"
       params={{ projectId: project.id }}
-      className="-mx-2.5 grid min-h-11 grid-cols-[8px_minmax(0,1fr)_104px_120px] items-center gap-4 rounded-md px-2.5 transition-colors duration-[120ms] ease-soft hover:bg-hover"
+      className={
+        '-mx-2.5 grid min-h-11 items-center gap-4 rounded-md px-2.5 transition-colors duration-[120ms] ease-soft hover:bg-hover ' +
+        (compact ? 'grid-cols-[8px_minmax(0,1fr)_80px_84px]' : 'grid-cols-[8px_minmax(0,1fr)_104px_120px]')
+      }
     >
       <ColorDot color={project.typeColor} />
       <span className="truncate">
         {project.name}
-        {project.clientName && <span className="ml-2.5 text-meta text-ink-3">{project.clientName}</span>}
+        {!compact && project.clientName && <span className="ml-2.5 text-meta text-ink-3">{project.clientName}</span>}
       </span>
       <span>{progress !== null && <ProgressBar percent={progress} />}</span>
       <span className="text-right">

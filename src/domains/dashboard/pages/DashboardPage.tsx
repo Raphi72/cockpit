@@ -1,5 +1,15 @@
 import { Link } from '@tanstack/react-router';
-import { Euro, FolderClosed, Hourglass, Play, Plus, TriangleAlert, Wallet, type LucideIcon } from 'lucide-react';
+import {
+  CircleDashed,
+  Euro,
+  FolderClosed,
+  Hourglass,
+  Play,
+  Plus,
+  TriangleAlert,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { formatLongDate } from '@/core/dates';
@@ -8,6 +18,9 @@ import { useOverduePayments } from '@/domains/finance/payments/hooks';
 import { ProjectRow } from '@/domains/projects/components/ProjectRow';
 import { useProjects } from '@/domains/projects/hooks';
 import { OPEN_STATUSES } from '@/domains/projects/model';
+import { TodayTasks, estimateSummary } from '@/domains/tasks/components/TaskGroups';
+import { useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
+import { selectToday } from '@/domains/tasks/model';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
@@ -18,6 +31,7 @@ const ALERT_ICONS: Record<Alert['kind'], LucideIcon> = {
   payment: Euro,
   start: Play,
   budget: Wallet,
+  noaction: CircleDashed,
 };
 
 const TONE_CLASS: Record<Alert['tone'], string> = {
@@ -88,56 +102,80 @@ export function DashboardPage() {
   const openCreate = useCreateStore((state) => state.openCreate);
   const { data: projects } = useProjects({ statuses: OPEN_STATUSES });
   const { data: overduePayments = [] } = useOverduePayments(today);
+  const { data: openTasks } = useOpenTasks();
+  const { data: doneToday = [] } = useDoneToday(today);
 
-  if (!projects) return null;
+  if (!projects || !openTasks) return null;
 
   const alerts = buildAlerts({ projects, overduePayments, today });
   const active = projects.filter((p) => p.status === 'active');
   const upcoming = projects.filter((p) => p.status === 'planned' || p.status === 'proposal');
+  const todayGroups = selectToday(openTasks, today);
+  const todayTasks = [...todayGroups.overdue, ...todayGroups.today];
   const title = formatLongDate(new Date(`${today}T12:00:00`));
 
-  if (projects.length === 0) {
+  if (projects.length === 0 && openTasks.length === 0 && doneToday.length === 0) {
     return (
       <Page title={title} subtitle="Rien de prévu pour l’instant.">
-        <EmptyState icon={FolderClosed} title="Tout commence par tes projets">
-          <p>Crée ton premier projet : cette page te montrera ensuite où tu en es et ce qui mérite ton attention.</p>
-          <Button variant="primary" icon={Plus} className="mt-4" onClick={() => openCreate('project')}>
-            Créer un projet
-          </Button>
+        <EmptyState icon={FolderClosed} title="Tout commence par tes projets et tes tâches">
+          <p>Cette page te montrera ensuite ce que tu as à faire aujourd’hui et ce qui mérite ton attention.</p>
+          <div className="mt-4 flex gap-2">
+            <Button variant="primary" icon={Plus} onClick={() => openCreate('project')}>
+              Créer un projet
+            </Button>
+            <Button variant="secondary" shortcut="N" onClick={() => openCreate('task', { scheduledDate: today })}>
+              Ajouter une tâche
+            </Button>
+          </div>
         </EmptyState>
       </Page>
     );
   }
 
+  const estimate = estimateSummary(todayTasks);
+
   return (
-    <Page title={title} subtitle={dashboardSummary(projects, alerts)}>
-      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)] items-start gap-x-18 gap-y-16">
+    <Page
+      title={title}
+      subtitle={dashboardSummary({ projects, alerts, todayCount: todayTasks.length, overdueCount: todayGroups.overdue.length })}
+    >
+      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18 gap-y-16">
+        <section className="min-w-0">
+          <div className="mb-1 flex items-baseline gap-2.5">
+            <h2 className="font-semibold">Aujourd’hui</h2>
+            {estimate && <span className="text-meta text-ink-3">{estimate}</span>}
+            <Link to="/tasks" className="ml-auto text-meta text-ink-3 hover:text-ink">
+              Toutes les tâches →
+            </Link>
+          </div>
+          <TodayTasks open={openTasks} doneToday={doneToday} today={today} />
+        </section>
+
         <div className="min-w-0">
-          <section>
+          <Attention alerts={alerts} />
+
+          <section className="mt-16">
             <div className="mb-3.5 flex items-baseline gap-2.5">
               <h2 className="font-semibold">Projets en cours</h2>
               <Link to="/projects" className="ml-auto text-meta text-ink-3 hover:text-ink">
-                Tous les projets →
+                Tous →
               </Link>
             </div>
             {active.length === 0 ? (
               <p className="text-ink-3">Aucun projet en cours.</p>
             ) : (
-              active.map((project) => <ProjectRow key={project.id} project={project} today={today} />)
+              active.map((project) => <ProjectRow key={project.id} project={project} today={today} compact />)
+            )}
+            {upcoming.length > 0 && (
+              <>
+                <h3 className="pt-5 pb-1.5 text-meta font-medium text-ink-3">À venir</h3>
+                {upcoming.map((project) => (
+                  <ProjectRow key={project.id} project={project} today={today} compact />
+                ))}
+              </>
             )}
           </section>
-
-          {upcoming.length > 0 && (
-            <section className="mt-16">
-              <h2 className="mb-3.5 font-semibold">À venir</h2>
-              {upcoming.map((project) => (
-                <ProjectRow key={project.id} project={project} today={today} />
-              ))}
-            </section>
-          )}
         </div>
-
-        <Attention alerts={alerts} />
       </div>
     </Page>
   );

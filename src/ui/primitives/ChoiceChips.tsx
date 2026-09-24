@@ -2,7 +2,8 @@ type Option<T extends string> = { value: T; label: string };
 
 type ChoiceChipsProps<T extends string> = {
   options: Option<T>[];
-  value: T;
+  /** `null` : aucune option sélectionnée (valeur saisie autrement). */
+  value: T | null;
   onChange: (value: T) => void;
   label: string;
 };

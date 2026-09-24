@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { ArrowLeft, Ellipsis, SquareCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, Ellipsis, Trash2 } from 'lucide-react';
+import { ProjectTasks } from '@/domains/tasks/components/ProjectTasks';
 import { useState } from 'react';
 import { useToday } from '@/core/use-today';
 import { PageContainer } from '@/ui/layout/Page';
@@ -41,7 +42,7 @@ export function ProjectDetailPage() {
     deleteProject.mutate(project.id, {
       onSuccess: (result) => {
         if (result === 'has-received-payments') {
-          toast('Ce projet a déjà reçu des paiements : passe-le plutôt en Terminé ou Annulé.', 'danger');
+          toast('Ce projet a déjà reçu des paiements : passe-le plutôt en Terminé ou Annulé.', { tone: 'danger' });
           return;
         }
         toast('Projet supprimé.');
@@ -88,13 +89,9 @@ export function ProjectDetailPage() {
             aria-label="Description"
           />
 
-          <section className="mt-14">
-            <h2 className="mb-3 font-semibold">Tâches</h2>
-            <p className="flex items-center gap-2.5 text-ink-3">
-              <SquareCheck className="size-4" strokeWidth={1.75} />
-              Les tâches du projet arrivent à la prochaine étape.
-            </p>
-          </section>
+          <div className="mt-14">
+            <ProjectTasks projectId={project.id} today={today} />
+          </div>
 
           <section className="mt-14">
             <h2 className="mb-2 font-semibold">Notes</h2>

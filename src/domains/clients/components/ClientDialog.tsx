@@ -79,7 +79,10 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
     <form
       onSubmit={submit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && e.ctrlKey) submit();
+        if (e.key === 'Enter' && e.ctrlKey) {
+          e.preventDefault();
+          submit();
+        }
       }}
       className="mt-5"
     >
@@ -165,7 +168,7 @@ type ClientDialogProps = {
 
 export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={client ? client.name : 'Nouveau client'}>
+    <Dialog open={open} onOpenChange={onOpenChange} title={client ? client.name : 'Nouveau client'} restoreFocus={Boolean(client)}>
       {open && <ClientForm client={client} onDone={() => onOpenChange(false)} />}
     </Dialog>
   );
@@ -173,7 +176,7 @@ export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) 
 
 /** Fenêtre de création globale (bouton « Nouveau »). */
 export function CreateClientDialog() {
-  const open = useCreateStore((state) => state.open === 'client');
+  const open = useCreateStore((state) => state.open?.kind === 'client');
   const close = useCreateStore((state) => state.close);
   return <ClientDialog open={open} onOpenChange={(next) => !next && close()} />;
 }

@@ -1,5 +1,7 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { todayISO } from '@/core/dates';
+import { defaultsFromPath, useCreateStore } from './create-store';
 import { mainNav } from './navigation';
 import { useUiStore } from './ui-store';
 
@@ -17,21 +19,29 @@ export function digitFromEvent(event: Pick<KeyboardEvent, 'code' | 'key'>): stri
   return AZERTY_DIGITS[event.key] ?? null;
 }
 
+/** Vrai si une fenêtre ou un menu est ouvert. */
+function overlayOpen(): boolean {
+  return document.querySelector('[role="dialog"], [role="menu"]') !== null;
+}
+
 /** Vrai si l'utilisateur tape du texte ou si une fenêtre / un menu est ouvert. */
 function isBusy(target: EventTarget | null): boolean {
   const element = target as HTMLElement | null;
   if (element?.closest('input, textarea, select, [contenteditable="true"]')) return true;
-  return document.querySelector('[role="dialog"], [role="menu"]') !== null;
+  return overlayOpen();
 }
 
 /**
  * Raccourcis disponibles partout :
- * Ctrl+1…6 pour les pages, Ctrl+B pour la barre latérale, C pour le menu « Nouveau ».
+ * Ctrl+1…6 pour les pages, Ctrl+B pour la barre latérale, N (ou Ctrl+N) pour une nouvelle tâche,
+ * C pour le menu « Nouveau ».
  */
 export function useGlobalShortcuts(): void {
   const navigate = useNavigate();
+  const router = useRouter();
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const setNewMenuOpen = useUiStore((state) => state.setNewMenuOpen);
+  const openCreate = useCreateStore((state) => state.openCreate);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -44,20 +54,33 @@ export function useGlobalShortcuts(): void {
           void navigate({ to: target.to });
           return;
         }
-        if (!event.shiftKey && event.key.toLowerCase() === 'b') {
+        const letter = event.key.toLowerCase();
+        if (!event.shiftKey && letter === 'b') {
           event.preventDefault();
           toggleSidebar();
+        }
+        // Ctrl+N : toujours, même en tapant du texte (sauf si une fenêtre est déjà ouverte).
+        if (!event.shiftKey && letter === 'n') {
+          event.preventDefault();
+          if (!overlayOpen()) openCreate('task', defaultsFromPath(router.state.location.pathname, todayISO()));
         }
         return;
       }
 
-      if (event.key.toLowerCase() === 'c' && !event.altKey && !event.metaKey && !isBusy(event.target)) {
+      if (event.altKey || event.metaKey || event.shiftKey || isBusy(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (key === 'c') {
         event.preventDefault();
         setNewMenuOpen(true);
+      }
+      // N : nouvelle tâche. Ctrl+N reste disponible, mais certains navigateurs le réservent.
+      if (key === 'n') {
+        event.preventDefault();
+        openCreate('task', defaultsFromPath(router.state.location.pathname, todayISO()));
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [navigate, toggleSidebar, setNewMenuOpen]);
+  }, [navigate, router, toggleSidebar, setNewMenuOpen, openCreate]);
 }

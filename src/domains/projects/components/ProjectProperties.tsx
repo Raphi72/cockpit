@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
 import { daysBetween, relativeDateLabel } from '@/core/dates';
 import { ClientPicker } from '@/domains/clients/components/ClientPicker';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { ProgressBar } from '@/ui/data/ProgressBar';
+import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '@/ui/overlays/Menu';
 import { InlineDate } from '@/ui/primitives/InlineFields';
 import { PropertyButton } from '@/ui/primitives/PropertyButton';
@@ -18,18 +18,6 @@ import {
   type ProjectStatus,
 } from '../model';
 import { StatusIcon } from './StatusIcon';
-
-export function PropertyRow({ label, children, hint }: { label: string; children: ReactNode; hint?: ReactNode }) {
-  return (
-    <div className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-3 py-1">
-      <span className="pt-1.5 text-meta text-ink-3">{label}</span>
-      <div className="min-w-0">
-        {children}
-        {hint && <div className="pb-1 text-meta">{hint}</div>}
-      </div>
-    </div>
-  );
-}
 
 function DeadlineHint({ project, today }: { project: ProjectDetail; today: string }) {
   const tone = deadlineTone(project, today);

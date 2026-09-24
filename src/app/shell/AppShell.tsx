@@ -1,6 +1,8 @@
 import { Outlet } from '@tanstack/react-router';
 import { CreateClientDialog } from '@/domains/clients/components/ClientDialog';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
+import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
+import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { useGlobalShortcuts } from '../shortcuts';
 import { useUiStore } from '../ui-store';
@@ -25,8 +27,10 @@ export function AppShell() {
       </div>
 
       {/* Fenêtres globales, ouvrables depuis n'importe quelle page. */}
+      <CreateTaskDialog />
       <CreateProjectDialog />
       <CreateClientDialog />
+      <TaskSheet />
       <Toaster />
     </div>
   );

@@ -15,6 +15,13 @@ export const queryKeys = {
     list: ['clients', 'list'] as const,
     projects: (id: string) => ['clients', 'projects', id] as const,
   },
+  tasks: {
+    all: ['tasks'] as const,
+    open: ['tasks', 'open'] as const,
+    done: (options: object) => ['tasks', 'done', options] as const,
+    project: (projectId: string) => ['tasks', 'project', projectId] as const,
+    detail: (id: string) => ['tasks', 'detail', id] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

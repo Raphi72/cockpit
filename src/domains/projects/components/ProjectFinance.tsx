@@ -6,8 +6,8 @@ import { isPaymentLate, type Payment } from '@/domains/finance/payments/model';
 import { ProgressBar } from '@/ui/data/ProgressBar';
 import { InlineAmount } from '@/ui/primitives/InlineFields';
 import { useUpdateProject } from '../hooks';
+import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { projectMoney, type ProjectDetail } from '../model';
-import { PropertyRow } from './ProjectProperties';
 
 function PaymentRow({ payment, today }: { payment: Payment; today: string }) {
   const setReceived = useSetPaymentReceived();

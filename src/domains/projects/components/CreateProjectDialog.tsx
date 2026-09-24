@@ -104,7 +104,10 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
     <form
       onSubmit={submit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' && e.ctrlKey) submit();
+        if (e.key === 'Enter' && e.ctrlKey) {
+          e.preventDefault();
+          submit();
+        }
       }}
       className="mt-5"
     >
@@ -274,10 +277,10 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
 
 /** Monté une seule fois dans l'AppShell ; ouvert via le store de création. */
 export function CreateProjectDialog() {
-  const open = useCreateStore((state) => state.open === 'project');
+  const open = useCreateStore((state) => state.open?.kind === 'project');
   const close = useCreateStore((state) => state.close);
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && close()} title="Nouveau projet">
+    <Dialog open={open} onOpenChange={(next) => !next && close()} title="Nouveau projet" restoreFocus={false}>
       {open && <CreateProjectForm onDone={close} />}
     </Dialog>
   );

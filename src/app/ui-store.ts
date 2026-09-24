@@ -13,6 +13,9 @@ type UiState = {
   /** Dernier type choisi à la création d'un projet, proposé par défaut la fois suivante. */
   lastProjectTypeId: string | null;
   setLastProjectTypeId: (id: string) => void;
+  /** Affichage des tâches d'un projet : liste (par défaut) ou kanban. */
+  projectTasksMode: 'list' | 'board';
+  setProjectTasksMode: (mode: 'list' | 'board') => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -24,6 +27,8 @@ export const useUiStore = create<UiState>()(
       setNewMenuOpen: (open) => set({ newMenuOpen: open }),
       lastProjectTypeId: null,
       setLastProjectTypeId: (id) => set({ lastProjectTypeId: id }),
+      projectTasksMode: 'list',
+      setProjectTasksMode: (mode) => set({ projectTasksMode: mode }),
     }),
     {
       name: 'cockpit-ui',
@@ -31,6 +36,7 @@ export const useUiStore = create<UiState>()(
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         lastProjectTypeId: state.lastProjectTypeId,
+        projectTasksMode: state.projectTasksMode,
       }),
     },
   ),

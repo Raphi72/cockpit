@@ -27,7 +27,8 @@ const project = (overrides: Partial<ProjectListItem> = {}): ProjectListItem => (
   typeColor: 'blue',
   clientId: null,
   clientName: null,
-  tasksTotal: 0,
+  // Par défaut, une tâche ouverte : pas d'alerte « aucune prochaine action ».
+  tasksTotal: 1,
   tasksDone: 0,
   receivedCents: 0,
   scheduledCents: 0,
@@ -63,7 +64,7 @@ describe('échéancier à la création', () => {
 
 describe('valeurs calculées d’un projet', () => {
   it('progression : null sans tâche, 100 % si terminé', () => {
-    expect(projectProgress(project())).toBeNull();
+    expect(projectProgress(project({ tasksTotal: 0 }))).toBeNull();
     expect(projectProgress(project({ tasksTotal: 10, tasksDone: 6 }))).toBe(60);
     expect(projectProgress(project({ status: 'done' }))).toBe(100);
   });
@@ -149,8 +150,9 @@ describe('bloc « À surveiller »', () => {
         project({ id: 'soon', name: 'Identité', deadline: '2026-09-27' }),
         project({ id: 'later', name: 'Gala', deadline: '2026-09-28' }),
         project({ id: 'late', name: 'Audit SEO', deadline: '2026-09-22' }),
-        project({ id: 'start', name: 'Appli', status: 'planned', startDate: '2026-10-01' }),
+        project({ id: 'start', name: 'Appli', status: 'planned', startDate: '2026-10-01', tasksTotal: 0 }),
         project({ id: 'budget', name: 'Site', budgetCents: 200000, scheduledCents: 150000 }),
+        project({ id: 'idle', name: 'Portfolio', tasksTotal: 3, tasksDone: 3 }),
       ],
       overduePayments: [
         {
@@ -174,6 +176,7 @@ describe('bloc « À surveiller »', () => {
       ['warning', 'Deadline dimanche'],
       ['muted', 'Commence 1 oct. · aucune tâche créée'],
       ['muted', expect.stringMatching(/^500\s€ du budget sans échéance$/)],
+      ['muted', 'Toutes les tâches sont faites : terminer le projet ?'],
     ]);
   });
 });

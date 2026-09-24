@@ -11,7 +11,7 @@ import { router } from './router';
  */
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
-    onError: (error) => toast(humanizeError(error), 'danger'),
+    onError: (error) => toast(humanizeError(error), { tone: 'danger' }),
   }),
   defaultOptions: {
     queries: {

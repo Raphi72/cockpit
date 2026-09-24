@@ -108,7 +108,14 @@
   /* Seuls les éléments qui apparaissent sont animés, brièvement. */
   --animate-pop: pop 150ms var(--ease-soft);
   --animate-fade: fade 150ms var(--ease-soft);
+  --animate-slide-in: slide-in 180ms var(--ease-soft);
 
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(12px);
+    }
+  }
   @keyframes pop {
     from {
       opacity: 0;

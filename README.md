@@ -18,6 +18,9 @@ Tauri 2 (Rust, coquille fine) · React 19 + TypeScript · SQLite (rusqlite) · T
 
 Prérequis : Node 24, Rust (stable, MSVC) et les Build Tools C++ de Visual Studio.
 
+En développement, l'app utilise une base séparée (`cockpit-dev.db`) : les essais ne touchent jamais les vraies données.
+`npm run dev` seul ouvre aussi l'interface dans un navigateur, sur une base SQLite en mémoire (sql.js, mêmes migrations) : pratique pour tester l'interface, absent du build de production.
+
 ## Organisation
 
 - `src-tauri/` : pont SQLite (`db_query`, `db_execute`, `db_batch`), migrations, sauvegardes.

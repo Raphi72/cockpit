@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 et 1 terminés le 24/09/2026 ; prochaine étape : jalon 2 (tâches).
+> Statut : **validé** (voir §8). Jalons 0, 1 et 2 terminés le 24/09/2026 ; prochaine étape : jalon 3 (finances).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -627,8 +627,8 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | Raccourci | Action |
 |---|---|
 | `Ctrl K` | Rechercher ou lancer une commande |
-| `C` | Menu Créer, puis `T` tâche · `P` projet · `E` événement · `R` encaissement · `D` transaction |
-| `Ctrl N` | Nouvelle tâche (l'action la plus fréquente) |
+| `C` | Menu Créer, puis `T` tâche · `P` projet · `L` client (plus tard `E` événement · `R` encaissement · `D` transaction) |
+| `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet |
 | `Ctrl 1` … `Ctrl 6` | Aller aux pages principales |
 | `Ctrl B` | Réduire / déplier la sidebar |
 | `↑ ↓` · `Entrée` · `Espace` | Parcourir une liste · ouvrir · cocher la tâche |
@@ -793,7 +793,7 @@ Chaque jalon aboutit à une version utilisable. Les règles métier de chaque ja
 |---|---|---|
 | **0. Socle** ✓ | Outils, projet Tauri + React + TS, tokens et polices, AppShell (sidebar réductible, routes, thème), pont SQLite, migration 0001, données initiales, sauvegarde auto | L'app s'ouvre depuis un raccourci Windows, la base est créée dans AppData et la navigation fonctionne au clavier |
 | **1. Projets & clients** ✓ | Liste filtrable, création avec échéancier (P3), page détail éditable sur place, types personnalisables, clients | Je peux saisir, filtrer et modifier mes vrais projets |
-| **2. Tâches** | Tâches de projet et libres, liste + kanban, glisser-déposer, TaskSheet, page Tâches et ses vues, progression automatique | « Aujourd'hui » reflète exactement ce que j'ai à faire |
+| **2. Tâches** ✓ | Tâches de projet et libres, liste + kanban, glisser-déposer, TaskSheet, page Tâches et ses vues, progression automatique | « Aujourd'hui » reflète exactement ce que j'ai à faire |
 | **3. Finances** | Comptes et ajustement de solde, encaissements, transactions et virements, page Finances, bloc finances du projet | Les soldes, le montant à recevoir et les retards sont justes sans aucune double saisie |
 | **4. Calendrier** | Événements, vues mois / semaine / jour, agrégation des dates | Toutes mes dates sont au même endroit, sans doublon |
 | **5. Dashboard** | Bandeau de chiffres, Aujourd'hui, Prochains jours, À surveiller, Projets, À recevoir | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
