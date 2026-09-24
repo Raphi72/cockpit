@@ -1,53 +1,95 @@
-import { Check } from 'lucide-react';
-import { relativeDateLabel } from '@/core/dates';
-import { formatMoney } from '@/core/money';
-import { useCreatePayment, useProjectPayments, useSetPaymentReceived } from '@/domains/finance/payments/hooks';
-import { isPaymentLate, type Payment } from '@/domains/finance/payments/model';
+import { useState, type ReactNode } from 'react';
+import { useCreateStore } from '@/app/create-store';
+import { formatShortDate } from '@/core/dates';
+import { formatMoney, formatSignedMoney } from '@/core/money';
+import { PaymentDialog } from '@/domains/finance/payments/components/PaymentDialog';
+import { PaymentDate, ReceiveToggle } from '@/domains/finance/payments/components/PaymentRow';
+import { useCreatePayment, useProjectPayments } from '@/domains/finance/payments/hooks';
+import type { PaymentListItem } from '@/domains/finance/payments/model';
+import { TransactionDialog } from '@/domains/finance/transactions/components/TransactionDialog';
+import { useProjectExpenses } from '@/domains/finance/transactions/hooks';
+import type { TransactionListItem } from '@/domains/finance/transactions/model';
 import { ProgressBar } from '@/ui/data/ProgressBar';
+import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { InlineAmount } from '@/ui/primitives/InlineFields';
 import { useUpdateProject } from '../hooks';
-import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { projectMoney, type ProjectDetail } from '../model';
 
-function PaymentRow({ payment, today }: { payment: Payment; today: string }) {
-  const setReceived = useSetPaymentReceived();
-  const received = payment.status === 'received';
-  const late = isPaymentLate(payment, today);
-  const date = received ? payment.receivedDate : payment.dueDate;
+const rowClass =
+  '-mx-2 grid min-h-10 cursor-default items-center gap-3 rounded-md px-2 outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-soft';
 
+function ClickableRow({ onOpen, className, children }: { onOpen: () => void; className: string; children: ReactNode }) {
   return (
-    <li className="-mx-2 grid min-h-10 grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2 hover:bg-hover">
-      <button
-        type="button"
-        onClick={() => setReceived.mutate({ id: payment.id, receivedDate: received ? null : today })}
-        aria-label={received ? 'Annuler la réception' : 'Marquer comme reçu'}
-        title={received ? 'Annuler la réception' : 'Marquer comme reçu aujourd’hui'}
-        className={
-          'grid size-[18px] place-items-center rounded-full border-[1.5px] transition-colors duration-[120ms] ease-soft ' +
-          (received ? 'border-success bg-success' : 'border-line-strong hover:border-ink-3')
-        }
-      >
-        {received && <Check className="size-3 text-white" strokeWidth={3} />}
-      </button>
-      <span className="min-w-0">
-        <span className={`block truncate ${received ? 'text-ink-3' : ''}`}>{payment.label}</span>
-        <span className={`tnum block text-meta ${late ? 'text-danger' : 'text-ink-3'}`}>
-          {received ? 'reçu ' : late ? 'en retard · ' : ''}
-          {date ? relativeDateLabel(date, today) : 'date à définir'}
-        </span>
-      </span>
-      <span className={`tnum font-medium ${received ? 'text-ink-3' : ''}`}>{formatMoney(payment.amountCents)}</span>
+    <li
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.target === event.currentTarget && event.key === 'Enter') onOpen();
+      }}
+      className={`${rowClass} ${className}`}
+    >
+      {children}
     </li>
   );
 }
 
-/** Budget et échéancier : reçu, restant et pourcentage payé sont calculés, jamais saisis. */
+function PaymentItem({ payment, today, onOpen }: { payment: PaymentListItem; today: string; onOpen: () => void }) {
+  const received = payment.status === 'received';
+  return (
+    <ClickableRow onOpen={onOpen} className="grid-cols-[18px_minmax(0,1fr)_auto]">
+      <ReceiveToggle payment={payment} />
+      <span className="min-w-0">
+        <span className={`block truncate ${received ? 'text-ink-3' : ''}`}>{payment.label}</span>
+        <span className="block">
+          <PaymentDate payment={payment} today={today} />
+        </span>
+      </span>
+      <span className={`tnum font-medium ${received ? 'text-ink-3' : ''}`}>{formatMoney(payment.amountCents)}</span>
+    </ClickableRow>
+  );
+}
+
+function ExpenseItem({ expense, today, onOpen }: { expense: TransactionListItem; today: string; onOpen: () => void }) {
+  return (
+    <ClickableRow onOpen={onOpen} className="grid-cols-[minmax(0,1fr)_auto]">
+      <span className="min-w-0">
+        <span className="block truncate">{expense.label}</span>
+        <span className="tnum block text-meta text-ink-3">{formatShortDate(expense.date, today)}</span>
+      </span>
+      <span className="tnum">{formatSignedMoney(expense.amountCents)}</span>
+    </ClickableRow>
+  );
+}
+
+function QuietLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-meta text-ink-3 transition-colors hover:text-ink"
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Budget, échéancier et dépenses du projet. Reçu, reste, pourcentage payé et marge sont calculés,
+ * jamais saisis. Un clic sur une ligne l'ouvre ; le rond passe par « Marquer reçu ».
+ */
 export function ProjectFinance({ project, today }: { project: ProjectDetail; today: string }) {
   const update = useUpdateProject(project.id);
+  const openCreate = useCreateStore((state) => state.openCreate);
   const { data: payments = [] } = useProjectPayments(project.id);
+  const { data: expenses = [] } = useProjectExpenses(project.id);
   const createPayment = useCreatePayment();
+  const [editingPayment, setEditingPayment] = useState<PaymentListItem | null>(null);
+  const [editingExpense, setEditingExpense] = useState<TransactionListItem | null>(null);
+
   const money = projectMoney(project);
   const hasBudget = project.budgetCents !== null && project.budgetCents > 0;
+  const expenseCents = expenses.reduce((sum, e) => sum + e.amountCents, 0);
 
   return (
     <div>
@@ -75,7 +117,7 @@ export function ProjectFinance({ project, today }: { project: ProjectDetail; tod
       {payments.length > 0 && (
         <ul className="mt-3">
           {payments.map((payment) => (
-            <PaymentRow key={payment.id} payment={payment} today={today} />
+            <PaymentItem key={payment.id} payment={payment} today={today} onOpen={() => setEditingPayment(payment)} />
           ))}
         </ul>
       )}
@@ -88,10 +130,14 @@ export function ProjectFinance({ project, today }: { project: ProjectDetail; tod
             className="text-ink-2 underline decoration-line-strong underline-offset-2 hover:text-ink"
             onClick={() =>
               createPayment.mutate({
-                projectId: project.id,
                 label: payments.length > 0 ? 'Solde' : 'Paiement',
                 amountCents: money.unplanned,
                 dueDate: project.deadline,
+                status: 'planned',
+                projectId: project.id,
+                client: { kind: 'none' },
+                invoiceRef: null,
+                notes: null,
               })
             }
           >
@@ -99,6 +145,40 @@ export function ProjectFinance({ project, today }: { project: ProjectDetail; tod
           </button>
         </p>
       )}
+
+      {expenses.length > 0 && (
+        <div className="mt-5">
+          <PropertyRow label="Dépenses">
+            <div className="tnum flex h-8 items-center">{formatSignedMoney(expenseCents)}</div>
+          </PropertyRow>
+          <PropertyRow label="Marge">
+            <div className="tnum flex h-8 items-center" title="Reçu moins les dépenses du projet">
+              {formatMoney(money.received + expenseCents)}
+            </div>
+          </PropertyRow>
+          <ul className="mt-1">
+            {expenses.map((expense) => (
+              <ExpenseItem key={expense.id} expense={expense} today={today} onOpen={() => setEditingExpense(expense)} />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-4 flex gap-4">
+        <QuietLink onClick={() => openCreate('payment', { projectId: project.id })}>+ Échéance</QuietLink>
+        <QuietLink onClick={() => openCreate('transaction', { projectId: project.id })}>+ Dépense</QuietLink>
+      </div>
+
+      <PaymentDialog
+        open={editingPayment !== null}
+        onOpenChange={(next) => !next && setEditingPayment(null)}
+        payment={editingPayment}
+      />
+      <TransactionDialog
+        open={editingExpense !== null}
+        onOpenChange={(next) => !next && setEditingExpense(null)}
+        transaction={editingExpense}
+      />
     </div>
   );
 }

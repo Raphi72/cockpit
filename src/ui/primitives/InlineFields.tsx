@@ -90,16 +90,27 @@ type InlineAmountProps = {
   value: number | null;
   onSave: (cents: number | null) => void;
   placeholder?: string;
+  /** Accepte un montant négatif (un solde à découvert). */
+  signed?: boolean;
+  className?: string;
+  title?: string;
   'aria-label': string;
 };
 
-export function InlineAmount({ value, onSave, placeholder = 'Ajouter', ...aria }: InlineAmountProps) {
+export function InlineAmount({
+  value,
+  onSave,
+  placeholder = 'Ajouter',
+  signed = false,
+  className = 'h-8',
+  ...aria
+}: InlineAmountProps) {
   const [focused, setFocused] = useState(false);
   const [draft, setDraft] = useState(moneyToInput(value));
 
   const commit = () => {
     setFocused(false);
-    const cents = parseMoneyInput(draft);
+    const cents = parseMoneyInput(draft, { signed });
     if (cents === undefined) {
       toast('Montant invalide : écris par exemple 1500 ou 1 234,50.', { tone: 'danger' });
       return;
@@ -120,7 +131,7 @@ export function InlineAmount({ value, onSave, placeholder = 'Ajouter', ...aria }
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => blurOnEnterOrEscape(e, () => setDraft(moneyToInput(value)))}
-      className={`tnum h-8 ${inlineClass}`}
+      className={`tnum ${inlineClass} ${className}`}
       {...aria}
     />
   );

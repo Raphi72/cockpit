@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { listClients } from '@/domains/clients/repository';
-import { listProjectPayments, setPaymentReceived } from '@/domains/finance/payments/repository';
+import { listProjectPayments } from '@/domains/finance/payments/repository';
+import { buildReceivePaymentBatch } from '@/domains/finance/payments/service';
 import type { NewProjectInput } from '@/domains/projects/model';
 import { getProject, listProjects, updateProjectStatement } from '@/domains/projects/repository';
 import { buildCreateProjectBatch, buildSetClientBatch, deleteProject } from '@/domains/projects/service';
@@ -57,7 +58,7 @@ describe('création d’un projet', () => {
     const { projectId, statements } = buildCreateProjectBatch(baseInput, context());
     await db.batch(statements);
     const [deposit] = await listProjectPayments(db, projectId);
-    await setPaymentReceived(db, deposit!.id, TODAY, NOW);
+    await db.batch(buildReceivePaymentBatch(deposit!, { receivedDate: TODAY, accountId: null }, context()).statements);
 
     expect(await getProject(db, projectId)).toMatchObject({ receivedCents: 60000 });
     const [client] = await listClients(db);
@@ -110,7 +111,7 @@ describe('suppression', () => {
     const { projectId, statements } = buildCreateProjectBatch(baseInput, context());
     await db.batch(statements);
     const [deposit] = await listProjectPayments(db, projectId);
-    await setPaymentReceived(db, deposit!.id, TODAY, NOW);
+    await db.batch(buildReceivePaymentBatch(deposit!, { receivedDate: TODAY, accountId: null }, context()).statements);
 
     expect(await deleteProject(db, projectId)).toBe('has-received-payments');
     expect(await getProject(db, projectId)).toBeDefined();

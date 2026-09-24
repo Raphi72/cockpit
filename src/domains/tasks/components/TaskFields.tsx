@@ -1,7 +1,5 @@
 import { Circle, CircleCheck, CircleDot, type LucideIcon } from 'lucide-react';
-import { useProjects } from '@/domains/projects/hooks';
-import { OPEN_STATUSES, PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
-import { ColorDot } from '@/ui/data/ColorDot';
+import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { PropertyButton } from '@/ui/primitives/PropertyButton';
 import { ESTIMATE_PRESETS, TASK_STATUSES, TASK_STATUS_LABELS, formatDuration, type TaskStatus } from '../model';
@@ -35,46 +33,6 @@ export function TaskStatusMenu({ value, onChange, variant }: { value: TaskStatus
           {TASK_STATUSES.map((status) => (
             <MenuRadioItem key={status} value={status} leading={<TaskStatusIcon status={status} />}>
               {TASK_STATUS_LABELS[status]}
-            </MenuRadioItem>
-          ))}
-        </MenuRadioGroup>
-      </MenuContent>
-    </Menu>
-  );
-}
-
-/** Projets proposés : ceux qui sont actifs, plus le projet actuel de la tâche s'il est clos. */
-export function TaskProjectMenu({
-  value,
-  currentName,
-  onChange,
-  variant,
-}: { value: string | null; currentName?: string | null; onChange: (id: string | null) => void } & Variant) {
-  const { data: projects = [] } = useProjects({ statuses: OPEN_STATUSES });
-  const selected = projects.find((p) => p.id === value);
-  const label = selected?.name ?? (value ? currentName : null);
-
-  return (
-    <Menu>
-      <MenuTrigger asChild>
-        <PropertyButton variant={variant} aria-label="Projet">
-          {label ? (
-            <>
-              {selected && <ColorDot color={selected.typeColor} />}
-              <span className="truncate">{label}</span>
-            </>
-          ) : (
-            <span className="text-ink-3">Sans projet</span>
-          )}
-        </PropertyButton>
-      </MenuTrigger>
-      <MenuContent className="max-h-80 overflow-y-auto">
-        <MenuRadioGroup value={value ?? 'none'} onValueChange={(v) => onChange(v === 'none' ? null : v)}>
-          <MenuRadioItem value="none">Sans projet</MenuRadioItem>
-          {projects.length > 0 && <MenuSeparator />}
-          {projects.map((project) => (
-            <MenuRadioItem key={project.id} value={project.id} leading={<ColorDot color={project.typeColor} />}>
-              {project.name}
             </MenuRadioItem>
           ))}
         </MenuRadioGroup>

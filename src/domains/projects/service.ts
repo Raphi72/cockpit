@@ -1,6 +1,6 @@
+import type { BatchContext } from '@/core/batch';
 import type { Db, Statement } from '@/core/db';
-import { normalizeClient } from '@/domains/clients/model';
-import { insertClientStatement } from '@/domains/clients/repository';
+import { resolveClientChoice } from '@/domains/clients/service';
 import { insertPaymentStatement } from '@/domains/finance/payments/repository';
 import { buildSchedule, type ClientChoice, type NewProjectInput } from './model';
 import {
@@ -10,17 +10,7 @@ import {
   updateProjectStatement,
 } from './repository';
 
-export type BatchContext = { now: string; today: string; newId: () => string };
-
-/** Résout le client choisi ; un nouveau client ajoute son INSERT au lot. */
-function resolveClient(choice: ClientChoice, ctx: BatchContext, statements: Statement[]): string | null {
-  if (choice.kind === 'existing') return choice.id;
-  if (choice.kind === 'none') return null;
-  const clientId = ctx.newId();
-  const client = normalizeClient({ name: choice.name, email: null, phone: null, notes: null });
-  statements.push(insertClientStatement(clientId, client, ctx.now));
-  return clientId;
-}
+export type { BatchContext };
 
 /**
  * Création d'un projet en une seule transaction : client éventuel, projet, puis échéancier.
@@ -28,7 +18,7 @@ function resolveClient(choice: ClientChoice, ctx: BatchContext, statements: Stat
  */
 export function buildCreateProjectBatch(input: NewProjectInput, ctx: BatchContext) {
   const statements: Statement[] = [];
-  const clientId = resolveClient(input.client, ctx, statements);
+  const clientId = resolveClientChoice(input.client, ctx, statements);
   const projectId = ctx.newId();
 
   statements.push(
@@ -66,7 +56,7 @@ export function buildCreateProjectBatch(input: NewProjectInput, ctx: BatchContex
 /** Change le client d'un projet, en créant le client au passage si besoin. */
 export function buildSetClientBatch(projectId: string, choice: ClientChoice, ctx: BatchContext): Statement[] {
   const statements: Statement[] = [];
-  const clientId = resolveClient(choice, ctx, statements);
+  const clientId = resolveClientChoice(choice, ctx, statements);
   statements.push(updateProjectStatement(projectId, { clientId }, ctx.now));
   return statements;
 }

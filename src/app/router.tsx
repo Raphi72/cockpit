@@ -6,6 +6,7 @@ import {
   lazyRouteComponent,
 } from '@tanstack/react-router';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
+import { validateFinancesSearch } from '@/domains/finance/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateTasksSearch } from '@/domains/tasks/search';
 import { AppShell } from './shell/AppShell';
@@ -46,6 +47,7 @@ const routes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/finances',
+    validateSearch: validateFinancesSearch,
     component: lazyRouteComponent(() => import('@/domains/finance/pages/FinancesPage'), 'FinancesPage'),
   }),
   createRoute({

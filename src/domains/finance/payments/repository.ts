@@ -1,52 +1,180 @@
-import type { Db, Statement } from '@/core/db';
-import type { OverduePayment, Payment } from './model';
+import type { Db, SqlValue, Statement } from '@/core/db';
+import type { OpenPaymentStatus, PaymentListItem, PaymentRow } from './model';
 
-const COLUMNS = 'id, project_id, label, amount_cents, due_date, status, received_date, invoice_ref';
+const LIST_SELECT = `
+  SELECT pay.id, pay.project_id, pay.client_id, pay.label, pay.amount_cents, pay.due_date, pay.status,
+         pay.received_date, pay.invoice_ref, pay.notes,
+         p.name AS project_name, pt.color AS project_color, COALESCE(c.name, dc.name) AS client_name,
+         tx.id AS transaction_id, ta.name AS transaction_account_name
+  FROM payments pay
+  LEFT JOIN projects p ON p.id = pay.project_id
+  LEFT JOIN project_types pt ON pt.id = p.type_id
+  LEFT JOIN clients c ON c.id = p.client_id
+  LEFT JOIN clients dc ON dc.id = pay.client_id
+  LEFT JOIN transactions tx ON tx.payment_id = pay.id
+  LEFT JOIN accounts ta ON ta.id = tx.account_id`;
 
-export function listProjectPayments(db: Db, projectId: string): Promise<Payment[]> {
-  return db.query<Payment>(
-    `SELECT ${COLUMNS} FROM payments WHERE project_id = ?
-     ORDER BY due_date IS NULL, due_date, created_at`,
+export function listProjectPayments(db: Db, projectId: string): Promise<PaymentListItem[]> {
+  return db.query<PaymentListItem>(
+    `${LIST_SELECT} WHERE pay.project_id = ?
+     ORDER BY pay.due_date IS NULL, pay.due_date, pay.created_at`,
     [projectId],
   );
 }
 
+/** Tout ce qui reste à recevoir, par date prévue (les retards arrivent donc en tête). */
+export function listOpenPayments(db: Db): Promise<PaymentListItem[]> {
+  return db.query<PaymentListItem>(
+    `${LIST_SELECT} WHERE pay.status <> 'received'
+     ORDER BY pay.due_date IS NULL, pay.due_date, pay.created_at`,
+  );
+}
+
+/** Encaissements reçus, les plus récents d'abord. */
+export function listReceivedPayments(db: Db, limit = 200): Promise<PaymentListItem[]> {
+  return db.query<PaymentListItem>(
+    `${LIST_SELECT} WHERE pay.status = 'received'
+     ORDER BY pay.received_date DESC, pay.updated_at DESC
+     LIMIT ?`,
+    [limit],
+  );
+}
+
 /** Encaissements non reçus dont la date prévue est passée. */
-export function listOverduePayments(db: Db, today: string): Promise<OverduePayment[]> {
-  return db.query<OverduePayment>(
-    `SELECT pay.id, pay.project_id, pay.label, pay.amount_cents, pay.due_date, pay.status,
-            pay.received_date, pay.invoice_ref,
-            p.name AS project_name, COALESCE(c.name, dc.name) AS client_name
-     FROM payments pay
-     LEFT JOIN projects p ON p.id = pay.project_id
-     LEFT JOIN clients c ON c.id = p.client_id
-     LEFT JOIN clients dc ON dc.id = pay.client_id
-     WHERE pay.status <> 'received' AND pay.due_date < ?
+export function listOverduePayments(db: Db, today: string): Promise<PaymentListItem[]> {
+  return db.query<PaymentListItem>(
+    `${LIST_SELECT} WHERE pay.status <> 'received' AND pay.due_date < ?
      ORDER BY pay.due_date`,
     [today],
+  );
+}
+
+export function getPayment(db: Db, id: string): Promise<PaymentListItem | undefined> {
+  return db.queryOne<PaymentListItem>(`${LIST_SELECT} WHERE pay.id = ?`, [id]);
+}
+
+export function getPaymentRow(db: Db, id: string): Promise<PaymentRow | undefined> {
+  return db.queryOne<PaymentRow>(
+    `SELECT id, project_id, client_id, label, amount_cents, due_date, status, received_date, invoice_ref, notes, created_at
+     FROM payments WHERE id = ?`,
+    [id],
   );
 }
 
 export type NewPaymentRow = {
   id: string;
   projectId: string | null;
+  clientId?: string | null;
   label: string;
   amountCents: number;
   dueDate: string | null;
+  status?: OpenPaymentStatus;
+  invoiceRef?: string | null;
+  notes?: string | null;
 };
 
 export function insertPaymentStatement(payment: NewPaymentRow, now: string): Statement {
   return {
-    sql: `INSERT INTO payments (id, project_id, label, amount_cents, due_date, status, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, 'planned', ?, ?)`,
-    params: [payment.id, payment.projectId, payment.label, payment.amountCents, payment.dueDate, now, now],
+    sql: `INSERT INTO payments
+            (id, project_id, client_id, label, amount_cents, due_date, status, invoice_ref, notes, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    params: [
+      payment.id,
+      payment.projectId,
+      payment.projectId ? null : (payment.clientId ?? null),
+      payment.label,
+      payment.amountCents,
+      payment.dueDate,
+      payment.status ?? 'planned',
+      payment.invoiceRef ?? null,
+      payment.notes ?? null,
+      now,
+      now,
+    ],
   };
 }
 
-/** Marque reçu à la date donnée, ou annule la réception (`null`). */
-export function setPaymentReceived(db: Db, id: string, receivedDate: string | null, now: string) {
-  return db.execute(
-    `UPDATE payments SET status = ?, received_date = ?, updated_at = ? WHERE id = ?`,
-    [receivedDate ? 'received' : 'planned', receivedDate, now, id],
-  );
+/** Réinsère un encaissement supprimé à l'identique (annulation). */
+export function restorePaymentStatement(row: PaymentRow, now: string): Statement {
+  return {
+    sql: `INSERT INTO payments
+            (id, project_id, client_id, label, amount_cents, due_date, status, received_date, invoice_ref, notes,
+             created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    params: [
+      row.id,
+      row.projectId,
+      row.clientId,
+      row.label,
+      row.amountCents,
+      row.dueDate,
+      row.status,
+      row.receivedDate,
+      row.invoiceRef,
+      row.notes,
+      row.createdAt,
+      now,
+    ],
+  };
+}
+
+export type PaymentPatch = Partial<{
+  projectId: string | null;
+  clientId: string | null;
+  label: string;
+  amountCents: number;
+  dueDate: string | null;
+  status: OpenPaymentStatus;
+  receivedDate: string;
+  invoiceRef: string | null;
+  notes: string | null;
+}>;
+
+const PATCH_COLUMNS: Record<keyof PaymentPatch, string> = {
+  projectId: 'project_id',
+  clientId: 'client_id',
+  label: 'label',
+  amountCents: 'amount_cents',
+  dueDate: 'due_date',
+  status: 'status',
+  receivedDate: 'received_date',
+  invoiceRef: 'invoice_ref',
+  notes: 'notes',
+};
+
+export function updatePaymentStatement(id: string, patch: PaymentPatch, now: string): Statement {
+  const sets: string[] = [];
+  const params: SqlValue[] = [];
+  for (const key of Object.keys(patch) as (keyof PaymentPatch)[]) {
+    sets.push(`${PATCH_COLUMNS[key]} = ?`);
+    params.push(patch[key] ?? null);
+  }
+  sets.push('updated_at = ?');
+  params.push(now);
+  return { sql: `UPDATE payments SET ${sets.join(', ')} WHERE id = ?`, params: [...params, id] };
+}
+
+export function markReceivedStatement(id: string, receivedDate: string, now: string): Statement {
+  return {
+    sql: `UPDATE payments SET status = 'received', received_date = ?, updated_at = ? WHERE id = ?`,
+    params: [receivedDate, now, id],
+  };
+}
+
+/**
+ * Annule la réception. Sans statut précisé, un encaissement qui a un n° de facture
+ * revient « En attente » (facture envoyée), sinon « Prévu ».
+ */
+export function unmarkReceivedStatement(id: string, now: string, status: OpenPaymentStatus | null = null): Statement {
+  return {
+    sql: `UPDATE payments
+          SET status = COALESCE(?, CASE WHEN invoice_ref IS NULL THEN 'planned' ELSE 'pending' END),
+              received_date = NULL, updated_at = ?
+          WHERE id = ?`,
+    params: [status, now, id],
+  };
+}
+
+export function deletePaymentStatement(id: string): Statement {
+  return { sql: 'DELETE FROM payments WHERE id = ?', params: [id] };
 }

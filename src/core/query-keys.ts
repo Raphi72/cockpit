@@ -26,5 +26,22 @@ export const queryKeys = {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,
     overdue: (today: string) => ['payments', 'overdue', today] as const,
+    open: ['payments', 'open'] as const,
+    received: ['payments', 'received'] as const,
+  },
+  transactions: {
+    all: ['transactions'] as const,
+    list: (filter: object) => ['transactions', 'list', filter] as const,
+    byProject: (projectId: string) => ['transactions', 'project', projectId] as const,
+    group: (id: string) => ['transactions', 'group', id] as const,
+  },
+  /** Soldes, chiffres de l'en-tête et catégories. */
+  finance: {
+    all: ['finance'] as const,
+    accounts: ['finance', 'accounts'] as const,
+    summary: (today: string) => ['finance', 'summary', today] as const,
+    categories: ['finance', 'categories'] as const,
+    /** Faut-il encore demander les soldes de départ ? */
+    needsInitialBalances: ['finance', 'needs-initial-balances'] as const,
   },
 };

@@ -1,5 +1,8 @@
 import { Outlet } from '@tanstack/react-router';
 import { CreateClientDialog } from '@/domains/clients/components/ClientDialog';
+import { CreatePaymentDialog } from '@/domains/finance/payments/components/PaymentDialog';
+import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
+import { CreateTransactionDialog } from '@/domains/finance/transactions/components/TransactionDialog';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
 import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
@@ -30,6 +33,9 @@ export function AppShell() {
       <CreateTaskDialog />
       <CreateProjectDialog />
       <CreateClientDialog />
+      <CreatePaymentDialog />
+      <CreateTransactionDialog />
+      <ReceivePaymentDialog />
       <TaskSheet />
       <Toaster />
     </div>

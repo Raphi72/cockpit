@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0, 1 et 2 terminés le 24/09/2026 ; prochaine étape : jalon 3 (finances).
+> Statut : **validé** (voir §8). Jalons 0 à 3 terminés le 24/09/2026 ; prochaine étape : jalon 4 (calendrier).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -627,7 +627,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | Raccourci | Action |
 |---|---|
 | `Ctrl K` | Rechercher ou lancer une commande |
-| `C` | Menu Créer, puis `T` tâche · `P` projet · `L` client (plus tard `E` événement · `R` encaissement · `D` transaction) |
+| `C` | Menu Créer, puis `T` tâche · `P` projet · `L` client · `R` encaissement · `D` transaction (plus tard `E` événement) |
 | `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet |
 | `Ctrl 1` … `Ctrl 6` | Aller aux pages principales |
 | `Ctrl B` | Réduire / déplier la sidebar |
@@ -796,7 +796,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **0. Socle** | ✓ Fait | Tauri + React + TS, design system, AppShell, pont SQLite, migration 0001, sauvegarde auto, base de dev séparée | L'app s'ouvre depuis un raccourci Windows, la base est dans AppData |
 | **1. Projets & clients** | ✓ Fait | Création avec échéancier (P3), liste filtrable, fiche éditable sur place, types personnalisables, clients créés à la volée, « À surveiller » | Je peux saisir, filtrer et modifier mes vrais projets |
 | **2. Tâches** | ✓ Fait | Tâches de projet et libres, 6 vues, liste réordonnable + kanban, panneau latéral, ajout express, touche N, bloc Aujourd'hui du dashboard | « Aujourd'hui » reflète exactement ce que j'ai à faire |
-| **3. Finances** | À faire | Comptes et soldes, encaissements complets, transactions, virements, lien « reçu → transaction », page Finances | Soldes, à recevoir et retards justes sans aucune double saisie |
+| **3. Finances** | ✓ Fait | Comptes et soldes, encaissements complets, transactions, virements, lien « reçu → transaction », page Finances | Soldes, à recevoir et retards justes sans aucune double saisie |
 | **4. Calendrier** | À faire | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
 | **5. Dashboard final** | À faire | Chiffres clés, « Prochains jours », finitions | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | À faire | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
@@ -805,46 +805,9 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 
 ### 7.2 Détail des jalons restants
 
-#### Jalon 3 — Finances
-
-**Déjà en place** : tables `accounts`, `transactions`, `payments`, `transaction_categories` et vues `account_balances`, `project_money` (migration 0001). Côté interface, les encaissements se créent via l'échéancier du projet ou le lien « créer l'échéance », et le rond d'une échéance la marque reçue (domaine `src/domains/finance/payments/`).
-
-**À construire** :
-- **Comptes et soldes (P5)** :
-  - le solde de chaque compte est la somme de ses transactions (vue `account_balances`) ;
-  - cliquer sur un solde permet d'en saisir un nouveau, ce qui crée une transaction `adjustment` égale à la différence ;
-  - au premier lancement, ou tant qu'aucun solde n'est saisi, l'app pose la question « Quel est le solde actuel de tes comptes ? » et crée des ajustements « Solde initial ».
-- **Transactions** :
-  - création : montant, revenu ou dépense, compte, catégorie, date, libellé, projet facultatif ;
-  - montants signés (+ entrée, − sortie), suppression avec « Annuler » ;
-  - liste filtrable par compte, type, catégorie et mois.
-- **Virements (P6)** : deux lignes `transfer` partageant un `transfer_group`, écrites dans un seul `db.batch`. Ils sont exclus des revenus et des dépenses.
-- **Encaissements** :
-  - onglets À recevoir · Reçus · En retard ;
-  - création et édition d'une échéance : libellé, montant, date prévue, statut Prévu / En attente, n° de facture, rattachement à un projet **ou** à un client ;
-  - édition et suppression depuis la fiche projet (aujourd'hui, on ne peut que les créer).
-- **Lien « reçu → transaction » (P4)** :
-  - « Marquer reçu » ouvre un petit dialogue : date de réception, compte (pro par défaut), case « Créer la transaction » cochée ;
-  - dans un seul lot : mise à jour de l'encaissement et insertion d'une transaction `income` avec `payment_id` ;
-  - annuler la réception supprime la transaction liée ;
-  - le rond de la fiche projet passe par ce même dialogue.
-- **Fiche projet** : dépenses liées (transactions du projet) et marge (reçu − dépenses).
-- **Page Finances** :
-  - en-tête : soldes, à recevoir, en retard, encaissé ce mois, dépenses pro du mois ;
-  - onglets Encaissements / Transactions.
-- **Paramètres** : catégories éditables, comme les types de projet.
-- **Menu Nouveau** : `R` pour un encaissement, `D` pour une transaction.
-
-**Tests attendus** :
-- solde après ajustement ;
-- virement atomique ;
-- « reçu » avec transaction liée comptée une seule fois ;
-- dépenses pro du mois sans virements ni ajustements ;
-- annulation de réception.
-
 #### Jalon 4 — Calendrier
 
-**Déjà en place** : table `events` (migration 0001).
+**Déjà en place** : table `events` (migration 0001). Les listes d'encaissements (`finance/payments/repository.ts`) donnent déjà projet, client et couleur de chaque échéance.
 
 **À construire** :
 - **Événements** : titre, type (rendez-vous, réunion, échéance libre, perso, autre), journée entière ou heures de début et de fin, lieu, notes, projet facultatif. Création, édition sur place et suppression avec « Annuler ».
@@ -872,11 +835,12 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - Projets en cours / À venir.
 
 **À construire** :
-- **4 chiffres clés**, comme sur la maquette (données du jalon 3) :
+- **4 chiffres clés**, comme sur la maquette. Les données existent : `getFinanceSummary` (`finance/repository.ts`) et l'en-tête `FinanceFigures` de la page Finances, à réutiliser :
   - compte pro, avec les dépenses pro du mois ;
   - compte perso, avec la variation du mois ;
   - à recevoir, avec le montant en retard ;
   - encaissé ce mois, avec le prévu sur 30 jours.
+- **À surveiller** : ajouter l'action directe « Marquer reçu » au survol d'un encaissement en retard (le dialogue global `useReceiveDialog` existe).
 - **Prochains jours** : l'agenda des 7 prochains jours (données du jalon 4), groupé par jour, entre « Aujourd'hui » et « Projets ».
 - **Vérification** : les 5 questions du §1.1 ont leur réponse sans défilement sur un écran 1080p à 125 %. Toujours viser **peu d'informations, beaucoup d'espace** (§6.1, principe 3).
 
@@ -911,6 +875,17 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - **Réordonnancement au clavier** : les tâches ne se réordonnent pas au clavier (piste : Alt+↑ / Alt+↓).
 - **Clients** : pas encore d'archivage.
 - **Erreurs dans les fenêtres globales** : une erreur dans une fenêtre globale (création, panneau de tâche) remplace toute l'app par l'écran d'erreur. Il faudrait des « error boundaries » locales.
+- **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
+- **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
+- **Export CSV des transactions** : prévu avec les exports (V1.1).
+
+**Choix faits au jalon 3**, à confirmer à l'usage :
+- La question « Quel est le solde actuel de tes comptes ? » est posée en haut de la page Finances (pas au démarrage), tant qu'aucun ajustement n'existe ; « Plus tard » la masque jusqu'à la prochaine visite. Le réglage `finance.initialBalancesAsked` retient qu'on y a répondu.
+- L'écart d'un ajustement est calculé par SQLite au moment de l'écriture, jamais à partir du solde affiché. Un solde négatif (découvert) est accepté.
+- Le revenu créé à la réception reprend le libellé de l'encaissement (suivi du client s'il n'a pas de projet) et la catégorie « Revenus client ». Modifier le montant ou la date de réception d'un encaissement reçu met à jour cette transaction. Modifier la transaction seule reste possible (frais bancaires) : les deux montants peuvent alors différer.
+- Supprimer un encaissement supprime sa transaction liée, et « Annuler » remet les deux. Annuler une réception ramène l'encaissement à « En attente » s'il a un n° de facture, sinon à « Prévu ».
+- Un virement modifié est réécrit (ses deux lignes sont remplacées dans le même lot). Sans filtre de compte, la liste ne le montre qu'une fois.
+- Une catégorie utilisée par des transactions ne se supprime pas, comme un type de projet utilisé.
 
 ---
 

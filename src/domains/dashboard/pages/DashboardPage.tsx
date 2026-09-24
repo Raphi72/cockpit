@@ -58,13 +58,22 @@ function AlertRow({ alert }: { alert: Alert }) {
   );
   const className = '-mx-2.5 flex items-start gap-3 rounded-md px-2.5 py-3 transition-colors duration-[120ms] ease-soft';
 
-  return alert.projectId ? (
-    <Link to="/projects/$projectId" params={{ projectId: alert.projectId }} className={`${className} hover:bg-hover`}>
-      {content}
-    </Link>
-  ) : (
-    <div className={className}>{content}</div>
-  );
+  if (alert.projectId) {
+    return (
+      <Link to="/projects/$projectId" params={{ projectId: alert.projectId }} className={`${className} hover:bg-hover`}>
+        {content}
+      </Link>
+    );
+  }
+  // Un encaissement sans projet (rattaché à un client) se retrouve dans Finances › En retard.
+  if (alert.kind === 'payment') {
+    return (
+      <Link to="/finances" search={{ view: 'late' }} className={`${className} hover:bg-hover`}>
+        {content}
+      </Link>
+    );
+  }
+  return <div className={className}>{content}</div>;
 }
 
 function Attention({ alerts }: { alerts: Alert[] }) {
@@ -114,7 +123,9 @@ export function DashboardPage() {
   const todayTasks = [...todayGroups.overdue, ...todayGroups.today];
   const title = formatLongDate(new Date(`${today}T12:00:00`));
 
-  if (projects.length === 0 && openTasks.length === 0 && doneToday.length === 0) {
+  const nothingYet =
+    projects.length === 0 && openTasks.length === 0 && doneToday.length === 0 && overduePayments.length === 0;
+  if (nothingYet) {
     return (
       <Page title={title} subtitle="Rien de prévu pour l’instant.">
         <EmptyState icon={FolderClosed} title="Tout commence par tes projets et tes tâches">

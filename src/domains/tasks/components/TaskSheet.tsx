@@ -3,6 +3,7 @@ import { ArrowUpRight, Trash2, X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
 import { formatShortDate, toISODate } from '@/core/dates';
 import { useToday } from '@/core/use-today';
+import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { Button } from '@/ui/primitives/Button';
 import { InlineDate, InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
@@ -10,7 +11,7 @@ import { useDeleteTask, useTask, useUpdateTask } from '../hooks';
 import type { TaskItem, TaskPatch } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
-import { TaskEstimateMenu, TaskPriorityMenu, TaskProjectMenu, TaskStatusMenu } from './TaskFields';
+import { TaskEstimateMenu, TaskPriorityMenu, TaskStatusMenu } from './TaskFields';
 
 function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => void }) {
   const update = useUpdateTask();
@@ -75,7 +76,7 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
           <TaskStatusMenu value={task.status} onChange={(status) => save({ status })} />
         </PropertyRow>
         <PropertyRow label="Projet">
-          <TaskProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />
+          <ProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />
         </PropertyRow>
         <PropertyRow label="Priorité">
           <TaskPriorityMenu value={task.priority} onChange={(priority) => save({ priority })} />

@@ -1,14 +1,17 @@
 import { useRouterState } from '@tanstack/react-router';
-import { FolderClosed, Plus, SquareCheck, User } from 'lucide-react';
+import { ArrowRightLeft, FolderClosed, HandCoins, Plus, SquareCheck, User } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { todayISO } from '@/core/dates';
-import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/ui/overlays/Menu';
+import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { defaultsFromPath, useCreateStore, type CreateKind } from '../create-store';
 import { useUiStore } from '../ui-store';
 
-/** Lettres actives dans le menu « Nouveau » (C puis T, P ou L). */
-const MENU_KEYS: Record<string, CreateKind> = { t: 'task', p: 'project', l: 'client' };
+/** Lettres actives dans le menu « Nouveau » (C puis T, P, L, R ou D). */
+const MENU_KEYS: Record<string, CreateKind> = { t: 'task', p: 'project', l: 'client', r: 'payment', d: 'transaction' };
+
+/** Ces créations reprennent le projet de la fiche ouverte. */
+const PROJECT_AWARE: CreateKind[] = ['task', 'payment', 'transaction'];
 
 function NewMenu() {
   const open = useUiStore((state) => state.newMenuOpen);
@@ -18,7 +21,7 @@ function NewMenu() {
 
   const create = (kind: CreateKind) => {
     setOpen(false);
-    openCreate(kind, kind === 'task' ? defaultsFromPath(pathname, todayISO()) : {});
+    openCreate(kind, PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, todayISO()) : {});
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -45,6 +48,13 @@ function NewMenu() {
         </MenuItem>
         <MenuItem icon={User} shortcut="L" onSelect={() => create('client')}>
           Nouveau client
+        </MenuItem>
+        <MenuSeparator />
+        <MenuItem icon={HandCoins} shortcut="R" onSelect={() => create('payment')}>
+          Nouvel encaissement
+        </MenuItem>
+        <MenuItem icon={ArrowRightLeft} shortcut="D" onSelect={() => create('transaction')}>
+          Nouvelle transaction
         </MenuItem>
       </MenuContent>
     </Menu>

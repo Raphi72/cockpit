@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { formatBackupDate, parseBackupStamp, useAppInfo } from '@/domains/data';
+import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
 import { Page } from '@/ui/layout/Page';
 import { Section } from '@/ui/layout/Section';
@@ -53,6 +54,9 @@ export function SettingsPage() {
     <Page title="Paramètres">
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />
+      </Section>
+      <Section title="Catégories de transactions" meta="clique sur un nom pour le modifier">
+        <CategoriesEditor />
       </Section>
       <DataSection />
     </Page>

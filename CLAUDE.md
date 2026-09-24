@@ -6,7 +6,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 ## Par où commencer
 
 - **Référence complète** : [docs/CONCEPTION.md](docs/CONCEPTION.md). Le besoin, les décisions (§8), l'architecture, le schéma SQL et le design system y sont décrits.
-- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 2 sont faits ; le suivant est le **jalon 3 (Finances)**, détaillé au §7.2. Les points à reprendre sont au §7.3.
+- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 3 sont faits ; le suivant est le **jalon 4 (Calendrier)**, détaillé au §7.2. Les points à reprendre sont au §7.3.
 - **Maquette de référence du dashboard** : [docs/maquette-dashboard.html](docs/maquette-dashboard.html).
 
 ## L'utilisateur

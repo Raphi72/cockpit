@@ -29,11 +29,13 @@ export function formatSignedMoney(cents: number): string {
 /**
  * Lit un montant saisi librement : « 2000 », « 2 000 », « 1 234,56 », « 12.5 € ».
  * Renvoie des centimes, `null` pour une saisie vide et `undefined` si la saisie est invalide.
+ * Avec `signed`, un montant négatif est accepté (« −120 » : un compte à découvert).
  */
-export function parseMoneyInput(text: string): number | null | undefined {
-  const cleaned = text.replace(/[\s  €]/g, '').replace(',', '.');
+export function parseMoneyInput(text: string, options: { signed?: boolean } = {}): number | null | undefined {
+  const cleaned = text.replace(/[\s  €]/g, '').replace(',', '.').replace('−', '-');
   if (cleaned === '') return null;
-  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return undefined;
+  const pattern = options.signed ? /^-?\d+(\.\d{1,2})?$/ : /^\d+(\.\d{1,2})?$/;
+  if (!pattern.test(cleaned)) return undefined;
   return Math.round(Number(cleaned) * 100);
 }
 

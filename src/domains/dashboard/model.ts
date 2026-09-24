@@ -1,6 +1,6 @@
 import { daysBetween, relativeDateLabel } from '@/core/dates';
 import { formatMoney } from '@/core/money';
-import type { OverduePayment } from '@/domains/finance/payments/model';
+import type { PaymentListItem } from '@/domains/finance/payments/model';
 import { deadlineTone, projectMoney, type ProjectListItem } from '@/domains/projects/model';
 
 export type AlertTone = 'danger' | 'warning' | 'muted';
@@ -24,7 +24,7 @@ const TONE_RANK: Record<AlertTone, number> = { danger: 0, warning: 1, muted: 2 }
  */
 export function buildAlerts(input: {
   projects: ProjectListItem[];
-  overduePayments: OverduePayment[];
+  overduePayments: PaymentListItem[];
   today: string;
 }): Alert[] {
   const { projects, overduePayments, today } = input;

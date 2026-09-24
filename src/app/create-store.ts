@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 
 /** Fenêtres de création globales, ouvrables depuis n'importe où (bouton « Nouveau », raccourcis…). */
-export type CreateKind = 'task' | 'project' | 'client';
+export type CreateKind = 'task' | 'project' | 'client' | 'payment' | 'transaction';
 
-/** Contexte pré-rempli : depuis une fiche projet, la tâche est rattachée à ce projet. */
+/** Contexte pré-rempli : depuis une fiche projet, la tâche (ou l'encaissement, la dépense) est rattachée à ce projet. */
 export type CreateDefaults = { projectId?: string | null; scheduledDate?: string | null };
 
 type CreateState = {

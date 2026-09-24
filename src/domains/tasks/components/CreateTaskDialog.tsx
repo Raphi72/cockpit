@@ -2,6 +2,7 @@ import { addDays, parseISO } from 'date-fns';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { DATE_INPUT_BOUNDS, toISODate, todayISO } from '@/core/dates';
+import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { toast } from '@/ui/overlays/toast';
@@ -10,7 +11,7 @@ import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { Input, Textarea, fieldClass } from '@/ui/primitives/Input';
 import { useCreateTask } from '../hooks';
 import { validateNewTask } from '../model';
-import { TaskEstimateMenu, TaskProjectMenu } from './TaskFields';
+import { TaskEstimateMenu } from './TaskFields';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -86,7 +87,7 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
 
       <div className="mt-5 grid grid-cols-[92px_minmax(0,1fr)] gap-x-4 gap-y-3">
         <Row label="Projet">
-          <TaskProjectMenu variant="field" value={projectId} onChange={setProjectId} />
+          <ProjectMenu variant="field" value={projectId} onChange={setProjectId} />
         </Row>
 
         <Row label="Prévue le">

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { batchContext } from '@/core/batch';
 import { db } from '@/core/db';
-import { nowTimestamp, todayISO } from '@/core/dates';
+import { nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import type { PaletteKey } from '@/ui/data/ColorDot';
@@ -17,8 +18,6 @@ import {
   type ProjectFilter,
 } from './repository';
 import { buildCreateProjectBatch, buildSetClientBatch, deleteProject } from './service';
-
-const batchContext = () => ({ now: nowTimestamp(), today: todayISO(), newId });
 
 // ─── Lectures ───────────────────────────────────────────────────────────────
 

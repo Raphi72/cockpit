@@ -16,6 +16,9 @@ type UiState = {
   /** Affichage des tâches d'un projet : liste (par défaut) ou kanban. */
   projectTasksMode: 'list' | 'board';
   setProjectTasksMode: (mode: 'list' | 'board') => void;
+  /** Dernier compte choisi pour une transaction, proposé par défaut la fois suivante. */
+  lastAccountId: string | null;
+  setLastAccountId: (id: string) => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -29,6 +32,8 @@ export const useUiStore = create<UiState>()(
       setLastProjectTypeId: (id) => set({ lastProjectTypeId: id }),
       projectTasksMode: 'list',
       setProjectTasksMode: (mode) => set({ projectTasksMode: mode }),
+      lastAccountId: null,
+      setLastAccountId: (id) => set({ lastAccountId: id }),
     }),
     {
       name: 'cockpit-ui',
@@ -37,6 +42,7 @@ export const useUiStore = create<UiState>()(
         sidebarCollapsed: state.sidebarCollapsed,
         lastProjectTypeId: state.lastProjectTypeId,
         projectTasksMode: state.projectTasksMode,
+        lastAccountId: state.lastAccountId,
       }),
     },
   ),
