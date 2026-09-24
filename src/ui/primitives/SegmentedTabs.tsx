@@ -1,4 +1,4 @@
-type Tab<T extends string> = { value: T; label: string; count?: number };
+type Tab<T extends string> = { value: T; label: string; count?: number; title?: string };
 
 type SegmentedTabsProps<T extends string> = {
   tabs: Tab<T>[];
@@ -17,6 +17,7 @@ export function SegmentedTabs<T extends string>({ tabs, value, onChange }: Segme
             type="button"
             role="tab"
             aria-selected={selected}
+            title={tab.title}
             onClick={() => onChange(tab.value)}
             className={
               'flex h-8 items-center gap-2 rounded-md px-3 transition-colors duration-[120ms] ease-soft ' +

@@ -1,14 +1,164 @@
-import { CalendarDays } from 'lucide-react';
-import { EmptyState } from '@/ui/layout/EmptyState';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { ChevronLeft, ChevronRight, ListFilter } from 'lucide-react';
+import { useMemo } from 'react';
+import { useCreateStore } from '@/app/create-store';
+import { usePageShortcuts } from '@/app/shortcuts';
+import { useUiStore } from '@/app/ui-store';
+import { useToday } from '@/core/use-today';
 import { Page } from '@/ui/layout/Page';
+import { Menu, MenuCheckboxItem, MenuContent, MenuTrigger } from '@/ui/overlays/Menu';
+import { Button } from '@/ui/primitives/Button';
+import { SegmentedTabs } from '@/ui/primitives/SegmentedTabs';
+import { useAgenda } from '../hooks';
+import {
+  AGENDA_SOURCES,
+  AGENDA_SOURCE_HINTS,
+  AGENDA_SOURCE_LABELS,
+  CALENDAR_VIEWS,
+  CALENDAR_VIEW_KEYS,
+  CALENDAR_VIEW_LABELS,
+  groupByDay,
+  shiftAnchor,
+  viewDays,
+  viewRange,
+  viewTitle,
+  type AgendaSource,
+} from '../model';
+import { useOpenAgendaItem } from '../open-item';
+import { MonthView } from './MonthView';
+import { TimeGridView } from './TimeGridView';
+
+/** « Filtrer » tant que tout est affiché ; sinon ce qui est affiché (« Sans tâches », « Événements »…). */
+function filterLabel(hidden: AgendaSource[]): string {
+  const shown = AGENDA_SOURCES.filter((source) => !hidden.includes(source));
+  if (hidden.length === 0) return 'Filtrer';
+  if (shown.length === 0) return 'Rien';
+  if (hidden.length === 1) return `Sans ${AGENDA_SOURCE_LABELS[hidden[0]!].toLowerCase()}`;
+  return shown.map((source) => AGENDA_SOURCE_LABELS[source]).join(', ');
+}
+
+function SourceFilter() {
+  const hidden = useUiStore((state) => state.calendarHidden);
+  const toggle = useUiStore((state) => state.toggleCalendarSource);
+  return (
+    <Menu>
+      <MenuTrigger asChild>
+        <Button variant="ghost" icon={ListFilter} className={hidden.length > 0 ? '!text-ink' : ''}>
+          {filterLabel(hidden)}
+        </Button>
+      </MenuTrigger>
+      <MenuContent align="end" className="min-w-[300px]">
+        {AGENDA_SOURCES.map((source) => (
+          <MenuCheckboxItem key={source} checked={!hidden.includes(source)} onCheckedChange={() => toggle(source)}>
+            {AGENDA_SOURCE_LABELS[source]}
+            <span className="ml-2 text-meta text-ink-3">{AGENDA_SOURCE_HINTS[source]}</span>
+          </MenuCheckboxItem>
+        ))}
+      </MenuContent>
+    </Menu>
+  );
+}
 
 export function CalendarPage() {
+  const today = useToday();
+  const search = useSearch({ from: '/calendar' });
+  const navigate = useNavigate({ from: '/calendar' });
+  const view = useUiStore((state) => state.calendarView);
+  const setView = useUiStore((state) => state.setCalendarView);
+  const hidden = useUiStore((state) => state.calendarHidden);
+  const openCreate = useCreateStore((state) => state.openCreate);
+  const openItem = useOpenAgendaItem();
+
+  const anchor = search.date ?? today;
+  const days = useMemo(() => viewDays(view, anchor), [view, anchor]);
+  const { data: items } = useAgenda(viewRange(days));
+  const groups = useMemo(
+    () => groupByDay((items ?? []).filter((item) => !hidden.includes(item.source)), days),
+    [items, hidden, days],
+  );
+  const empty = items !== undefined && [...groups.values()].every((list) => list.length === 0);
+
+  const goTo = (date: string) => void navigate({ search: date === today ? {} : { date } });
+  const showDay = (day: string) => {
+    setView('day');
+    goTo(day);
+  };
+
+  usePageShortcuts({
+    arrowleft: () => goTo(shiftAnchor(view, anchor, -1)),
+    arrowright: () => goTo(shiftAnchor(view, anchor, 1)),
+    t: () => goTo(today),
+    m: () => setView('month'),
+    s: () => setView('week'),
+    j: () => setView('day'),
+  });
+
+  const unit = view === 'month' ? 'Mois' : view === 'week' ? 'Semaine' : 'Jour';
+
   return (
-    <Page title="Calendrier">
-      <EmptyState icon={CalendarDays} title="Calendrier vide">
-        Les vues mois, semaine et jour arrivent au jalon 4, avec tes deadlines, rendez-vous et
-        paiements attendus au même endroit.
-      </EmptyState>
+    <Page
+      title={viewTitle(view, anchor, today)}
+      actions={
+        <>
+          <SourceFilter />
+          <SegmentedTabs
+            tabs={CALENDAR_VIEWS.map((v) => ({
+              value: v,
+              label: CALENDAR_VIEW_LABELS[v],
+              title: `${CALENDAR_VIEW_LABELS[v]} · ${CALENDAR_VIEW_KEYS[v]}`,
+            }))}
+            value={view}
+            onChange={setView}
+          />
+          <div className="ml-2 flex items-center gap-1">
+            <Button
+              variant="ghost"
+              icon={ChevronLeft}
+              aria-label={`${unit} précédent${view === 'week' ? 'e' : ''}`}
+              title="Précédent · ←"
+              onClick={() => goTo(shiftAnchor(view, anchor, -1))}
+            />
+            <Button variant="secondary" shortcut="T" onClick={() => goTo(today)}>
+              Aujourd’hui
+            </Button>
+            <Button
+              variant="ghost"
+              icon={ChevronRight}
+              aria-label={`${unit} suivant${view === 'week' ? 'e' : ''}`}
+              title="Suivant · →"
+              onClick={() => goTo(shiftAnchor(view, anchor, 1))}
+            />
+          </div>
+        </>
+      }
+    >
+      {view === 'month' ? (
+        <MonthView
+          anchor={anchor}
+          days={days}
+          groups={groups}
+          today={today}
+          onOpen={openItem}
+          onCreate={(day) => openCreate('event', { eventStart: day })}
+          onShowDay={showDay}
+        />
+      ) : (
+        <TimeGridView
+          days={days}
+          groups={groups}
+          today={today}
+          onOpen={openItem}
+          onCreate={(start, allDay) => openCreate('event', { eventStart: start, eventAllDay: allDay })}
+          onShowDay={showDay}
+        />
+      )}
+
+      {empty && (
+        <p className="mt-6 text-meta text-ink-3">
+          {hidden.length > 0 ? 'Rien à afficher avec ces filtres.' : 'Aucune date sur cette période.'} Clique sur un jour pour
+          ajouter un événement.
+        </p>
+      )}
     </Page>
   );
 }

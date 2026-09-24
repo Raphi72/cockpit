@@ -14,7 +14,8 @@ import { Button } from '@/ui/primitives/Button';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { DateField } from '@/ui/primitives/DateField';
 import { Input, Textarea } from '@/ui/primitives/Input';
-import { useCreatePayment, useDeletePayment, useUpdatePayment } from '../hooks';
+import { usePaymentEditor } from '../editor-store';
+import { useCreatePayment, useDeletePayment, usePayment, useUpdatePayment } from '../hooks';
 import { PAYMENT_STATUS_LABELS, validatePayment, type OpenPaymentStatus, type PaymentInput, type PaymentListItem } from '../model';
 
 function initialClient(payment?: PaymentListItem): ClientChoice {
@@ -234,4 +235,18 @@ export function CreatePaymentDialog() {
   const open = useCreateStore((state) => (state.open?.kind === 'payment' ? state.open : null));
   const close = useCreateStore((state) => state.close);
   return <PaymentDialog open={open !== null} onOpenChange={(next) => !next && close()} defaults={open?.defaults} />;
+}
+
+/** Encaissement ouvert depuis le calendrier : chargé par son identifiant. */
+export function PaymentEditorDialog() {
+  const paymentId = usePaymentEditor((state) => state.paymentId);
+  const close = usePaymentEditor((state) => state.close);
+  const { data: payment } = usePayment(paymentId);
+  return (
+    <PaymentDialog
+      open={paymentId !== null && Boolean(payment)}
+      onOpenChange={(next) => !next && close()}
+      payment={payment}
+    />
+  );
 }

@@ -1,10 +1,17 @@
 import { create } from 'zustand';
 
 /** Fenêtres de création globales, ouvrables depuis n'importe où (bouton « Nouveau », raccourcis…). */
-export type CreateKind = 'task' | 'project' | 'client' | 'payment' | 'transaction';
+export type CreateKind = 'task' | 'event' | 'project' | 'client' | 'payment' | 'transaction';
 
 /** Contexte pré-rempli : depuis une fiche projet, la tâche (ou l'encaissement, la dépense) est rattachée à ce projet. */
-export type CreateDefaults = { projectId?: string | null; scheduledDate?: string | null };
+export type CreateDefaults = {
+  projectId?: string | null;
+  scheduledDate?: string | null;
+  /** Événement créé depuis le calendrier : jour ('YYYY-MM-DD') ou créneau ('YYYY-MM-DDTHH:MM') cliqué. */
+  eventStart?: string;
+  /** Clic dans la ligne « journée » d'un jour. */
+  eventAllDay?: boolean;
+};
 
 type CreateState = {
   open: { kind: CreateKind; defaults: CreateDefaults } | null;

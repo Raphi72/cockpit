@@ -95,6 +95,24 @@ export function addDaysISO(iso: string, days: number): string {
   return toISODate(addDays(parseISO(iso), days));
 }
 
+// ─── Heures ('HH:MM', heure locale) ─────────────────────────────────────────
+
+/** Vrai pour une heure au format 'HH:MM', de 00:00 à 23:59. */
+export function isTime(value: unknown): value is string {
+  return typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+/** '14:30' → 870 */
+export function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number) as [number, number];
+  return hours * 60 + minutes;
+}
+
+/** 870 → '14:30' */
+export function minutesToTime(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }

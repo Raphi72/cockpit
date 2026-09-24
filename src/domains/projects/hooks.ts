@@ -58,6 +58,7 @@ export function useCreateProject() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectTypes });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
     },
   });
 }
@@ -81,6 +82,7 @@ export function useUpdateProject(id: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectTypes });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
     },
   });
 }
@@ -105,6 +107,7 @@ export function useDeleteProject() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectTypes });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
     },
   });
 }
@@ -116,6 +119,7 @@ function useInvalidateTypes() {
   return () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.projectTypes });
     void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
   };
 }
 

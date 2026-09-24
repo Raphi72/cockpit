@@ -7,7 +7,7 @@ import { queryKeys } from '@/core/query-keys';
 import { toast } from '@/ui/overlays/toast';
 import { useInvalidateMoney } from '../hooks';
 import type { OpenPaymentStatus, PaymentInput, PaymentListItem, ReceiveInput } from './model';
-import { listOpenPayments, listOverduePayments, listProjectPayments, listReceivedPayments } from './repository';
+import { getPayment, listOpenPayments, listOverduePayments, listProjectPayments, listReceivedPayments } from './repository';
 import {
   buildCreatePaymentBatch,
   buildDeletePaymentBatch,
@@ -38,6 +38,14 @@ export function useOpenPayments() {
 
 export function useReceivedPayments() {
   return useQuery({ queryKey: queryKeys.payments.received, queryFn: () => listReceivedPayments(db) });
+}
+
+export function usePayment(id: string | null) {
+  return useQuery({
+    queryKey: queryKeys.payments.detail(id ?? ''),
+    queryFn: async () => (id ? ((await getPayment(db, id)) ?? null) : null),
+    enabled: id !== null,
+  });
 }
 
 // ─── Écritures ──────────────────────────────────────────────────────────────

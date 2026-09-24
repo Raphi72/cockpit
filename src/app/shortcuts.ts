@@ -1,5 +1,5 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { todayISO } from '@/core/dates';
 import { defaultsFromPath, useCreateStore } from './create-store';
 import { mainNav } from './navigation';
@@ -83,4 +83,29 @@ export function useGlobalShortcuts(): void {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [navigate, router, toggleSidebar, setNewMenuOpen, openCreate]);
+}
+
+/**
+ * Raccourcis propres à une page : des touches seules (`event.key` en minuscules : 't', 'arrowleft'…),
+ * inactives pendant la saisie ou quand une fenêtre / un menu est ouvert.
+ * Les lettres sont lues comme caractères : elles suivent la disposition du clavier (AZERTY).
+ */
+export function usePageShortcuts(handlers: Record<string, () => void>): void {
+  const latest = useRef(handlers);
+  useLayoutEffect(() => {
+    latest.current = handlers;
+  });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || isBusy(event.target)) return;
+      const handler = latest.current[event.key.toLowerCase()];
+      if (handler) {
+        event.preventDefault();
+        handler();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 }

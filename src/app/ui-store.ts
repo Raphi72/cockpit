@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import type { AgendaSource, CalendarView } from '@/domains/agenda/model';
 
 /**
  * État d'interface uniquement (jamais de données métier ici).
@@ -19,6 +20,12 @@ type UiState = {
   /** Dernier compte choisi pour une transaction, proposé par défaut la fois suivante. */
   lastAccountId: string | null;
   setLastAccountId: (id: string) => void;
+  /** Vue du calendrier, retrouvée à la visite suivante. */
+  calendarView: CalendarView;
+  setCalendarView: (view: CalendarView) => void;
+  /** Sources masquées par les filtres du calendrier. */
+  calendarHidden: AgendaSource[];
+  toggleCalendarSource: (source: AgendaSource) => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -34,6 +41,15 @@ export const useUiStore = create<UiState>()(
       setProjectTasksMode: (mode) => set({ projectTasksMode: mode }),
       lastAccountId: null,
       setLastAccountId: (id) => set({ lastAccountId: id }),
+      calendarView: 'month',
+      setCalendarView: (view) => set({ calendarView: view }),
+      calendarHidden: [],
+      toggleCalendarSource: (source) =>
+        set((state) => ({
+          calendarHidden: state.calendarHidden.includes(source)
+            ? state.calendarHidden.filter((s) => s !== source)
+            : [...state.calendarHidden, source],
+        })),
     }),
     {
       name: 'cockpit-ui',
@@ -43,6 +59,8 @@ export const useUiStore = create<UiState>()(
         lastProjectTypeId: state.lastProjectTypeId,
         projectTasksMode: state.projectTasksMode,
         lastAccountId: state.lastAccountId,
+        calendarView: state.calendarView,
+        calendarHidden: state.calendarHidden,
       }),
     },
   ),

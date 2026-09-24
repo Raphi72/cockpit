@@ -15,6 +15,8 @@ function useInvalidateClients() {
   return () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
     void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    // Le nom d'un client titre ses encaissements sans projet dans le calendrier.
+    void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
   };
 }
 

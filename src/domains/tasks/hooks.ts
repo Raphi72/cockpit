@@ -47,10 +47,11 @@ export function useTask(id: string | null) {
 
 // ─── Écritures ──────────────────────────────────────────────────────────────
 
-/** Les tâches font bouger la progression des projets et le bloc « À surveiller ». */
+/** Les tâches font bouger la progression des projets, le bloc « À surveiller » et le calendrier. */
 function invalidateAfterTaskChange(queryClient: QueryClient) {
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
   void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
 }
 
 /** Applique un changement à toutes les listes et fiches en cache, avant la base : rien n'attend. */

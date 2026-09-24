@@ -67,6 +67,29 @@ export function MenuRadioItem({ leading, children, className = '', ...props }: M
   );
 }
 
+type MenuCheckboxItemProps = ComponentProps<typeof DropdownMenu.CheckboxItem>;
+
+/** Option à cocher ; le menu reste ouvert pour en cocher plusieurs. */
+export function MenuCheckboxItem({ children, className = '', onSelect, ...props }: MenuCheckboxItemProps) {
+  return (
+    <DropdownMenu.CheckboxItem
+      className={`${itemClass} ${className}`}
+      onSelect={(event) => {
+        event.preventDefault();
+        onSelect?.(event);
+      }}
+      {...props}
+    >
+      <span className="grid size-4 shrink-0 place-items-center">
+        <DropdownMenu.ItemIndicator>
+          <Check className="size-4 text-ink-2" strokeWidth={1.75} />
+        </DropdownMenu.ItemIndicator>
+      </span>
+      <span className="flex-1 truncate">{children}</span>
+    </DropdownMenu.CheckboxItem>
+  );
+}
+
 export function MenuSeparator() {
   return <DropdownMenu.Separator className="my-1 h-px bg-line" />;
 }

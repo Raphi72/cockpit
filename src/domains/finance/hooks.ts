@@ -9,7 +9,7 @@ export function useFinanceSummary(today: string) {
 
 /**
  * Tout mouvement d'argent touche plusieurs vues : soldes, encaissements, transactions,
- * montants reçus des projets et « à recevoir » des clients.
+ * montants reçus des projets, « à recevoir » des clients et échéances du calendrier.
  */
 export function invalidateMoney(queryClient: QueryClient): void {
   for (const queryKey of [
@@ -18,6 +18,7 @@ export function invalidateMoney(queryClient: QueryClient): void {
     queryKeys.transactions.all,
     queryKeys.projects.all,
     queryKeys.clients.all,
+    queryKeys.agenda.all,
   ]) {
     void queryClient.invalidateQueries({ queryKey });
   }

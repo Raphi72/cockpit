@@ -1,0 +1,83 @@
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { formatLongDate, monthOf } from '@/core/dates';
+import { weekdayShort, type AgendaItem } from '../model';
+import { DayItems } from './AgendaChip';
+
+/** 3 éléments au plus par jour, puis « +N ». */
+const MAX_PER_DAY = 3;
+
+type MonthViewProps = {
+  anchor: string;
+  days: string[];
+  groups: Map<string, AgendaItem[]>;
+  today: string;
+  onOpen: (item: AgendaItem) => void;
+  /** Clic sur un jour vide : nouvel événement ce jour-là. */
+  onCreate: (day: string) => void;
+  onShowDay: (day: string) => void;
+};
+
+/** Grille de 6 semaines × 7 jours, séparée par des filets fins, sans cadre. */
+export function MonthView({ anchor, days, groups, today, onOpen, onCreate, onShowDay }: MonthViewProps) {
+  const month = monthOf(anchor);
+  return (
+    <div>
+      <div className="grid grid-cols-7">
+        {days.slice(0, 7).map((day) => (
+          <div key={day} className="px-2 pb-2 text-meta text-ink-3">
+            {weekdayShort(day)}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {days.map((day, index) => {
+          const isToday = day === today;
+          const inMonth = monthOf(day) === month;
+          // Le 1er de chaque mois porte le nom du mois : on s'y retrouve dans les jours voisins.
+          const label = day.endsWith('-01') ? format(parseISO(day), 'd MMM', { locale: fr }) : String(Number(day.slice(8)));
+          return (
+            <div
+              key={day}
+              onClick={() => onCreate(day)}
+              title="Clic : nouvel événement ce jour-là"
+              className={
+                'flex min-h-[92px] min-w-0 cursor-default flex-col gap-px border-t border-line px-1 pt-1 pb-1.5 ' +
+                'transition-colors duration-[120ms] ease-soft hover:bg-hover/50 ' +
+                (index % 7 === 0 ? '' : 'border-l')
+              }
+            >
+              <div className="px-0.5 pb-0.5">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onShowDay(day);
+                  }}
+                  title={`Voir la journée · ${formatLongDate(parseISO(day))}`}
+                  className={
+                    'tnum grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-meta transition-colors duration-[120ms] ease-soft ' +
+                    (isToday
+                      ? 'bg-accent font-semibold text-canvas'
+                      : inMonth
+                        ? 'text-ink-2 hover:bg-active hover:text-ink'
+                        : 'text-ink-3 hover:bg-active hover:text-ink')
+                  }
+                >
+                  {label}
+                </button>
+              </div>
+              <DayItems
+                items={groups.get(day) ?? []}
+                limit={MAX_PER_DAY}
+                today={today}
+                onOpen={onOpen}
+                onShowDay={() => onShowDay(day)}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

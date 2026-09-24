@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 3 terminés le 24/09/2026 ; prochaine étape : jalon 4 (calendrier).
+> Statut : **validé** (voir §8). Jalons 0 à 4 terminés le 24/09/2026 ; prochaine étape : jalon 5 (dashboard final).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -627,11 +627,12 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | Raccourci | Action |
 |---|---|
 | `Ctrl K` | Rechercher ou lancer une commande |
-| `C` | Menu Créer, puis `T` tâche · `P` projet · `L` client · `R` encaissement · `D` transaction (plus tard `E` événement) |
+| `C` | Menu Créer, puis `T` tâche · `E` événement · `P` projet · `L` client · `R` encaissement · `D` transaction |
 | `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet |
 | `Ctrl 1` … `Ctrl 6` | Aller aux pages principales |
 | `Ctrl B` | Réduire / déplier la sidebar |
 | `↑ ↓` · `Entrée` · `Espace` | Parcourir une liste · ouvrir · cocher la tâche |
+| `← →` · `T` · `M` `S` `J` | Calendrier : période précédente ou suivante, aujourd'hui, vue mois, semaine ou jour |
 | `Suppr` | Supprimer, avec « Annuler » dans le toast (`Ctrl Z`) |
 | `?` | Afficher tous les raccourcis |
 
@@ -797,34 +798,13 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **1. Projets & clients** | ✓ Fait | Création avec échéancier (P3), liste filtrable, fiche éditable sur place, types personnalisables, clients créés à la volée, « À surveiller » | Je peux saisir, filtrer et modifier mes vrais projets |
 | **2. Tâches** | ✓ Fait | Tâches de projet et libres, 6 vues, liste réordonnable + kanban, panneau latéral, ajout express, touche N, bloc Aujourd'hui du dashboard | « Aujourd'hui » reflète exactement ce que j'ai à faire |
 | **3. Finances** | ✓ Fait | Comptes et soldes, encaissements complets, transactions, virements, lien « reçu → transaction », page Finances | Soldes, à recevoir et retards justes sans aucune double saisie |
-| **4. Calendrier** | À faire | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
+| **4. Calendrier** | ✓ Fait | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
 | **5. Dashboard final** | À faire | Chiffres clés, « Prochains jours », finitions | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | À faire | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | Plus tard | Planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets | |
 | **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF), sous-tâches | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
-
-#### Jalon 4 — Calendrier
-
-**Déjà en place** : table `events` (migration 0001). Les listes d'encaissements (`finance/payments/repository.ts`) donnent déjà projet, client et couleur de chaque échéance.
-
-**À construire** :
-- **Événements** : titre, type (rendez-vous, réunion, échéance libre, perso, autre), journée entière ou heures de début et de fin, lieu, notes, projet facultatif. Création, édition sur place et suppression avec « Annuler ».
-- **Agrégation (P8, §3.5)** : `src/domains/agenda/` fournit le type `AgendaItem` et `listAgenda(db, from, to)`.
-  - Une seule requête `UNION ALL` réunit les événements, les débuts et deadlines de projets, les tâches (deadline, ou date prévue si prioritaire) et les échéances d'encaissement non reçues.
-  - Aucune date n'est recopiée : décaler une deadline la fait bouger partout.
-- **Vues** :
-  - **Mois** : grille de 6 × 7, 3 éléments au plus par jour puis « +N » ;
-  - **Semaine** : colonnes jours, créneaux horaires, éléments « journée » en haut ;
-  - **Jour**.
-- **Navigation** : ← → et `T` pour revenir à aujourd'hui. Des filtres par source (événements, deadlines, tâches, encaissements) sont disponibles.
-- **Interactions** :
-  - un clic sur un jour vide crée un événement pré-rempli ;
-  - un clic sur un élément ouvre sa source : fiche projet, panneau de tâche, encaissement ou événement.
-- **Menu Nouveau** : `E` pour un événement.
-
-**Tests attendus** : agrégation sur une plage de dates, sans doublon, avec les tâches terminées et les encaissements reçus exclus.
 
 #### Jalon 5 — Dashboard final
 
@@ -841,7 +821,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
   - à recevoir, avec le montant en retard ;
   - encaissé ce mois, avec le prévu sur 30 jours.
 - **À surveiller** : ajouter l'action directe « Marquer reçu » au survol d'un encaissement en retard (le dialogue global `useReceiveDialog` existe).
-- **Prochains jours** : l'agenda des 7 prochains jours (données du jalon 4), groupé par jour, entre « Aujourd'hui » et « Projets ».
+- **Prochains jours** : l'agenda des 7 prochains jours, groupé par jour, entre « Aujourd'hui » et « Projets ». `useAgenda` et `useOpenAgendaItem` (`domains/agenda/index.ts`) donnent déjà les éléments, leur ordre dans la journée et l'ouverture de leur source.
 - **Vérification** : les 5 questions du §1.1 ont leur réponse sans défilement sur un écran 1080p à 125 %. Toujours viser **peu d'informations, beaucoup d'espace** (§6.1, principe 3).
 
 #### Jalon 6 — Vitesse & données (→ MVP)
@@ -878,6 +858,9 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
 - **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
 - **Export CSV des transactions** : prévu avec les exports (V1.1).
+- **Calendrier** : un événement sur plusieurs jours est répété dans chaque case (pas de barre continue). Glisser pour replanifier reste prévu en V1.1.
+- **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
+- **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
 
 **Choix faits au jalon 3**, à confirmer à l'usage :
 - La question « Quel est le solde actuel de tes comptes ? » est posée en haut de la page Finances (pas au démarrage), tant qu'aucun ajustement n'existe ; « Plus tard » la masque jusqu'à la prochaine visite. Le réglage `finance.initialBalancesAsked` retient qu'on y a répondu.
@@ -886,6 +869,17 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - Supprimer un encaissement supprime sa transaction liée, et « Annuler » remet les deux. Annuler une réception ramène l'encaissement à « En attente » s'il a un n° de facture, sinon à « Prévu ».
 - Un virement modifié est réécrit (ses deux lignes sont remplacées dans le même lot). Sans filtre de compte, la liste ne le montre qu'une fois.
 - Une catégorie utilisée par des transactions ne se supprime pas, comme un type de projet utilisé.
+
+**Choix faits au jalon 4**, à confirmer à l'usage :
+- Les filtres sont Événements · Projets (débuts et deadlines) · Tâches · Encaissements. Les deadlines de tâches sont sous « Tâches ».
+- Une tâche apparaît une seule fois : à sa deadline, sinon à sa date prévue si elle est Haute ou Urgente. Les tâches ordinaires sans deadline n'y figurent pas.
+- Les projets terminés, annulés ou archivés sortent du calendrier ; leurs encaissements non reçus restent.
+- Un encaissement y porte le nom du projet (ou du client), son libellé au survol, et son montant.
+- Seul le retard est coloré (rouge) : une deadline ou un encaissement passé. Pas d'ambre « bientôt » dans le calendrier.
+- Un nouvel événement est à heure fixe, pour 1 h : 9 h, ou l'heure pleine suivante s'il est pour aujourd'hui. Un clic sur un créneau prend sa demi-heure ; un clic dans la ligne « Journée » crée un événement sur la journée ; le type « Échéance » coche « Journée entière ».
+- Plusieurs jours : seulement en journée entière (« Jusqu'au »). À heure fixe, la fin est le même jour et facultative. Changer l'heure de début déplace la fin (la durée est conservée).
+- La vue et les filtres sont mémorisés d'une visite à l'autre ; le jour affiché est dans l'URL interne, si bien qu'on revient au même endroit après avoir ouvert une fiche.
+- Semaine et jour montrent 8 h – 20 h, élargis si un événement déborde, avec une ligne « maintenant ». Un clic sur un encaissement ouvre sa fenêtre (pas directement « Marquer reçu »).
 
 ---
 

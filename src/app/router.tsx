@@ -5,6 +5,7 @@ import {
   createRouter,
   lazyRouteComponent,
 } from '@tanstack/react-router';
+import { validateCalendarSearch } from '@/domains/agenda/search';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
 import { validateFinancesSearch } from '@/domains/finance/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
@@ -37,6 +38,7 @@ const routes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/calendar',
+    validateSearch: validateCalendarSearch,
     component: lazyRouteComponent(() => import('@/domains/agenda/calendar/CalendarPage'), 'CalendarPage'),
   }),
   createRoute({

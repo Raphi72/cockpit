@@ -14,3 +14,20 @@ export function useToday(): string {
 
   return today;
 }
+
+function minutesOfDay(): number {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
+/** Minutes écoulées depuis minuit, mises à jour chaque minute (ligne « maintenant » du calendrier). */
+export function useMinutesOfDay(): number {
+  const [minutes, setMinutes] = useState(minutesOfDay);
+
+  useEffect(() => {
+    const timer = setInterval(() => setMinutes(minutesOfDay()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return minutes;
+}

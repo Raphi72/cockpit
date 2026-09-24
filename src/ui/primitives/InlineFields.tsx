@@ -1,5 +1,5 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
-import { DATE_INPUT_BOUNDS, isISODate } from '@/core/dates';
+import { DATE_INPUT_BOUNDS, isISODate, isTime } from '@/core/dates';
 import { formatMoney, moneyToInput, parseMoneyInput } from '@/core/money';
 import { toast } from '../overlays/toast';
 
@@ -142,6 +142,46 @@ type InlineDateProps = {
   onSave: (value: string | null) => void;
   'aria-label': string;
 };
+
+type InlineTimeProps = {
+  value: string | null;
+  /** Renvoie `false` si la valeur est refusée : le champ revient alors à l'heure enregistrée. */
+  onSave: (value: string | null) => boolean | void;
+  'aria-label': string;
+};
+
+/**
+ * Heure 'HH:MM' habillée comme du texte, enregistrée en quittant le champ (ou avec Entrée) :
+ * les heures intermédiaires tapées au clavier ne sont jamais enregistrées.
+ * Sans marge négative, pour pouvoir en aligner deux (« 14:00 – 15:00 »).
+ */
+export function InlineTime({ value, onSave, ...aria }: InlineTimeProps) {
+  const [draft, setDraft] = useState(value ?? '');
+  useEffect(() => setDraft(value ?? ''), [value]);
+  const reset = () => setDraft(value ?? '');
+
+  const commit = () => {
+    const next = draft === '' ? null : draft;
+    if (next === value) return;
+    if (next !== null && !isTime(next)) return reset();
+    if (onSave(next) === false) reset();
+  };
+
+  return (
+    <input
+      type="time"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => blurOnEnterOrEscape(e, reset)}
+      className={
+        'date-quiet tnum h-8 w-[88px] rounded-md bg-transparent px-2 outline-none transition-colors duration-[120ms] ease-soft ' +
+        `hover:bg-hover focus:bg-elevated focus:ring-2 focus:ring-accent-soft ${draft ? '' : 'text-ink-3'}`
+      }
+      {...aria}
+    />
+  );
+}
 
 /** Sélecteur de date natif, habillé comme du texte. */
 export function InlineDate({ value, onSave, ...aria }: InlineDateProps) {

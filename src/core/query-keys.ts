@@ -25,6 +25,7 @@ export const queryKeys = {
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,
+    detail: (id: string) => ['payments', 'detail', id] as const,
     overdue: (today: string) => ['payments', 'overdue', today] as const,
     open: ['payments', 'open'] as const,
     received: ['payments', 'received'] as const,
@@ -34,6 +35,15 @@ export const queryKeys = {
     list: (filter: object) => ['transactions', 'list', filter] as const,
     byProject: (projectId: string) => ['transactions', 'project', projectId] as const,
     group: (id: string) => ['transactions', 'group', id] as const,
+  },
+  /**
+   * Calendrier : il agrège les événements, les projets, les tâches et les encaissements.
+   * Toute écriture sur l'une de ces sources invalide la racine `agenda`.
+   */
+  agenda: {
+    all: ['agenda'] as const,
+    range: (from: string, to: string) => ['agenda', 'range', from, to] as const,
+    event: (id: string) => ['agenda', 'event', id] as const,
   },
   /** Soldes, chiffres de l'en-tête et catégories. */
   finance: {

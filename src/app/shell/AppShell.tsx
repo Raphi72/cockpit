@@ -1,6 +1,8 @@
 import { Outlet } from '@tanstack/react-router';
+import { CreateEventDialog } from '@/domains/agenda/components/CreateEventDialog';
+import { EventSheet } from '@/domains/agenda/components/EventSheet';
 import { CreateClientDialog } from '@/domains/clients/components/ClientDialog';
-import { CreatePaymentDialog } from '@/domains/finance/payments/components/PaymentDialog';
+import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/payments/components/PaymentDialog';
 import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
 import { CreateTransactionDialog } from '@/domains/finance/transactions/components/TransactionDialog';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
@@ -31,12 +33,15 @@ export function AppShell() {
 
       {/* Fenêtres globales, ouvrables depuis n'importe quelle page. */}
       <CreateTaskDialog />
+      <CreateEventDialog />
       <CreateProjectDialog />
       <CreateClientDialog />
       <CreatePaymentDialog />
       <CreateTransactionDialog />
       <ReceivePaymentDialog />
+      <PaymentEditorDialog />
       <TaskSheet />
+      <EventSheet />
       <Toaster />
     </div>
   );
