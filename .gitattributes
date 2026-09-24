@@ -1,0 +1,6 @@
+# Fins de ligne LF dans le dépôt et la copie de travail, quel que soit le réglage Git de la machine.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary

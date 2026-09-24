@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cockpit — maquette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg: #FAFAF9;
+  --bg-sidebar: #F3F3F1;
+  --bg-elevated: #FFFFFF;
+  --bg-hover: #EFEFEC;
+  --bg-active: #E7E7E3;
+  --border: #E7E6E3;
+  --border-strong: #D3D2CE;
+  --text: #1C1C1A;
+  --text-2: #62615C;
+  --text-3: #9A9892;
+  --accent: #3E63DD;
+  --accent-soft: rgb(62 99 221 / .12);
+  --danger: #D13B3B;
+  --warning: #B7791F;
+  --success: #2F9E62;
+  --backdrop: rgb(20 20 18 / .22);
+  --shadow: 0 0 0 1px var(--border), 0 16px 40px -12px rgb(0 0 0 / .22);
+
+  --p-slate: #8B8D98; --p-blue: #3E7BFA; --p-violet: #8A63D2; --p-pink: #D6589A;
+  --p-red: #DC5050; --p-orange: #E07B39; --p-amber: #D4A018; --p-green: #3AA56B; --p-teal: #2A9D9A;
+
+  --sidebar-w: 232px;
+  --content-w: 1120px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #121214; --bg-sidebar: #0D0D0F; --bg-elevated: #1A1A1E; --bg-hover: #1D1D21; --bg-active: #26262B;
+  --border: #232328; --border-strong: #34343A;
+  --text: #ECECEE; --text-2: #A3A3AB; --text-3: #6E6E77;
+  --accent: #7C9CFF; --accent-soft: rgb(124 156 255 / .16);
+  --danger: #F0716B; --warning: #E5AC45; --success: #52C48A;
+  --backdrop: rgb(0 0 0 / .5);
+  --shadow: 0 0 0 1px var(--border-strong), 0 16px 40px -12px rgb(0 0 0 / .6);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121214; --bg-sidebar: #0D0D0F; --bg-elevated: #1A1A1E; --bg-hover: #1D1D21; --bg-active: #26262B;
+    --border: #232328; --border-strong: #34343A;
+    --text: #ECECEE; --text-2: #A3A3AB; --text-3: #6E6E77;
+    --accent: #7C9CFF; --accent-soft: rgb(124 156 255 / .16);
+    --danger: #F0716B; --warning: #E5AC45; --success: #52C48A;
+    --backdrop: rgb(0 0 0 / .5);
+    --shadow: 0 0 0 1px var(--border-strong), 0 16px 40px -12px rgb(0 0 0 / .6);
+    color-scheme: dark;
+  }
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: Inter, "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px; line-height: 1.5;
+  color: var(--text); background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.tnum { font-variant-numeric: tabular-nums; }
+kbd {
+  font: 500 11px/1 Inter, "Segoe UI", system-ui, sans-serif;
+  padding: 3px 5px; min-width: 18px; text-align: center;
+  border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text-3); background: var(--bg-elevated);
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 6px; }
+.danger { color: var(--danger); }
+.warning { color: var(--warning); }
+.muted { color: var(--text-3); }
+
+/* ─── Layout ─────────────────────────────────────────────────────────── */
+.app { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); height: 100vh; }
+.app.collapsed { --sidebar-w: 56px; }
+.container { max-width: var(--content-w); margin: 0 auto; padding: 0 48px; }
+
+/* ─── Sidebar ────────────────────────────────────────────────────────── */
+.sidebar {
+  background: var(--bg-sidebar); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; overflow: hidden;
+}
+.brand { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 8px; margin-bottom: 14px; }
+.logo { width: 18px; height: 18px; border-radius: 5px; background: var(--text); display: grid; place-items: center; flex: none; }
+.logo::after { content: ""; width: 7px; height: 7px; border-radius: 50%; border: 1.75px solid var(--bg-sidebar); }
+.brand-name { font-weight: 600; letter-spacing: -.01em; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 9px;
+  border-radius: 7px; color: var(--text-2); white-space: nowrap; width: 100%; text-align: left;
+  transition: background-color 120ms var(--ease), color 120ms var(--ease);
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--text); }
+.nav-item.active { background: var(--bg-active); color: var(--text); font-weight: 500; }
+.nav-label { font-size: 12px; font-weight: 500; color: var(--text-3); padding: 26px 9px 8px; white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--p-slate)); flex: none; }
+.nav-item .dot { margin: 0 4px; }
+.nav-item .late { margin-left: auto; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+.sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 2px; }
+.app.collapsed .label, .app.collapsed .brand-name, .app.collapsed .projects-nav { display: none; }
+
+/* ─── Top bar ────────────────────────────────────────────────────────── */
+main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.topbar { height: 56px; flex: none; border-bottom: 1px solid var(--border); }
+.topbar .container { height: 100%; display: flex; align-items: center; gap: 8px; }
+.search {
+  display: flex; align-items: center; gap: 10px; width: min(360px, 100%); height: 32px; padding: 0 6px 0 11px;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--bg-elevated); color: var(--text-3);
+  transition: border-color 120ms var(--ease);
+}
+.search:hover { border-color: var(--border-strong); }
+.search span { flex: 1; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.spacer { flex: 1; }
+.icon-btn {
+  width: 32px; height: 32px; display: grid; place-items: center; border-radius: 7px; color: var(--text-2);
+  transition: background-color 120ms var(--ease);
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+.btn-primary {
+  display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 7px 0 11px; border-radius: 7px;
+  background: var(--text); color: var(--bg); font-weight: 500;
+  transition: opacity 120ms var(--ease);
+}
+.btn-primary:hover { opacity: .88; }
+.btn-primary kbd { background: transparent; border-color: color-mix(in srgb, var(--bg) 30%, transparent); color: color-mix(in srgb, var(--bg) 70%, transparent); }
+.new-wrap { position: relative; }
+
+/* ─── Menus & palette (superpositions) ───────────────────────────────── */
+.menu {
+  position: absolute; right: 0; top: 40px; width: 248px; padding: 5px; z-index: 20;
+  background: var(--bg-elevated); border-radius: 9px; box-shadow: var(--shadow);
+  display: none;
+}
+.menu.open { display: block; animation: pop 150ms var(--ease); }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 9px; border-radius: 6px; color: var(--text); }
+.menu-item svg { color: var(--text-2); }
+.menu-item:hover, .menu-item.sel { background: var(--bg-hover); }
+.menu-item kbd { margin-left: auto; }
+.menu-sep { height: 1px; background: var(--border); margin: 5px 0; }
+@keyframes pop { from { opacity: 0; transform: translateY(4px) scale(.985); } to { opacity: 1; transform: none; } }
+
+.backdrop { position: fixed; inset: 0; background: var(--backdrop); display: none; z-index: 30; }
+.backdrop.open { display: block; animation: fade 150ms var(--ease); }
+@keyframes fade { from { opacity: 0; } }
+.palette {
+  position: absolute; left: 50%; top: 13vh; transform: translateX(-50%);
+  width: min(600px, calc(100vw - 32px)); background: var(--bg-elevated); border-radius: 12px; box-shadow: var(--shadow);
+  overflow: hidden; animation: pop 150ms var(--ease);
+}
+.palette-input { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--border); color: var(--text-3); }
+.palette-input input { flex: 1; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: var(--text); }
+.palette-results { max-height: min(420px, 60vh); overflow: auto; padding: 6px; }
+.p-group { font-size: 12px; font-weight: 500; color: var(--text-3); padding: 12px 10px 5px; }
+.p-item { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border-radius: 6px; color: var(--text); }
+.p-item svg { color: var(--text-2); }
+.p-item:hover, .p-item.sel { background: var(--bg-active); }
+.p-item .t { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.p-item .m { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+mark { background: var(--accent-soft); color: inherit; border-radius: 3px; padding: 0 1px; }
+.palette-foot { display: flex; gap: 16px; align-items: center; height: 38px; padding: 0 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3); }
+.palette-foot span { display: flex; align-items: center; gap: 6px; }
+
+/* ─── Page ───────────────────────────────────────────────────────────── */
+.page { flex: 1; overflow: auto; }
+.page .container { padding-top: 48px; padding-bottom: 96px; }
+.hero h1 { font-size: 20px; font-weight: 600; letter-spacing: -.015em; }
+.hero p { color: var(--text-2); margin-top: 6px; }
+.hero p b { font-weight: 500; color: var(--text); }
+
+.figures {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 56px;
+  margin: 40px 0 64px; padding-bottom: 40px; border-bottom: 1px solid var(--border);
+}
+.fig { min-width: 0; }
+.fig .l { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fig .v { font-size: 22px; font-weight: 500; letter-spacing: -.02em; margin: 6px 0 4px; white-space: nowrap; }
+.fig .s { font-size: 12.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fig .s.danger { color: var(--danger); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); gap: 64px 72px; align-items: start; }
+.section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.section-head h2 { font-size: 14px; font-weight: 600; }
+.section-head .meta { font-size: 12.5px; color: var(--text-3); }
+.section-head .more { margin-left: auto; font-size: 12.5px; color: var(--text-3); display: flex; align-items: center; gap: 4px; transition: color 120ms var(--ease); }
+.section-head .more:hover { color: var(--text); }
+.subhead { font-size: 12.5px; font-weight: 500; color: var(--text-3); padding: 18px 0 6px; }
+.subhead:first-of-type { padding-top: 4px; }
+.subhead.danger { color: var(--danger); }
+
+.row { border-radius: 7px; margin: 0 -10px; padding: 0 10px; transition: background-color 120ms var(--ease); }
+.row:hover { background: var(--bg-hover); }
+
+/* Tâches : titre, projet, et la date seulement quand elle compte */
+.task { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 44px; }
+.task-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.task-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.task-side { display: flex; align-items: center; gap: 18px; font-size: 12.5px; color: var(--text-3); }
+.chip { display: inline-flex; align-items: center; gap: 7px; max-width: 200px; }
+.chip span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.check {
+  width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+  display: grid; place-items: center; transition: border-color 120ms var(--ease), background-color 120ms var(--ease);
+}
+.check:hover { border-color: var(--text-3); }
+.check svg { width: 11px; height: 11px; stroke: #fff; stroke-width: 3; fill: none; opacity: 0; }
+.task.done .check { background: var(--accent); border-color: var(--accent); }
+.task.done .check svg { opacity: 1; }
+.task.done .task-title { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--border-strong); }
+.flag { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--warning); }
+.flag.high { background: var(--text-3); }
+.done-toggle { display: flex; align-items: center; gap: 8px; min-height: 40px; color: var(--text-3); font-size: 12.5px; width: calc(100% + 20px); }
+.done-toggle:hover { color: var(--text-2); }
+.done-list { display: none; }
+.done-list.open { display: block; }
+.add-row { display: flex; align-items: center; gap: 14px; min-height: 44px; color: var(--text-3); width: calc(100% + 20px); }
+.add-row svg { width: 18px; }
+.add-row kbd { margin-left: auto; opacity: 0; transition: opacity 120ms var(--ease); }
+.add-row:hover kbd { opacity: 1; }
+
+/* Agenda */
+.day { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 8px; padding: 10px 0; }
+.day + .day { border-top: 1px solid var(--border); }
+.day-label { font-size: 12.5px; font-weight: 500; color: var(--text-2); padding-top: 10px; }
+.day-label.today { color: var(--accent); }
+.day-label small { display: block; font-weight: 400; color: var(--text-3); }
+.ev { display: grid; grid-template-columns: 16px 46px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; }
+.ev svg { color: var(--text-3); }
+.ev .time { font-size: 12.5px; color: var(--text-3); }
+.ev .t { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ev .t small { font-size: 12.5px; color: var(--text-3); margin-left: 8px; }
+.ev .amt { font-weight: 500; }
+.ev.kind-deadline svg { color: var(--warning); }
+.ev.kind-pay svg { color: var(--success); }
+
+/* À surveiller */
+.alert { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 10px; }
+.alert > svg { margin-top: 2px; }
+.alert .t { font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.alert .r { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+.alert .act { font-size: 12.5px; color: var(--text-3); margin-top: 6px; display: none; }
+.alert:hover .act { display: inline-flex; align-items: center; gap: 4px; }
+.alert .act:hover { color: var(--text); }
+.more-link { display: inline-block; font-size: 12.5px; color: var(--text-3); margin-top: 8px; }
+.more-link:hover { color: var(--text); }
+
+/* Projets */
+.proj { display: grid; grid-template-columns: 8px minmax(0, 1fr) 104px 64px; gap: 14px; align-items: center; min-height: 44px; }
+.proj .n { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-3); }
+.bar { flex: 1; height: 4px; border-radius: 2px; background: var(--bg-active); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 2px; background: var(--text-2); }
+.proj .d { font-size: 12.5px; text-align: right; color: var(--text-3); }
+.proj .d.danger { color: var(--danger); }
+.proj .d.warning { color: var(--warning); }
+
+.mock-tag {
+  position: fixed; right: 14px; bottom: 12px; font-size: 11px; color: var(--text-3);
+  background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1180px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 780px) {
+  .app { --sidebar-w: 56px; }
+  .app .label, .app .brand-name, .app .projects-nav { display: none; }
+  .container { padding: 0 20px; }
+  .task-side .chip, .ev .t small { display: none; }
+  .day { grid-template-columns: 76px minmax(0, 1fr); }
+  .search kbd, .btn-primary kbd { display: none; }
+}
+@media (max-width: 560px) {
+  .figures { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .btn-primary { font-size: 0; gap: 0; padding: 0 8px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Icônes (inspirées de Lucide) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+    <symbol id="i-tasks" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-plan" viewBox="0 0 24 24"><path d="M3 3v18"/><path d="M7 7h8M11 12h9M7 17h6"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M19 7V5.5A1.5 1.5 0 0 0 17.5 4H5a2 2 0 0 0 0 4h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6"/><path d="M16.5 14h.01"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+    <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4.5L17 13H5"/></symbol>
+    <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18 7.5A6.5 6.5 0 1 0 18 16.5"/><path d="M4 10.5h9M4 13.5h9"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5v14l11-7z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/><path d="M12 10v4M12 17.5h.01"/></symbol>
+    <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7 3v3a5 5 0 0 0 10 0V3M7 21v-3a5 5 0 0 1 10 0v3"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar">
+    <div class="brand"><span class="logo"></span><span class="brand-name">Cockpit</span></div>
+    <nav>
+      <a href="#" class="nav-item active" title="Aujourd'hui (Ctrl 1)"><svg class="i"><use href="#i-dash"/></svg><span class="label">Aujourd'hui</span></a>
+      <a href="#" class="nav-item" title="Projets (Ctrl 2)"><svg class="i"><use href="#i-folder"/></svg><span class="label">Projets</span></a>
+      <a href="#" class="nav-item" title="Tâches (Ctrl 3)"><svg class="i"><use href="#i-tasks"/></svg><span class="label">Tâches</span></a>
+      <a href="#" class="nav-item" title="Calendrier (Ctrl 4)"><svg class="i"><use href="#i-cal"/></svg><span class="label">Calendrier</span></a>
+      <a href="#" class="nav-item" title="Planning (Ctrl 5)"><svg class="i"><use href="#i-plan"/></svg><span class="label">Planning</span></a>
+      <a href="#" class="nav-item" title="Finances (Ctrl 6)"><svg class="i"><use href="#i-wallet"/></svg><span class="label">Finances</span></a>
+    </nav>
+    <div class="projects-nav">
+      <div class="nav-label">Projets en cours</div>
+      <a href="#" class="nav-item"><span class="dot" style="--c:var(--p-teal)"></span><span class="label">Audit SEO</span><span class="late" title="En retard"></span></a>
+      <a href="#" class="nav-item"><span class="dot" style="--c:var(--p-violet)"></span><span class="label">Refonte identité</span></a>
+      <a href="#" class="nav-item"><span class="dot" style="--c:var(--p-blue)"></span><span class="label">Site vitrine</span></a>
+      <a href="#" class="nav-item"><span class="dot" style="--c:var(--p-orange)"></span><span class="label">Gala de fin d'année</span></a>
+      <a href="#" class="nav-item"><span class="dot" style="--c:var(--p-green)"></span><span class="label">Portfolio personnel</span></a>
+    </div>
+    <div class="sidebar-bottom">
+      <a href="#" class="nav-item"><svg class="i"><use href="#i-users"/></svg><span class="label">Clients</span></a>
+      <a href="#" class="nav-item"><svg class="i"><use href="#i-settings"/></svg><span class="label">Paramètres</span></a>
+      <button class="nav-item" id="collapse" title="Réduire la barre latérale (Ctrl B)"><svg class="i"><use href="#i-sidebar"/></svg><span class="label">Réduire</span></button>
+    </div>
+  </aside>
+
+  <!-- ─── Contenu ─── -->
+  <main>
+    <header class="topbar">
+      <div class="container">
+        <button class="search" id="open-palette"><svg class="i"><use href="#i-search"/></svg><span>Rechercher ou lancer une commande…</span><kbd>Ctrl K</kbd></button>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="theme" title="Changer de thème"><svg class="i"><use href="#i-moon"/></svg></button>
+        <div class="new-wrap">
+          <button class="btn-primary" id="new-btn"><svg class="i"><use href="#i-plus"/></svg>Nouveau<kbd>C</kbd></button>
+          <div class="menu" id="new-menu" role="menu">
+            <button class="menu-item sel"><svg class="i"><use href="#i-tasks"/></svg>Nouvelle tâche<kbd>T</kbd></button>
+            <button class="menu-item"><svg class="i"><use href="#i-folder"/></svg>Nouveau projet<kbd>P</kbd></button>
+            <button class="menu-item"><svg class="i"><use href="#i-cal"/></svg>Nouvel événement<kbd>E</kbd></button>
+            <div class="menu-sep"></div>
+            <button class="menu-item"><svg class="i"><use href="#i-euro"/></svg>Nouvel encaissement<kbd>R</kbd></button>
+            <button class="menu-item"><svg class="i"><use href="#i-swap"/></svg>Nouvelle transaction<kbd>D</kbd></button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page">
+      <div class="container">
+        <section class="hero">
+          <h1>Jeudi 24 septembre</h1>
+          <p><b>5 tâches</b> aujourd'hui, dont <span class="danger">1 en retard</span> · rendez-vous à <b>14:00</b></p>
+        </section>
+
+        <section class="figures tnum" aria-label="Chiffres clés">
+          <div class="fig"><div class="l">Compte pro</div><div class="v">4 280,50 €</div><div class="s">184,90 € de dépenses ce mois</div></div>
+          <div class="fig"><div class="l">Compte perso</div><div class="v">1 912,30 €</div><div class="s">−318 € ce mois</div></div>
+          <div class="fig"><div class="l">À recevoir</div><div class="v">4 550 €</div><div class="s danger">dont 750 € en retard</div></div>
+          <div class="fig"><div class="l">Encaissé en septembre</div><div class="v">2 450 €</div><div class="s">3 800 € prévus sur 30 jours</div></div>
+        </section>
+
+        <div class="grid">
+          <!-- 1. Ce que je dois faire -->
+          <section>
+            <div class="section-head"><h2>Aujourd'hui</h2><span class="meta tnum">~5 h estimées</span><a href="#" class="more">Toutes les tâches <svg class="i" style="width:13px;height:13px"><use href="#i-arrow"/></svg></a></div>
+
+            <div class="subhead danger">En retard</div>
+            <div class="row task" data-task>
+              <button class="check" aria-label="Terminer"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></button>
+              <div class="task-main"><span class="task-title">Envoyer le rapport d'audit SEO</span></div>
+              <div class="task-side"><span class="chip"><span class="dot" style="--c:var(--p-teal)"></span><span>Audit SEO</span></span><span class="danger">hier</span></div>
+            </div>
+
+            <div class="subhead">Prévues aujourd'hui</div>
+            <div class="row task" data-task>
+              <button class="check" aria-label="Terminer"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></button>
+              <div class="task-main"><span class="flag" title="Urgente"></span><span class="task-title">Finaliser les déclinaisons du logo</span></div>
+              <div class="task-side"><span class="chip"><span class="dot" style="--c:var(--p-violet)"></span><span>Refonte identité</span></span><span class="warning">lundi</span></div>
+            </div>
+            <div class="row task" data-task>
+              <button class="check" aria-label="Terminer"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></button>
+              <div class="task-main"><span class="task-title">Intégrer la page Contact</span></div>
+              <div class="task-side"><span class="chip"><span class="dot" style="--c:var(--p-blue)"></span><span>Site vitrine</span></span></div>
+            </div>
+            <div class="row task" data-task>
+              <button class="check" aria-label="Terminer"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></button>
+              <div class="task-main"><span class="task-title">Relancer Nordik pour la facture impayée</span></div>
+              <div class="task-side"><span class="chip"><span class="dot" style="--c:var(--p-teal)"></span><span>Audit SEO</span></span></div>
+            </div>
+            <div class="row task" data-task>
+              <button class="check" aria-label="Terminer"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></button>
+              <div class="task-main"><span class="task-title">Appeler la banque pour la carte pro</span></div>
+              <div class="task-side"></div>
+            </div>
+
+            <button class="row done-toggle" id="done-toggle"><svg class="i" style="width:14px;height:14px"><use href="#i-chevron"/></svg>1 terminée</button>
+            <div class="done-list" id="done-list">
+              <div class="row task done" data-task>
+                <button class="check" aria-label="Rouvrir"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></button>
+                <div class="task-main"><span class="task-title">Réserver la salle pour le gala</span></div>
+                <div class="task-side"><span class="chip"><span class="dot" style="--c:var(--p-orange)"></span><span>Gala de fin d'année</span></span></div>
+              </div>
+            </div>
+            <button class="row add-row"><svg class="i"><use href="#i-plus"/></svg>Ajouter une tâche<kbd>Ctrl N</kbd></button>
+          </section>
+
+          <!-- 2. Ce qui dérape -->
+          <section>
+            <div class="section-head"><h2>À surveiller</h2></div>
+            <div class="row alert"><svg class="i danger"><use href="#i-alert"/></svg><div><div class="t">Audit SEO</div><div class="r"><span class="danger">Deadline dépassée de 2 jours</span></div><a href="#" class="act">Ouvrir le projet <svg class="i" style="width:12px;height:12px"><use href="#i-arrow"/></svg></a></div></div>
+            <div class="row alert"><svg class="i danger"><use href="#i-euro"/></svg><div><div class="t">Facture Agence Nordik · <span class="tnum">750 €</span></div><div class="r"><span class="danger">En retard de 11 jours</span></div><a href="#" class="act">Marquer comme reçu <svg class="i" style="width:12px;height:12px"><use href="#i-arrow"/></svg></a></div></div>
+            <div class="row alert"><svg class="i warning"><use href="#i-hourglass"/></svg><div><div class="t">Refonte identité</div><div class="r"><span class="warning">Deadline lundi</span> · 3 tâches restantes</div><a href="#" class="act">Ouvrir le projet <svg class="i" style="width:12px;height:12px"><use href="#i-arrow"/></svg></a></div></div>
+            <a href="#" class="more-link">1 autre point</a>
+          </section>
+
+          <!-- 3. Ce qui arrive -->
+          <section>
+            <div class="section-head"><h2>Prochains jours</h2><a href="#" class="more">Calendrier <svg class="i" style="width:13px;height:13px"><use href="#i-arrow"/></svg></a></div>
+
+            <div class="day">
+              <div class="day-label today">Aujourd'hui</div>
+              <div>
+                <div class="row ev"><svg class="i"><use href="#i-clock"/></svg><span class="time tnum">14:00</span><span class="t">Point visio — validation des logos<small>Studio Lumen</small></span><span></span></div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="day-label">Vendredi<small>25 sept.</small></div>
+              <div>
+                <div class="row ev kind-pay"><svg class="i"><use href="#i-euro"/></svg><span class="time"></span><span class="t">Paiement attendu<small>Boulangerie Marchal</small></span><span class="amt tnum">750 €</span></div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="day-label">Lundi<small>28 sept.</small></div>
+              <div>
+                <div class="row ev kind-deadline"><svg class="i"><use href="#i-flag"/></svg><span class="time"></span><span class="t">Deadline — Refonte identité</span><span></span></div>
+                <div class="row ev kind-pay"><svg class="i"><use href="#i-euro"/></svg><span class="time"></span><span class="t">Paiement attendu<small>Studio Lumen</small></span><span class="amt tnum">1 100 €</span></div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="day-label">Mardi<small>29 sept.</small></div>
+              <div>
+                <div class="row ev"><svg class="i"><use href="#i-clock"/></svg><span class="time tnum">18:30</span><span class="t">Réunion du bureau<small>BDE</small></span><span></span></div>
+              </div>
+            </div>
+            <div class="day">
+              <div class="day-label">Jeudi<small>1 oct.</small></div>
+              <div>
+                <div class="row ev"><svg class="i"><use href="#i-play"/></svg><span class="time"></span><span class="t">Début — Application mobile<small>Cabinet Verdier</small></span><span></span></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 4. Où en sont mes projets -->
+          <section>
+            <div class="section-head"><h2>Projets en cours</h2><a href="#" class="more">Tous <svg class="i" style="width:13px;height:13px"><use href="#i-arrow"/></svg></a></div>
+            <div class="row proj"><span class="dot" style="--c:var(--p-teal)"></span><span class="n">Audit SEO</span><span class="progress tnum"><span class="bar"><i style="width:50%"></i></span>50 %</span><span class="d danger tnum">en retard</span></div>
+            <div class="row proj"><span class="dot" style="--c:var(--p-violet)"></span><span class="n">Refonte identité</span><span class="progress tnum"><span class="bar"><i style="width:70%"></i></span>70 %</span><span class="d warning tnum">lundi</span></div>
+            <div class="row proj"><span class="dot" style="--c:var(--p-blue)"></span><span class="n">Site vitrine</span><span class="progress tnum"><span class="bar"><i style="width:58%"></i></span>58 %</span><span class="d tnum">10 oct.</span></div>
+            <div class="row proj"><span class="dot" style="--c:var(--p-orange)"></span><span class="n">Gala de fin d'année</span><span class="progress tnum"><span class="bar"><i style="width:36%"></i></span>36 %</span><span class="d tnum">15 nov.</span></div>
+            <div class="row proj"><span class="dot" style="--c:var(--p-green)"></span><span class="n">Portfolio personnel</span><span class="progress tnum"><span class="bar"><i style="width:22%"></i></span>22 %</span><span class="d">—</span></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ─── Palette Ctrl+K ─── -->
+<div class="backdrop" id="backdrop">
+  <div class="palette" role="dialog" aria-label="Recherche et commandes">
+    <div class="palette-input"><svg class="i"><use href="#i-search"/></svg><input id="palette-input" value="marchal" aria-label="Rechercher"><kbd>Échap</kbd></div>
+    <div class="palette-results">
+      <div class="p-group">Projet</div>
+      <div class="p-item sel"><svg class="i"><use href="#i-folder"/></svg><span class="t">Site vitrine — Boulangerie <mark>Marchal</mark></span><span class="m">En cours · 58 %</span></div>
+      <div class="p-group">Client</div>
+      <div class="p-item"><svg class="i"><use href="#i-users"/></svg><span class="t">Boulangerie <mark>Marchal</mark></span><span class="m tnum">1 500 € à recevoir</span></div>
+      <div class="p-group">Tâches</div>
+      <div class="p-item"><svg class="i"><use href="#i-tasks"/></svg><span class="t">Intégrer la page Contact</span><span class="m">Aujourd'hui</span></div>
+      <div class="p-item"><svg class="i"><use href="#i-tasks"/></svg><span class="t">Envoyer la maquette mobile</span><span class="m">Terminée</span></div>
+      <div class="p-group">Encaissements</div>
+      <div class="p-item"><svg class="i"><use href="#i-euro"/></svg><span class="t">2e paiement · 750 €</span><span class="m tnum">25 sept.</span></div>
+      <div class="p-item"><svg class="i"><use href="#i-euro"/></svg><span class="t">Solde · 750 €</span><span class="m tnum">10 oct.</span></div>
+      <div class="p-group">Actions</div>
+      <div class="p-item"><svg class="i"><use href="#i-plus"/></svg><span class="t">Nouvelle tâche dans « Site vitrine — <mark>Marchal</mark> »</span><span class="m"></span></div>
+    </div>
+    <div class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd>naviguer</span><span><kbd>Entrée</kbd>ouvrir</span><span><kbd>Échap</kbd>fermer</span></div>
+  </div>
+</div>
+
+<div class="mock-tag">Maquette statique · données fictives</div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const app = $('#app'), backdrop = $('#backdrop'), menu = $('#new-menu');
+
+  // Thème : suit le système, bascule manuelle possible
+  const themeBtn = $('#theme');
+  const isDark = () => document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
+  const syncThemeIcon = () => themeBtn.querySelector('use').setAttribute('href', isDark() ? '#i-sun' : '#i-moon');
+  themeBtn.addEventListener('click', () => { document.documentElement.dataset.theme = isDark() ? 'light' : 'dark'; syncThemeIcon(); });
+  syncThemeIcon();
+
+  // Sidebar réductible
+  $('#collapse').addEventListener('click', () => app.classList.toggle('collapsed'));
+
+  // Tâches terminées repliées
+  $('#done-toggle').addEventListener('click', () => {
+    const open = $('#done-list').classList.toggle('open');
+    $('#done-toggle svg').style.transform = open ? 'rotate(90deg)' : '';
+  });
+
+  // Palette
+  const openPalette = () => { menu.classList.remove('open'); backdrop.classList.add('open'); $('#palette-input').select(); };
+  const closeAll = () => { backdrop.classList.remove('open'); menu.classList.remove('open'); };
+  $('#open-palette').addEventListener('click', openPalette);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeAll(); });
+
+  // Menu « Nouveau »
+  $('#new-btn').addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('open'); });
+  document.addEventListener('click', (e) => { if (!menu.contains(e.target)) menu.classList.remove('open'); });
+
+  // Raccourcis
+  document.addEventListener('keydown', (e) => {
+    const typing = e.target.matches('input, textarea');
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); app.classList.toggle('collapsed'); }
+    else if (e.key === 'Escape') closeAll();
+    else if (!typing && e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey) menu.classList.toggle('open');
+  });
+
+  // Cocher une tâche
+  document.querySelectorAll('[data-task] .check').forEach((btn) =>
+    btn.addEventListener('click', () => btn.closest('[data-task]').classList.toggle('done')));
+</script>
+</body>
+</html>
