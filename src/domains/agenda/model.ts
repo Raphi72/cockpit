@@ -9,6 +9,7 @@ import {
   isTime,
   minutesToTime,
   monthOf,
+  relativeDateLabel,
   timeToMinutes,
   toISODate,
 } from '@/core/dates';
@@ -323,6 +324,68 @@ export function groupByDay(items: AgendaItem[], days: string[]): Map<string, Age
   }
   for (const list of groups.values()) list.sort(compareAgendaItems);
   return groups;
+}
+
+// ─── Prochains jours (dashboard) ────────────────────────────────────────────
+
+/** Jours couverts par « Prochains jours », aujourd'hui compris. */
+export const UPCOMING_AGENDA_DAYS = 7;
+
+export type UpcomingDay = { day: string; items: AgendaItem[] };
+
+/**
+ * « Prochains jours » du dashboard : les jours de [today, today + count[ qui ont quelque chose.
+ * Les tâches n'y sont pas : celles du jour sont déjà dans « Aujourd'hui », les autres dans la page Tâches.
+ * Un élément sur plusieurs jours n'apparaît qu'une fois, à son premier jour visible.
+ */
+export function upcomingDays(items: AgendaItem[], today: string, count = UPCOMING_AGENDA_DAYS): UpcomingDay[] {
+  const days = daysFrom(today, count);
+  const groups = new Map<string, AgendaItem[]>(days.map((day) => [day, []]));
+  for (const item of items) {
+    if (item.source === 'task') continue;
+    const { first, last } = itemDays(item);
+    if (last < today) continue;
+    groups.get(first > today ? first : today)?.push(item);
+  }
+  return days
+    .map((day) => ({ day, items: groups.get(day)!.sort(compareAgendaItems) }))
+    .filter((group) => group.items.length > 0);
+}
+
+/** Libellé d'un jour de « Prochains jours » : « Aujourd'hui », « Demain », puis « Lundi » et sa date. */
+export function upcomingDayLabel(day: string, today: string): { label: string; date: string | null } {
+  const diff = daysBetween(today, day);
+  const date = format(parseISO(day), 'd MMM', { locale: fr });
+  if (diff === 0) return { label: 'Aujourd’hui', date: null };
+  if (diff === 1) return { label: 'Demain', date };
+  const weekday = format(parseISO(day), 'EEEE', { locale: fr });
+  return { label: weekday.charAt(0).toUpperCase() + weekday.slice(1), date };
+}
+
+/** « jusqu'à lundi », « jusqu'au 27 oct. » */
+function untilLabel(day: string, today: string): string {
+  const label = relativeDateLabel(day, today);
+  return /^\d/.test(label) ? `jusqu’au ${label}` : `jusqu’à ${label}`;
+}
+
+/**
+ * Précision discrète après le titre, dans « Prochains jours » : la nature d'une date dérivée,
+ * le libellé d'un encaissement, le lieu d'un événement et, s'il dure plusieurs jours, sa fin.
+ */
+export function upcomingDetail(item: AgendaItem, today: string): string | null {
+  switch (item.kind) {
+    case 'project_deadline':
+      return 'deadline';
+    case 'project_start':
+      return 'début';
+    case 'payment_due':
+      return item.detail;
+    default: {
+      const { first, last } = itemDays(item);
+      const until = last > first ? untilLabel(last, today) : null;
+      return [item.detail, until].filter(Boolean).join(' · ') || null;
+    }
+  }
 }
 
 // ─── Vues du calendrier ─────────────────────────────────────────────────────

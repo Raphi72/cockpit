@@ -175,6 +175,7 @@ describe('bloc « À surveiller »', () => {
       ],
     });
 
+    expect(alerts.find((a) => a.kind === 'payment')?.action).toMatchObject({ kind: 'receive', payment: { id: 'pay' } });
     expect(alerts.map((a) => [a.tone, a.reason])).toEqual([
       ['danger', 'Deadline dépassée de 2 j'],
       ['danger', 'En retard de 11 j'],
@@ -182,6 +183,23 @@ describe('bloc « À surveiller »', () => {
       ['muted', 'Commence 1 oct. · aucune tâche créée'],
       ['muted', expect.stringMatching(/^500\s€ du budget sans échéance$/)],
       ['muted', 'Toutes les tâches sont faites : terminer le projet ?'],
+    ]);
+  });
+
+  it('propose une action directe : marquer reçu, ou créer la première tâche', () => {
+    const alerts = buildAlerts({
+      today: TODAY,
+      projects: [
+        project({ id: 'start', status: 'planned', startDate: '2026-10-01', tasksTotal: 0 }),
+        project({ id: 'empty', tasksTotal: 0 }),
+        project({ id: 'idle', tasksTotal: 3, tasksDone: 3 }),
+      ],
+      overduePayments: [],
+    });
+    expect(alerts.map((a) => [a.projectId, a.action])).toEqual([
+      ['start', { kind: 'add-task', projectId: 'start' }],
+      ['empty', { kind: 'add-task', projectId: 'empty' }],
+      ['idle', null], // « terminer le projet ? » : on ouvre la fiche
     ]);
   });
 });

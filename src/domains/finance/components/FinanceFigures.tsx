@@ -43,11 +43,14 @@ function BalanceFigure({ account }: { account: AccountFigure }) {
   );
 }
 
-/** En-tête de la page Finances : soldes, à recevoir (dont retards), encaissé du mois. Sans cartes. */
-export function FinanceFigures({ summary, today }: { summary: FinanceSummary; today: string }) {
+/**
+ * Chiffres clés, sans cartes : soldes, à recevoir (dont retards), encaissé du mois.
+ * En-tête de la page Finances, et bandeau du dashboard.
+ */
+export function FinanceFigures({ summary, today, className = '' }: { summary: FinanceSummary; today: string; className?: string }) {
   const month = formatMonth(monthOf(today), today).toLowerCase();
   return (
-    <div className="mb-16 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-x-10 gap-y-8">
+    <div className={`grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-x-10 gap-y-8 ${className}`}>
       {summary.accounts.map((account) => (
         <BalanceFigure key={account.id} account={account} />
       ))}

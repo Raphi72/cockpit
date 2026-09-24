@@ -6,8 +6,8 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 ## Par où commencer
 
 - **Référence complète** : [docs/CONCEPTION.md](docs/CONCEPTION.md). Le besoin, les décisions (§8), l'architecture, le schéma SQL et le design system y sont décrits.
-- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 4 sont faits ; le suivant est le **jalon 5 (Dashboard final)**, détaillé au §7.2. Les points à reprendre sont au §7.3.
-- **Maquette de référence du dashboard** : [docs/maquette-dashboard.html](docs/maquette-dashboard.html).
+- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 5 sont faits ; le suivant est le **jalon 6 (Vitesse & données → MVP)**, détaillé au §7.2. Les points à reprendre sont au §7.3.
+- **Maquette de référence du dashboard** : [docs/maquette-dashboard.html](docs/maquette-dashboard.html). La disposition finale en diffère (Prochains jours sous À surveiller) : voir « Choix faits au jalon 5 » au §7.3.
 
 ## L'utilisateur
 

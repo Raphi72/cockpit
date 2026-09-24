@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 4 terminés le 24/09/2026 ; prochaine étape : jalon 5 (dashboard final).
+> Statut : **validé** (voir §8). Jalons 0 à 5 terminés le 24/09/2026 ; prochaine étape : jalon 6 (vitesse & données).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -799,30 +799,12 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **2. Tâches** | ✓ Fait | Tâches de projet et libres, 6 vues, liste réordonnable + kanban, panneau latéral, ajout express, touche N, bloc Aujourd'hui du dashboard | « Aujourd'hui » reflète exactement ce que j'ai à faire |
 | **3. Finances** | ✓ Fait | Comptes et soldes, encaissements complets, transactions, virements, lien « reçu → transaction », page Finances | Soldes, à recevoir et retards justes sans aucune double saisie |
 | **4. Calendrier** | ✓ Fait | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
-| **5. Dashboard final** | À faire | Chiffres clés, « Prochains jours », finitions | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
+| **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | À faire | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | Plus tard | Planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets | |
 | **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF), sous-tâches | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
-
-#### Jalon 5 — Dashboard final
-
-**Déjà en place** :
-- date et synthèse ;
-- Aujourd'hui (tâches) ;
-- À surveiller (règles P11, 3 points au plus) ;
-- Projets en cours / À venir.
-
-**À construire** :
-- **4 chiffres clés**, comme sur la maquette. Les données existent : `getFinanceSummary` (`finance/repository.ts`) et l'en-tête `FinanceFigures` de la page Finances, à réutiliser :
-  - compte pro, avec les dépenses pro du mois ;
-  - compte perso, avec la variation du mois ;
-  - à recevoir, avec le montant en retard ;
-  - encaissé ce mois, avec le prévu sur 30 jours.
-- **À surveiller** : ajouter l'action directe « Marquer reçu » au survol d'un encaissement en retard (le dialogue global `useReceiveDialog` existe).
-- **Prochains jours** : l'agenda des 7 prochains jours, groupé par jour, entre « Aujourd'hui » et « Projets ». `useAgenda` et `useOpenAgendaItem` (`domains/agenda/index.ts`) donnent déjà les éléments, leur ordre dans la journée et l'ouverture de leur source.
-- **Vérification** : les 5 questions du §1.1 ont leur réponse sans défilement sur un écran 1080p à 125 %. Toujours viser **peu d'informations, beaucoup d'espace** (§6.1, principe 3).
 
 #### Jalon 6 — Vitesse & données (→ MVP)
 
@@ -869,6 +851,14 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - Supprimer un encaissement supprime sa transaction liée, et « Annuler » remet les deux. Annuler une réception ramène l'encaissement à « En attente » s'il a un n° de facture, sinon à « Prévu ».
 - Un virement modifié est réécrit (ses deux lignes sont remplacées dans le même lot). Sans filtre de compte, la liste ne le montre qu'une fois.
 - Une catégorie utilisée par des transactions ne se supprime pas, comme un type de projet utilisé.
+
+**Choix faits au jalon 5**, à confirmer à l'usage :
+- **Disposition** : deux colonnes indépendantes. À gauche, Aujourd'hui puis Projets en cours ; à droite, À surveiller puis Prochains jours. C'est un écart avec la maquette, où Prochains jours est sous Aujourd'hui : À surveiller est limité à 3 points, donc Prochains jours reste visible sans défilement quel que soit le nombre de tâches du jour. Les projets en cours sont aussi dans la sidebar.
+- **Vérification 1080p à 125 %** (fenêtre par défaut 1280 × 780 et plein écran 1536 × 785), sur une journée chargée (5 tâches et 1 terminée, 3 points à surveiller) : les chiffres, les tâches du jour, les points à surveiller et le début de Prochains jours (aujourd'hui, demain en plein écran) sont visibles sans défiler ; la suite de la semaine et la liste des projets demandent un court défilement. Sur une journée plus légère, tout tient.
+- **Prochains jours** : 7 jours, aujourd'hui compris ; seuls les jours qui ont quelque chose sont montrés. Les tâches n'y figurent pas (celles du jour sont dans Aujourd'hui, les autres dans la page Tâches), ni les retards (ils sont dans À surveiller). Un événement sur plusieurs jours n'apparaît qu'une fois, avec « jusqu'à … ». Un clic ouvre la source, comme dans le calendrier.
+- **Synthèse sous la date** : les tâches du jour (dont en retard) et le prochain rendez-vous à heure fixe pas encore commencé ; elle suit l'heure. Le nombre de projets en cours et de paiements en retard n'y figure plus : ils sont déjà dans les blocs et les chiffres clés.
+- **Chiffres clés** : le même composant que l'en-tête de la page Finances ; les soldes s'y corrigent aussi sur place.
+- **À surveiller** : l'action directe apparaît au survol (ou au clavier) à droite de la ligne, sans décaler le texte : « Marquer reçu… » pour un encaissement en retard, « Ajouter une tâche » pour un projet sans aucune tâche (qui démarre bientôt ou déjà en cours). « Toutes les tâches sont faites : terminer le projet ? » ouvre simplement la fiche.
 
 **Choix faits au jalon 4**, à confirmer à l'usage :
 - Les filtres sont Événements · Projets (débuts et deadlines) · Tâches · Encaissements. Les deadlines de tâches sont sous « Tâches ».

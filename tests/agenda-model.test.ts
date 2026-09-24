@@ -13,6 +13,9 @@ import {
   slotStart,
   timingColumns,
   timingOf,
+  upcomingDayLabel,
+  upcomingDays,
+  upcomingDetail,
   validateTiming,
   viewDays,
   viewRange,
@@ -204,5 +207,47 @@ describe('grille horaire', () => {
     });
     expect(slotStart(14 * 60 + 47)).toBe('14:30');
     expect(slotStart(24 * 60 + 10)).toBe('23:30');
+  });
+});
+
+describe('prochains jours (dashboard)', () => {
+  it('garde les jours qui ont quelque chose, sans les tâches, dans l’ordre d’une journée', () => {
+    const days = upcomingDays(
+      [
+        item({ key: 'pay', source: 'payment', kind: 'payment_due', start: '2026-09-25', amountCents: 75000 }),
+        item({ key: 'deadline', source: 'project', kind: 'project_deadline', start: '2026-09-28' }),
+        item({ key: 'rdv', allDay: false, start: '2026-09-28T14:00' }),
+        item({ key: 'tâche', source: 'task', kind: 'task_due', start: '2026-09-26' }),
+        item({ key: 'loin', start: '2026-10-01' }), // J+7 : hors de la semaine
+      ],
+      TODAY,
+    );
+    expect(days.map((d) => [d.day, d.items.map((i) => i.key)])).toEqual([
+      ['2026-09-25', ['pay']],
+      ['2026-09-28', ['rdv', 'deadline']],
+    ]);
+  });
+
+  it('montre une seule fois un événement sur plusieurs jours, à son premier jour visible', () => {
+    const trip = item({ key: 'voyage', start: '2026-09-22', end: '2026-09-27' });
+    const salon = item({ key: 'salon', start: '2026-09-26', end: '2026-09-27' });
+    expect(upcomingDays([trip, salon], TODAY).map((d) => [d.day, d.items.map((i) => i.key)])).toEqual([
+      [TODAY, ['voyage']],
+      ['2026-09-26', ['salon']],
+    ]);
+    expect(upcomingDetail(trip, TODAY)).toBe('jusqu’à dimanche');
+    expect(upcomingDetail({ ...trip, detail: 'Lyon', end: '2026-10-05' }, TODAY)).toBe('Lyon · jusqu’au 5 oct.');
+  });
+
+  it('nomme les jours et précise chaque élément', () => {
+    expect(upcomingDayLabel(TODAY, TODAY)).toEqual({ label: 'Aujourd’hui', date: null });
+    expect(upcomingDayLabel('2026-09-25', TODAY)).toEqual({ label: 'Demain', date: '25 sept.' });
+    expect(upcomingDayLabel('2026-10-01', TODAY)).toEqual({ label: 'Jeudi', date: '1 oct.' });
+
+    expect(upcomingDetail(item({ source: 'project', kind: 'project_deadline' }), TODAY)).toBe('deadline');
+    expect(upcomingDetail(item({ source: 'project', kind: 'project_start' }), TODAY)).toBe('début');
+    expect(upcomingDetail(item({ source: 'payment', kind: 'payment_due', detail: 'Acompte' }), TODAY)).toBe('Acompte');
+    expect(upcomingDetail(item({ detail: 'Studio Lumen' }), TODAY)).toBe('Studio Lumen');
+    expect(upcomingDetail(item({}), TODAY)).toBeNull();
   });
 });

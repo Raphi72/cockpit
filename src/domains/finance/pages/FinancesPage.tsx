@@ -220,7 +220,7 @@ export function FinancesPage() {
       {needsInitialBalances && !later ? (
         <InitialBalances onLater={() => setLater(true)} />
       ) : (
-        <FinanceFigures summary={summary} today={today} />
+        <FinanceFigures summary={summary} today={today} className="mb-16" />
       )}
 
       <div className="mb-6">
