@@ -4,3 +4,18 @@ src-tauri/target/
 src-tauri/gen/
 *.log
 .DS_Store
+
+# ─── Données personnelles : ne JAMAIS versionner (le dépôt est public) ───────
+# La vraie base vit dans %APPDATA%\com.cockpit.desktop\, hors du dépôt.
+# Ces règles protègent contre une copie, une sauvegarde ou un export posé ici par erreur.
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+backups/
+backups-dev/
+exports/
+cockpit-export*
+cockpit_*.db

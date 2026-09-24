@@ -787,20 +787,130 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 ## 7. Plan de développement (étape 7)
 
-Chaque jalon aboutit à une version utilisable. Les règles métier de chaque jalon sont couvertes par des tests.
+Chaque jalon aboutit à une version utilisable, développée sur sa branche Git (`jalon-N-…`), puis fusionnée dans `main` et publiée. Les règles métier de chaque jalon sont couvertes par des tests.
 
-| Jalon | Contenu | Terminé quand… |
-|---|---|---|
-| **0. Socle** ✓ | Outils, projet Tauri + React + TS, tokens et polices, AppShell (sidebar réductible, routes, thème), pont SQLite, migration 0001, données initiales, sauvegarde auto | L'app s'ouvre depuis un raccourci Windows, la base est créée dans AppData et la navigation fonctionne au clavier |
-| **1. Projets & clients** ✓ | Liste filtrable, création avec échéancier (P3), page détail éditable sur place, types personnalisables, clients | Je peux saisir, filtrer et modifier mes vrais projets |
-| **2. Tâches** ✓ | Tâches de projet et libres, liste + kanban, glisser-déposer, TaskSheet, page Tâches et ses vues, progression automatique | « Aujourd'hui » reflète exactement ce que j'ai à faire |
-| **3. Finances** | Comptes et ajustement de solde, encaissements, transactions et virements, page Finances, bloc finances du projet | Les soldes, le montant à recevoir et les retards sont justes sans aucune double saisie |
-| **4. Calendrier** | Événements, vues mois / semaine / jour, agrégation des dates | Toutes mes dates sont au même endroit, sans doublon |
-| **5. Dashboard** | Bandeau de chiffres, Aujourd'hui, Prochains jours, À surveiller, Projets, À recevoir | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
-| **6. Vitesse & données** | Création rapide, palette Ctrl+K (FTS5), raccourcis, annulation ; Paramètres › Données (sauvegarder / restaurer) | Toute création prend moins de 3 secondes sans quitter la page |
-| **→ MVP** | Installeur Windows (.exe) avec raccourcis Menu Démarrer et Bureau | |
-| **V1.1** | Planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets | |
-| **V1.2 et après** | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA encaissé par mois / trimestre (utile pour la déclaration URSSAF si tu es micro-entrepreneur), sous-tâches | Selon l'usage réel |
+### 7.1 Vue d'ensemble
+
+| Jalon | Statut | Contenu | Terminé quand… |
+|---|---|---|---|
+| **0. Socle** | ✓ Fait | Tauri + React + TS, design system, AppShell, pont SQLite, migration 0001, sauvegarde auto, base de dev séparée | L'app s'ouvre depuis un raccourci Windows, la base est dans AppData |
+| **1. Projets & clients** | ✓ Fait | Création avec échéancier (P3), liste filtrable, fiche éditable sur place, types personnalisables, clients créés à la volée, « À surveiller » | Je peux saisir, filtrer et modifier mes vrais projets |
+| **2. Tâches** | ✓ Fait | Tâches de projet et libres, 6 vues, liste réordonnable + kanban, panneau latéral, ajout express, touche N, bloc Aujourd'hui du dashboard | « Aujourd'hui » reflète exactement ce que j'ai à faire |
+| **3. Finances** | À faire | Comptes et soldes, encaissements complets, transactions, virements, lien « reçu → transaction », page Finances | Soldes, à recevoir et retards justes sans aucune double saisie |
+| **4. Calendrier** | À faire | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
+| **5. Dashboard final** | À faire | Chiffres clés, « Prochains jours », finitions | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
+| **6. Vitesse & données** | À faire | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
+| **V1.1** | Plus tard | Planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets | |
+| **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF), sous-tâches | Selon l'usage réel |
+
+### 7.2 Détail des jalons restants
+
+#### Jalon 3 — Finances
+
+**Déjà en place** : tables `accounts`, `transactions`, `payments`, `transaction_categories` et vues `account_balances`, `project_money` (migration 0001). Côté interface, les encaissements se créent via l'échéancier du projet ou le lien « créer l'échéance », et le rond d'une échéance la marque reçue (domaine `src/domains/finance/payments/`).
+
+**À construire** :
+- **Comptes et soldes (P5)** :
+  - le solde de chaque compte est la somme de ses transactions (vue `account_balances`) ;
+  - cliquer sur un solde permet d'en saisir un nouveau, ce qui crée une transaction `adjustment` égale à la différence ;
+  - au premier lancement, ou tant qu'aucun solde n'est saisi, l'app pose la question « Quel est le solde actuel de tes comptes ? » et crée des ajustements « Solde initial ».
+- **Transactions** :
+  - création : montant, revenu ou dépense, compte, catégorie, date, libellé, projet facultatif ;
+  - montants signés (+ entrée, − sortie), suppression avec « Annuler » ;
+  - liste filtrable par compte, type, catégorie et mois.
+- **Virements (P6)** : deux lignes `transfer` partageant un `transfer_group`, écrites dans un seul `db.batch`. Ils sont exclus des revenus et des dépenses.
+- **Encaissements** :
+  - onglets À recevoir · Reçus · En retard ;
+  - création et édition d'une échéance : libellé, montant, date prévue, statut Prévu / En attente, n° de facture, rattachement à un projet **ou** à un client ;
+  - édition et suppression depuis la fiche projet (aujourd'hui, on ne peut que les créer).
+- **Lien « reçu → transaction » (P4)** :
+  - « Marquer reçu » ouvre un petit dialogue : date de réception, compte (pro par défaut), case « Créer la transaction » cochée ;
+  - dans un seul lot : mise à jour de l'encaissement et insertion d'une transaction `income` avec `payment_id` ;
+  - annuler la réception supprime la transaction liée ;
+  - le rond de la fiche projet passe par ce même dialogue.
+- **Fiche projet** : dépenses liées (transactions du projet) et marge (reçu − dépenses).
+- **Page Finances** :
+  - en-tête : soldes, à recevoir, en retard, encaissé ce mois, dépenses pro du mois ;
+  - onglets Encaissements / Transactions.
+- **Paramètres** : catégories éditables, comme les types de projet.
+- **Menu Nouveau** : `R` pour un encaissement, `D` pour une transaction.
+
+**Tests attendus** :
+- solde après ajustement ;
+- virement atomique ;
+- « reçu » avec transaction liée comptée une seule fois ;
+- dépenses pro du mois sans virements ni ajustements ;
+- annulation de réception.
+
+#### Jalon 4 — Calendrier
+
+**Déjà en place** : table `events` (migration 0001).
+
+**À construire** :
+- **Événements** : titre, type (rendez-vous, réunion, échéance libre, perso, autre), journée entière ou heures de début et de fin, lieu, notes, projet facultatif. Création, édition sur place et suppression avec « Annuler ».
+- **Agrégation (P8, §3.5)** : `src/domains/agenda/` fournit le type `AgendaItem` et `listAgenda(db, from, to)`.
+  - Une seule requête `UNION ALL` réunit les événements, les débuts et deadlines de projets, les tâches (deadline, ou date prévue si prioritaire) et les échéances d'encaissement non reçues.
+  - Aucune date n'est recopiée : décaler une deadline la fait bouger partout.
+- **Vues** :
+  - **Mois** : grille de 6 × 7, 3 éléments au plus par jour puis « +N » ;
+  - **Semaine** : colonnes jours, créneaux horaires, éléments « journée » en haut ;
+  - **Jour**.
+- **Navigation** : ← → et `T` pour revenir à aujourd'hui. Des filtres par source (événements, deadlines, tâches, encaissements) sont disponibles.
+- **Interactions** :
+  - un clic sur un jour vide crée un événement pré-rempli ;
+  - un clic sur un élément ouvre sa source : fiche projet, panneau de tâche, encaissement ou événement.
+- **Menu Nouveau** : `E` pour un événement.
+
+**Tests attendus** : agrégation sur une plage de dates, sans doublon, avec les tâches terminées et les encaissements reçus exclus.
+
+#### Jalon 5 — Dashboard final
+
+**Déjà en place** :
+- date et synthèse ;
+- Aujourd'hui (tâches) ;
+- À surveiller (règles P11, 3 points au plus) ;
+- Projets en cours / À venir.
+
+**À construire** :
+- **4 chiffres clés**, comme sur la maquette (données du jalon 3) :
+  - compte pro, avec les dépenses pro du mois ;
+  - compte perso, avec la variation du mois ;
+  - à recevoir, avec le montant en retard ;
+  - encaissé ce mois, avec le prévu sur 30 jours.
+- **Prochains jours** : l'agenda des 7 prochains jours (données du jalon 4), groupé par jour, entre « Aujourd'hui » et « Projets ».
+- **Vérification** : les 5 questions du §1.1 ont leur réponse sans défilement sur un écran 1080p à 125 %. Toujours viser **peu d'informations, beaucoup d'espace** (§6.1, principe 3).
+
+#### Jalon 6 — Vitesse & données (→ MVP)
+
+- **Palette Ctrl+K** (cmdk, déjà installé) :
+  - recherche globale via FTS5, avec une **migration 0002** qui crée `search_index` et ses triggers (§3.6) ;
+  - commandes : aller à une page, créer, marquer reçu…
+  - Attention : en mode navigateur, sql.js n'inclut peut-être pas FTS5. Il faudra le vérifier et prévoir un repli `LIKE` dans ce mode.
+- **Paramètres › Données** :
+  - « Sauvegarder maintenant » : nouvelle commande Rust `backup_create` vers un fichier choisi (plugin `dialog`) ;
+  - « Restaurer » : vérification `PRAGMA integrity_check` et `user_version`, sauvegarde de sécurité de la base actuelle, remplacement puis redémarrage ;
+  - choix du dossier des sauvegardes (un dossier OneDrive est possible, P12) ;
+  - « Ouvrir le dossier des données » (plugin `opener`).
+- **Raccourcis** : `?` affiche l'aide des raccourcis. « Annuler » est généralisé aux suppressions.
+- **Livraison du MVP** : installeur à jour, publié en Release GitHub si souhaité.
+
+#### V1.1
+
+- **Planning** : une ligne par projet en cours ou à venir, une barre du début à la deadline, une ligne « aujourd'hui », des losanges pour les encaissements, une bande de densité (projets simultanés par semaine) et un zoom mois / trimestre.
+- **Notifications Windows** : plugin `notification`, règles du §2.8, dédoublonnage par `notification_log`, chacune désactivable.
+- **Exports** : JSON (toutes les données) et CSV pour les finances (séparateur `;`, BOM UTF-8). Les fichiers sont nommés `cockpit-export-…` : ce motif est ignoré par Git.
+- **Paramètres complets** :
+  - thème forcé clair ou sombre (`data-theme`, déjà prévu dans `tokens.css`) ;
+  - premier jour de la semaine ;
+  - mémorisation de la taille et de la position de la fenêtre (plugin `window-state`).
+
+### 7.3 Points à reprendre, issus des jalons terminés
+
+- **Sélecteur de date natif** : un clic au milieu du champ commence la saisie par le mois. À remplacer par un `DatePicker` maison avec raccourcis (« auj. », « demain », « +3j »).
+- **Ctrl+N** : non vérifié dans la fenêtre WebView2. La touche `N` seule fonctionne partout.
+- **Réordonnancement au clavier** : les tâches ne se réordonnent pas au clavier (piste : Alt+↑ / Alt+↓).
+- **Clients** : pas encore d'archivage.
+- **Erreurs dans les fenêtres globales** : une erreur dans une fenêtre globale (création, panneau de tâche) remplace toute l'app par l'écran d'erreur. Il faudrait des « error boundaries » locales.
 
 ---
 
