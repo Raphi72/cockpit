@@ -98,15 +98,17 @@ describe('prochains jours', () => {
     ...overrides,
   });
 
-  it('ajoute les tâches à partir de demain, et ne garde que les jours qui ont quelque chose', () => {
+  it('ajoute les tâches qui commencent à partir de demain, et ne garde que les jours qui ont quelque chose', () => {
     const agenda = [event({ key: 'rdv', start: '2026-09-26T10:00' })];
     const tasks = [
       task({ id: 'a', title: 'aujourd’hui', scheduledDate: TODAY }),
       task({ id: 'b', title: 'demain', scheduledDate: '2026-09-25' }),
-      task({ id: 'c', title: 'samedi', dueDate: '2026-09-26' }),
+      task({ id: 'c', title: 'samedi', scheduledDate: '2026-09-26', dueDate: '2026-09-29' }),
+      task({ id: 'e', title: 'deadline seule', dueDate: '2026-09-27' }),
       task({ id: 'd', title: 'trop loin', scheduledDate: '2026-10-01' }),
     ];
     const days = upcomingWithTasks(agenda, tasks, TODAY);
+    // « deadline seule » est dans À prévoir, pas ici.
     expect(days.map((d) => [d.day, d.items.map((i) => i.key), d.tasks.map((t) => t.title)])).toEqual([
       ['2026-09-25', [], ['demain']],
       ['2026-09-26', ['rdv'], ['samedi']],

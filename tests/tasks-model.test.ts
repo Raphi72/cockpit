@@ -7,6 +7,7 @@ import {
   selectOverdue,
   selectPlannedOn,
   selectPriority,
+  selectToPlan,
   selectToday,
   selectUpcoming,
   sortOrderBetween,
@@ -88,6 +89,18 @@ describe('autres vues', () => {
     expect(selectPlannedOn(tasks, '2026-09-26', TODAY).map((t) => t.title)).toEqual(['deadline samedi', 'prévue samedi']);
     // Un jour passé : ce qui y était prévu et reste à faire.
     expect(selectPlannedOn(tasks, '2026-09-23', TODAY).map((t) => t.title)).toEqual(['pas faite hier']);
+  });
+
+  it('à prévoir : les deadlines de la semaine sans début, la plus proche d’abord', () => {
+    const tasks = [
+      task({ title: 'dans 6 jours', dueDate: '2026-09-30' }),
+      task({ title: 'demain', dueDate: '2026-09-25' }),
+      task({ title: 'déjà commencée', scheduledDate: '2026-09-22', dueDate: '2026-09-26' }),
+      task({ title: 'commence plus tard', scheduledDate: '2026-09-27', dueDate: '2026-09-29' }),
+      task({ title: 'aujourd’hui', dueDate: TODAY }),
+      task({ title: 'trop loin', dueDate: '2026-10-02' }),
+    ];
+    expect(selectToPlan(tasks, TODAY).map((t) => t.title)).toEqual(['demain', 'dans 6 jours']);
   });
 
   it('en retard, prioritaires, et regroupement par projet (tâches libres en dernier)', () => {

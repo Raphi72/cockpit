@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useDoneOn } from '../hooks';
-import { selectPlannedOn, selectToday, totalEstimate, formatDuration, type TaskItem } from '../model';
+import { selectPlannedOn, selectToPlan, selectToday, totalEstimate, formatDuration, type TaskItem } from '../model';
 import { InlineAddTask } from './InlineAddTask';
 import { TaskList } from './TaskList';
 
@@ -38,9 +38,13 @@ export function estimateSummary(tasks: TaskItem[]): string | null {
   return minutes > 0 ? `~${formatDuration(minutes)} estimées` : null;
 }
 
-/** Vue « Aujourd'hui » : retards, puis le jour, ajout express et terminées repliées. */
+/**
+ * Vue « Aujourd'hui » : retards, puis le jour, ajout express et terminées repliées ;
+ * enfin « À prévoir », les deadlines de la semaine qui n'ont pas encore de début.
+ */
 export function TodayTasks({ open, doneToday, today }: { open: TaskItem[]; doneToday: TaskItem[]; today: string }) {
   const groups = selectToday(open, today);
+  const toPlan = selectToPlan(open, today);
   const empty = groups.overdue.length === 0 && groups.today.length === 0;
 
   return (
@@ -64,6 +68,12 @@ export function TodayTasks({ open, doneToday, today }: { open: TaskItem[]; doneT
       )}
       <InlineAddTask scheduledDate={today} label="Ajouter une tâche pour aujourd’hui" />
       <DoneFold tasks={doneToday} today={today} />
+      {toPlan.length > 0 && (
+        <>
+          <GroupHeading>À prévoir</GroupHeading>
+          <TaskList tasks={toPlan} today={today} />
+        </>
+      )}
     </div>
   );
 }

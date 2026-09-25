@@ -50,14 +50,14 @@ function UpcomingRow({
   );
 }
 
-/** Tâche prévue ce jour-là : un rond comme dans la palette, son projet en gris ; un clic ouvre la tâche. */
+/** Tâche qui commence ce jour-là : un rond comme dans la palette, son projet en gris ; un clic ouvre la tâche. */
 function UpcomingTaskRow({ task, day, withTimes }: { task: TaskItem; day: string; withTimes: boolean }) {
   const openTask = useTaskSheet((state) => state.openTask);
   const due = task.dueDate === day;
   return (
     <button
       type="button"
-      title={[due ? 'Deadline de la tâche' : 'Tâche prévue', task.title, task.projectName].filter(Boolean).join(' · ')}
+      title={[due ? 'Début et deadline de la tâche' : 'Début de la tâche', task.title, task.projectName].filter(Boolean).join(' · ')}
       onClick={() => openTask(task.id)}
       className={rowClass(withTimes)}
     >
@@ -74,7 +74,7 @@ function UpcomingTaskRow({ task, day, withTimes }: { task: TaskItem; day: string
 
 /**
  * « Prochains jours » du dashboard : rendez-vous, deadlines et débuts de projet, encaissements
- * attendus et, à partir de demain, les tâches prévues, groupés par jour. Seuls les jours qui ont
+ * attendus et, à partir de demain, les tâches qui commencent, groupés par jour. Seuls les jours qui ont
  * quelque chose sont montrés, chacun sous un petit intitulé : la liste tient dans la colonne étroite.
  * Au-delà de quelques tâches, « +N tâches » ouvre ce jour dans le bloc de tâches.
  */

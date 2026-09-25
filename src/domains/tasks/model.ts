@@ -1,6 +1,6 @@
 import { addDays, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { daysBetween, isISODate, toISODate } from '@/core/dates';
+import { addDaysISO, daysBetween, isISODate, toISODate } from '@/core/dates';
 import { deadlineStatus, relativeDayText, type DeadlineTone } from '@/core/deadline';
 import type { Priority } from '@/domains/projects/model';
 import type { PaletteKey } from '@/ui/data/ColorDot';
@@ -107,6 +107,26 @@ export function selectPlannedOn(open: TaskItem[], day: string, today: string): T
   return open
     .filter((t) => isOpen(t) && effectiveDate(t) === day && (day <= today || !isTaskForToday(t, today)))
     .sort(byPriorityThenOrder);
+}
+
+/** Tâches qui commencent un jour à venir (« Prochains jours » du dashboard). */
+export function selectStartingOn(open: TaskItem[], day: string, today: string): TaskItem[] {
+  return open.filter((t) => isOpen(t) && t.scheduledDate === day && !isTaskForToday(t, today)).sort(byPriorityThenOrder);
+}
+
+/** Horizon de « À prévoir » : les deadlines des 7 prochains jours. */
+export const TO_PLAN_DAYS = 7;
+
+/**
+ * « À prévoir » : tâches sans début dont la deadline approche (dans les 7 jours, pas aujourd'hui).
+ * Elles ne sont pas dans Aujourd'hui (la deadline n'est pas un jour de travail), mais il faut leur
+ * trouver un moment. La plus proche d'abord. Le jour de la deadline, elles passent dans Aujourd'hui.
+ */
+export function selectToPlan(open: TaskItem[], today: string, days = TO_PLAN_DAYS): TaskItem[] {
+  const limit = addDaysISO(today, days);
+  return open
+    .filter((t) => isOpen(t) && t.scheduledDate === null && t.dueDate !== null && t.dueDate > today && t.dueDate <= limit)
+    .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!) || byPriorityThenOrder(a, b));
 }
 
 export function selectOverdue(open: TaskItem[], today: string): TaskItem[] {

@@ -6,7 +6,7 @@ import { formatMoney } from '@/core/money';
 import { UPCOMING_AGENDA_DAYS, upcomingDays, type AgendaItem, type AgendaKind } from '@/domains/agenda';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
 import { deadlineTone, projectMoney, type ProjectListItem } from '@/domains/projects/model';
-import { selectPlannedOn, type TaskItem } from '@/domains/tasks/model';
+import { selectStartingOn, type TaskItem } from '@/domains/tasks/model';
 
 export type AlertTone = 'danger' | 'warning' | 'muted';
 
@@ -206,8 +206,9 @@ export type UpcomingDay = { day: string; items: AgendaItem[]; tasks: TaskItem[] 
 
 /**
  * « Prochains jours » : l'agenda des 7 jours (aujourd'hui compris) et, à partir de demain, les tâches
- * prévues chaque jour. Celles du jour affiché dans le bloc de tâches (`shownDay`, aujourd'hui par défaut)
- * n'y sont pas répétées. Seuls les jours qui ont quelque chose sont gardés.
+ * qui commencent chaque jour. Une tâche qui n'a qu'une deadline n'y est pas : elle est dans « À prévoir ».
+ * Celles du jour affiché dans le bloc de tâches (`shownDay`, aujourd'hui par défaut) n'y sont pas
+ * répétées. Seuls les jours qui ont quelque chose sont gardés.
  */
 export function upcomingWithTasks(
   items: AgendaItem[],
@@ -221,7 +222,7 @@ export function upcomingWithTasks(
     .map((day) => ({
       day,
       items: agenda.get(day) ?? [],
-      tasks: day === today || day === shownDay ? [] : selectPlannedOn(open, day, today),
+      tasks: day === today || day === shownDay ? [] : selectStartingOn(open, day, today),
     }))
     .filter((group) => group.items.length > 0 || group.tasks.length > 0);
 }
