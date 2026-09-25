@@ -16,6 +16,8 @@ import { addDaysISO, formatLongDate } from '@/core/dates';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, UpcomingAgenda, useAgenda, type AgendaItem } from '@/domains/agenda';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
+import { useSetting } from '@/domains/settings/hooks';
+import { SETTINGS } from '@/domains/settings/model';
 import { useFinanceSummary } from '@/domains/finance/hooks';
 import { useOverduePayments } from '@/domains/finance/payments/hooks';
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
@@ -157,8 +159,9 @@ export function DashboardPage() {
   const { data: doneToday = [] } = useDoneToday(today);
   const { data: finance } = useFinanceSummary(today);
   const { data: agenda } = useAgenda(agendaRange);
+  const { data: showAccounts } = useSetting(SETTINGS.dashboardShowAccounts);
 
-  if (!projects || !openTasks || !finance || !agenda) return null;
+  if (!projects || !openTasks || !finance || !agenda || showAccounts === undefined) return null;
 
   const alerts = buildAlerts({ projects, overduePayments, today });
   const active = projects.filter((p) => p.status === 'active');
@@ -205,7 +208,7 @@ export function DashboardPage() {
         />
       }
     >
-      <FinanceFigures summary={finance} today={today} className="mb-12" />
+      <FinanceFigures summary={finance} today={today} showAccounts={showAccounts} className="mb-12" />
 
       {/*
         Deux colonnes indépendantes. « Prochains jours » est sous « À surveiller » (3 points au plus) :

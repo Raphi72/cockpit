@@ -1,4 +1,5 @@
 import type { Db, Statement } from '@/core/db';
+import { EXPECTED_PAYMENT } from '@/domains/finance/payments/repository';
 import type { Client, ClientInput, ClientListItem } from './model';
 
 export function listClients(db: Db): Promise<ClientListItem[]> {
@@ -8,7 +9,7 @@ export function listClients(db: Db): Promise<ClientListItem[]> {
             (SELECT COALESCE(SUM(pay.amount_cents), 0)
                FROM payments pay
                LEFT JOIN projects p ON p.id = pay.project_id
-              WHERE pay.status <> 'received' AND (p.client_id = c.id OR pay.client_id = c.id)) AS due_cents
+              WHERE ${EXPECTED_PAYMENT} AND (p.client_id = c.id OR pay.client_id = c.id)) AS due_cents
      FROM clients c
      WHERE c.archived_at IS NULL
      ORDER BY c.name COLLATE NOCASE`,

@@ -1,6 +1,13 @@
 import type { Db, SqlValue, Statement } from '@/core/db';
 import type { OpenPaymentStatus, PaymentListItem, PaymentRow } from './model';
 
+/**
+ * Encaissement réellement attendu : pas encore reçu, et pas lié à un projet en Proposition
+ * (devis envoyé, pas signé : de l'argent possible, pas de l'argent dû). Il compte dès que le projet
+ * passe en Prévu ou En cours. S'écrit avec `pay` = payments et `p` = son projet (LEFT JOIN).
+ */
+export const EXPECTED_PAYMENT = `pay.status <> 'received' AND (p.status IS NULL OR p.status <> 'proposal')`;
+
 const LIST_SELECT = `
   SELECT pay.id, pay.project_id, pay.client_id, pay.label, pay.amount_cents, pay.due_date, pay.status,
          pay.received_date, pay.invoice_ref, pay.notes,
@@ -25,7 +32,7 @@ export function listProjectPayments(db: Db, projectId: string): Promise<PaymentL
 /** Tout ce qui reste à recevoir, par date prévue (les retards arrivent donc en tête). */
 export function listOpenPayments(db: Db): Promise<PaymentListItem[]> {
   return db.query<PaymentListItem>(
-    `${LIST_SELECT} WHERE pay.status <> 'received'
+    `${LIST_SELECT} WHERE ${EXPECTED_PAYMENT}
      ORDER BY pay.due_date IS NULL, pay.due_date, pay.created_at`,
   );
 }
@@ -40,10 +47,10 @@ export function listReceivedPayments(db: Db, limit = 200): Promise<PaymentListIt
   );
 }
 
-/** Encaissements non reçus dont la date prévue est passée. */
+/** Encaissements attendus dont la date prévue est passée. */
 export function listOverduePayments(db: Db, today: string): Promise<PaymentListItem[]> {
   return db.query<PaymentListItem>(
-    `${LIST_SELECT} WHERE pay.status <> 'received' AND pay.due_date < ?
+    `${LIST_SELECT} WHERE ${EXPECTED_PAYMENT} AND pay.due_date < ?
      ORDER BY pay.due_date`,
     [today],
   );

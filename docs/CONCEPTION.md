@@ -470,7 +470,8 @@ Au premier lancement, une seule question est posée : « Quel est le solde actue
 | Reste à recevoir (projet) | Budget − reçu |
 | % payé | Reçu ÷ budget |
 | Non planifié | Budget − Σ de tous les encaissements |
-| Encaissement en retard | Non reçu et date prévue < aujourd'hui |
+| Encaissement attendu | Non reçu, et pas lié à un projet en Proposition (un devis non signé n'est pas de l'argent dû) |
+| Encaissement en retard | Attendu et date prévue < aujourd'hui |
 | Projet en retard | Deadline < aujourd'hui et statut ∉ {terminé, annulé} |
 | Solde d'un compte | Σ transactions du compte (ajustements inclus) |
 | CA encaissé (période) | Σ encaissements reçus dont la date de réception tombe dans la période |
@@ -839,6 +840,10 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
+
+**Choix faits après le MVP**, à confirmer à l'usage :
+- **Propositions** : leurs encaissements ne comptent ni dans « À recevoir » (chiffre, retards, prévu sur 30 jours), ni dans les listes À recevoir / En retard, ni dans À surveiller, ni dans le « à recevoir » des clients. Ils restent visibles dans la fiche du projet et dans le calendrier, et comptent dès que le projet passe en Prévu ou En cours. La règle SQL est unique : `EXPECTED_PAYMENT` (`finance/payments/repository.ts`).
+- **Paramètres › Tableau de bord** : « Afficher les soldes des comptes » (réglage `dashboard.showAccounts`, activé par défaut). La page Finances les montre toujours.
 
 **Choix faits au jalon 6**, à confirmer à l'usage :
 - **Palette Ctrl+K** : sans saisie, trois créations, « Marquer un encaissement reçu… » et les pages. En tapant : jusqu'à 5 commandes, puis les résultats groupés par type (5 au plus par type), le groupe de la meilleure correspondance en tête. Un projet ou un client trouvé fait remonter ses éléments liés, après les correspondances directes et ce qui est encore ouvert d'abord.

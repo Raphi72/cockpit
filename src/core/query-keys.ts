@@ -4,6 +4,8 @@
  */
 export const queryKeys = {
   appInfo: ['app-info'] as const,
+  /** Un réglage de la table `settings`. */
+  settings: (key: string) => ['settings', key] as const,
   projectTypes: ['project-types'] as const,
   projects: {
     all: ['projects'] as const,

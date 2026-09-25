@@ -80,11 +80,13 @@ export function useUpdateProject(id: string) {
     onError: (_error, _patch, context) => {
       if (context?.previous) queryClient.setQueryData(detailKey, context.previous);
     },
-    onSettled: () => {
+    onSettled: (_result, _error, patch) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.projectTypes });
       void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
+      // Une proposition signée (ou redevenue proposition) change ce qui est « à recevoir ».
+      if (patch.status !== undefined) invalidateMoney(queryClient);
     },
   });
 }

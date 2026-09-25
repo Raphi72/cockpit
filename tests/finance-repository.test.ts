@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { sql } from '@/core/db/client';
+import { listClients } from '@/domains/clients/repository';
 import { adjustBalanceStatement, listAccounts } from '@/domains/finance/accounts/repository';
 import type { PaymentInput } from '@/domains/finance/payments/model';
-import { getPayment, listOpenPayments, listProjectPayments } from '@/domains/finance/payments/repository';
+import {
+  getPayment,
+  listOpenPayments,
+  listOverduePayments,
+  listProjectPayments,
+} from '@/domains/finance/payments/repository';
 import {
   buildCreatePaymentBatch,
   buildDeletePaymentBatch,
@@ -26,6 +32,7 @@ import {
   buildUpdateTransactionBatch,
   deletionTarget,
 } from '@/domains/finance/transactions/service';
+import { updateProjectStatement } from '@/domains/projects/repository';
 import { buildCreateProjectBatch } from '@/domains/projects/service';
 import { createTestDb } from './support/test-db';
 
@@ -357,5 +364,39 @@ describe('catégories', () => {
     await db.batch([sql`DELETE FROM transaction_categories WHERE id = 'cat-software'`]);
     const [item] = await listTransactions(db, { month: '2026-09' });
     expect(item).toMatchObject({ categoryId: null, categoryName: null, amountCents: -3500 });
+  });
+});
+
+describe('propositions', () => {
+  it('l’argent d’une proposition ne compte pas dans « à recevoir », puis compte une fois signée', async () => {
+    const { db } = createTestDb();
+    const { projectId, statements } = buildCreateProjectBatch(
+      {
+        name: 'Refonte',
+        typeId: 'type-freelance',
+        client: { kind: 'new', name: 'Studio Lumen' },
+        status: 'proposal',
+        priority: 1,
+        startDate: null,
+        deadline: '2026-09-20',
+        budgetCents: 100000,
+        schedule: 'single',
+        description: null,
+      },
+      context(),
+    );
+    await db.batch(statements);
+
+    expect(await getFinanceSummary(db, TODAY)).toMatchObject({ dueCents: 0, lateCents: 0, lateCount: 0 });
+    expect(await listOpenPayments(db)).toEqual([]);
+    expect(await listOverduePayments(db, TODAY)).toEqual([]);
+    expect(await listClients(db)).toMatchObject([{ name: 'Studio Lumen', dueCents: 0 }]);
+    // Le projet garde son échéancier : il suffit de le signer.
+    expect(await listProjectPayments(db, projectId)).toHaveLength(1);
+
+    await db.batch([updateProjectStatement(projectId, { status: 'active' }, NOW)]);
+    expect(await getFinanceSummary(db, TODAY)).toMatchObject({ dueCents: 100000, lateCents: 100000, lateCount: 1 });
+    expect(await listOverduePayments(db, TODAY)).toHaveLength(1);
+    expect(await listClients(db)).toMatchObject([{ dueCents: 100000 }]);
   });
 });

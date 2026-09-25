@@ -20,6 +20,9 @@ import { Page } from '@/ui/layout/Page';
 import { Section } from '@/ui/layout/Section';
 import { ConfirmDialog } from '@/ui/overlays/ConfirmDialog';
 import { Button } from '@/ui/primitives/Button';
+import { Checkbox } from '@/ui/primitives/Checkbox';
+import { useSaveSetting, useSetting } from '../hooks';
+import { SETTINGS } from '../model';
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -138,9 +141,24 @@ function DataSection() {
   );
 }
 
+function DashboardSection() {
+  const { data: showAccounts } = useSetting(SETTINGS.dashboardShowAccounts);
+  const save = useSaveSetting(SETTINGS.dashboardShowAccounts);
+  if (showAccounts === undefined) return null;
+  return (
+    <Section title="Tableau de bord">
+      <Checkbox checked={showAccounts} onChange={(checked) => save.mutate(checked)}>
+        Afficher les soldes des comptes
+      </Checkbox>
+      <p className="mt-1.5 pl-[26px] text-meta text-ink-3">Ils restent toujours visibles dans Finances.</p>
+    </Section>
+  );
+}
+
 export function SettingsPage() {
   return (
     <Page title="Paramètres">
+      <DashboardSection />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />
       </Section>
