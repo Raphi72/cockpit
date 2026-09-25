@@ -9,6 +9,7 @@ import { ReceivePaymentDialog } from '@/domains/finance/payments/components/Rece
 import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
 import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
+import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { Toaster } from '@/ui/overlays/Toaster';
@@ -49,6 +50,7 @@ export function AppShell() {
       <TransactionEditorDialog />
       <TaskSheet />
       <EventSheet />
+      <SelectionBar />
       <CommandPalette />
       <ShortcutsDialog />
       <Toaster />

@@ -70,6 +70,20 @@ export function listParentCandidates(db: Db, task: Pick<TaskItem, 'id' | 'projec
   );
 }
 
+/**
+ * État avant une action groupée : les tâches choisies, leurs sous-tâches et leurs parentes
+ * (qu'une action peut terminer ou rouvrir en cascade). De quoi tout remettre avec « Annuler ».
+ */
+export function listTasksAround(db: Db, ids: string[]): Promise<TaskItem[]> {
+  const marks = ids.map(() => '?').join(', ');
+  return db.query<TaskItem>(
+    `SELECT ${COLUMNS} ${FROM}
+     WHERE t.id IN (${marks}) OR t.parent_id IN (${marks})
+        OR t.id IN (SELECT parent_id FROM tasks WHERE id IN (${marks}))`,
+    [...ids, ...ids, ...ids],
+  );
+}
+
 export function getTask(db: Db, id: string): Promise<TaskItem | undefined> {
   return db.queryOne<TaskItem>(`SELECT ${COLUMNS} ${FROM} WHERE t.id = ?`, [id]);
 }
@@ -228,6 +242,15 @@ export function updateTaskStatements(id: string, patch: TaskPatch, now: string):
     });
   }
   return statements;
+}
+
+/** Remet les champs qu'une action groupée peut changer, sans cascade : annulation. */
+export function restoreTaskFieldsStatement(task: TaskItem, now: string): Statement {
+  return {
+    sql: `UPDATE tasks SET status = ?, completed_at = ?, priority = ?, scheduled_date = ?, due_date = ?, updated_at = ?
+          WHERE id = ?`,
+    params: [task.status, task.completedAt, task.priority, task.scheduledDate, task.dueDate, now, task.id],
+  };
 }
 
 export function sortOrderStatements(updates: { id: string; sortOrder: number }[], now: string): Statement[] {

@@ -16,6 +16,8 @@ import {
   insertTaskStatement,
   listProjectTasks,
   listSubtasks,
+  listTasksAround,
+  restoreTaskFieldsStatement,
   restoreTaskStatement,
   updateTaskStatements,
 } from '@/domains/tasks/repository';
@@ -143,6 +145,28 @@ describe('sous-tâches : supprimer', () => {
     if (result.status !== 'deleted') throw new Error('projet non supprimé');
     await db.batch(buildRestoreProjectBatch(result.snapshot, NOW));
     expect((await listSubtasks(db, 'admin')).map((t) => t.id)).toEqual(['refonte', 'graphs']);
+  });
+});
+
+describe('actions groupées', () => {
+  it('même changement sur plusieurs tâches, puis « Annuler » remet tout, cascades comprises', async () => {
+    const db = await setup();
+    const ids = ['seule', 'graphs'];
+    const before = await listTasksAround(db, ids);
+    // Les choisies, et la parente de « graphs » (qu'une action peut terminer ou rouvrir).
+    expect(before.map((t) => t.id).sort()).toEqual(['admin', 'graphs', 'seule']);
+
+    await db.batch([
+      ...updateTaskStatements('refonte', { status: 'done' }, NOW),
+      ...ids.flatMap((id) => updateTaskStatements(id, { status: 'done', dueDate: '2026-10-01' }, NOW)),
+    ]);
+    expect(await status(db, 'admin')).toBe('done'); // dernière sous-tâche terminée
+
+    const snapshot = await listTasksAround(db, ['seule', 'graphs']);
+    expect(snapshot.find((t) => t.id === 'seule')).toMatchObject({ status: 'done', dueDate: '2026-10-01' });
+    await db.batch(before.map((t) => restoreTaskFieldsStatement(t, NOW)));
+    expect(await getTask(db, 'seule')).toMatchObject({ status: 'todo', dueDate: null, completedAt: null });
+    expect(await status(db, 'admin')).toBe('todo');
   });
 });
 

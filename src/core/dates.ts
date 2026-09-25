@@ -95,6 +95,12 @@ export function addDaysISO(iso: string, days: number): string {
   return toISODate(addDays(parseISO(iso), days));
 }
 
+/** Lundi qui suit `iso` (celui de la semaine prochaine si `iso` est un lundi). */
+export function nextMondayISO(iso: string): string {
+  const weekday = parseISO(iso).getDay(); // 0 = dimanche … 6 = samedi
+  return addDaysISO(iso, ((8 - weekday) % 7) || 7);
+}
+
 // ─── Heures ('HH:MM', heure locale) ─────────────────────────────────────────
 
 /** Vrai pour une heure au format 'HH:MM', de 00:00 à 23:59. */

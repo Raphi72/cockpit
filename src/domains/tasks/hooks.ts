@@ -14,6 +14,8 @@ import {
   listProjectTasks,
   listParentCandidates,
   listSubtasks,
+  listTasksAround,
+  restoreTaskFieldsStatement,
   restoreTaskStatement,
   sortOrderStatements,
   updateTaskStatements,
@@ -128,6 +130,68 @@ export function useReorderTasks(listKey: readonly unknown[]) {
       );
     },
     onSettled: () => invalidateAfterTaskChange(queryClient),
+  });
+}
+
+const tasksWord = (count: number) => `${count} tâche${count > 1 ? 's' : ''}`;
+
+/**
+ * Même changement sur plusieurs tâches (sélection) : début, deadline, priorité ou « terminées ».
+ * « Annuler » remet chaque tâche touchée comme avant, parentes et sous-tâches comprises.
+ */
+export function useBulkUpdateTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, patch }: { ids: string[]; patch: TaskPatch }) => {
+      const before = await listTasksAround(db, ids);
+      const now = nowTimestamp();
+      await db.batch(ids.flatMap((id) => updateTaskStatements(id, patch, now)));
+      return before;
+    },
+    onSuccess: (before, { ids }) => {
+      invalidateAfterTaskChange(queryClient);
+      toast(`${tasksWord(ids.length)} modifiée${ids.length > 1 ? 's' : ''}.`, {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () => {
+            const now = nowTimestamp();
+            void db
+              .batch(before.map((task) => restoreTaskFieldsStatement(task, now)))
+              .then(() => invalidateAfterTaskChange(queryClient));
+          },
+        },
+      });
+    },
+  });
+}
+
+/** Suppression de plusieurs tâches (et de leurs sous-tâches) ; « Annuler » les remet toutes. */
+export function useBulkDeleteTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const removed = (await listTasksAround(db, ids)).filter((t) => ids.includes(t.id) || (t.parentId && ids.includes(t.parentId)));
+      await db.batch(ids.map((id) => deleteTaskStatement(id)));
+      return removed;
+    },
+    onSuccess: (removed, ids) => {
+      invalidateAfterTaskChange(queryClient);
+      toast(`${tasksWord(ids.length)} supprimée${ids.length > 1 ? 's' : ''}.`, {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () => {
+            const now = nowTimestamp();
+            // Les parentes avant leurs sous-tâches (clé étrangère).
+            const ordered = [...removed].sort((a, b) => Number(a.parentId !== null) - Number(b.parentId !== null));
+            void db
+              .batch(ordered.map((task) => restoreTaskStatement(task, now)))
+              .then(() => invalidateAfterTaskChange(queryClient));
+          },
+        },
+      });
+    },
   });
 }
 
