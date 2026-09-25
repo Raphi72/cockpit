@@ -48,7 +48,7 @@ describe('idées de projet', () => {
 
   it('ne comptent pas dans la progression du projet', async () => {
     const db = await seed();
-    expect(await getProject(db, 'p1')).toMatchObject({ tasksTotal: 1, tasksDone: 0 });
+    expect(await getProject(db, 'p1', TODAY)).toMatchObject({ tasksTotal: 1, tasksDone: 0 });
   });
 
   it('se suppriment et reviennent à leur place (annulation)', async () => {
@@ -74,7 +74,7 @@ describe('une idée devient une tâche', () => {
     expect(tasks.map((t) => t.title)).toEqual(['Maquette', 'Mode sombre']);
     expect(tasks[1]).toMatchObject({ status: 'todo', priority: 1, scheduledDate: null, dueDate: null });
     expect((await listProjectIdeas(db, 'p1')).map((i) => i.id)).toEqual(['i1']);
-    expect(await getProject(db, 'p1')).toMatchObject({ tasksTotal: 2 });
+    expect(await getProject(db, 'p1', TODAY)).toMatchObject({ tasksTotal: 2 });
   });
 
   it('« Annuler » retire la tâche et remet l’idée', async () => {

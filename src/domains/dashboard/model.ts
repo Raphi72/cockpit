@@ -1,12 +1,12 @@
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { addDaysISO, daysBetween, formatLongDate, relativeDateLabel, timeToMinutes } from '@/core/dates';
-import { relativeDayText } from '@/core/deadline';
 import { formatMoney } from '@/core/money';
 import { UPCOMING_AGENDA_DAYS, upcomingDays, type AgendaItem, type AgendaKind } from '@/domains/agenda';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
-import { deadlineTone, projectMoney, type ProjectListItem } from '@/domains/projects/model';
+import { CLOSED_STATUSES, deadlineTone, projectMoney, type ProjectListItem } from '@/domains/projects/model';
 import { selectStartingOn, type TaskItem } from '@/domains/tasks/model';
+import type { DayMark } from '@/ui/primitives/DatePicker';
 
 export type AlertTone = 'danger' | 'warning' | 'muted';
 
@@ -18,7 +18,7 @@ export type AlertAction =
 export type Alert = {
   key: string;
   tone: AlertTone;
-  kind: 'deadline' | 'payment' | 'start' | 'budget' | 'noaction';
+  kind: 'payment' | 'start' | 'budget' | 'noaction';
   title: string;
   reason: string;
   projectId: string | null;
@@ -30,10 +30,13 @@ const TONE_RANK: Record<AlertTone, number> = { danger: 0, warning: 1, muted: 2 }
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
 
 /**
- * Règles du bloc « À surveiller » (P11), des plus graves aux plus légères :
- * deadline dépassée, encaissement en retard, deadline à 3 jours ou moins,
- * projet qui démarre dans la semaine sans tâche, projet en cours sans tâche ouverte
- * (pas de prochaine action), budget sans échéance.
+ * Règles du bloc « À surveiller » (P11), des plus graves aux plus légères : encaissement en retard,
+ * projet qui démarre dans la semaine sans tâche, projet en cours sans tâche ouverte (pas de prochaine
+ * action), budget sans échéance.
+ *
+ * Les deadlines (dépassées ou proches) ont leur propre bloc, « Deadlines » (voir selectDeadlines). Un
+ * projet dont la deadline est dépassée ou à 3 jours ou moins y est déjà en couleur : ses rappels
+ * secondaires (budget, prochaine action) ne sont pas répétés ici.
  */
 export function buildAlerts(input: {
   projects: ProjectListItem[];
@@ -46,29 +49,6 @@ export function buildAlerts(input: {
   const alerts: Alert[] = [];
 
   for (const project of projects) {
-    const tone = deadlineTone(project, today);
-    if (project.deadline && tone === 'late') {
-      alerts.push({
-        key: `late:${project.id}`,
-        tone: 'danger',
-        kind: 'deadline',
-        title: project.name,
-        reason: `Deadline dépassée de ${plural(daysBetween(project.deadline, today), 'jour')}`,
-        projectId: project.id,
-        action: null,
-      });
-    } else if (project.deadline && tone === 'soon') {
-      alerts.push({
-        key: `soon:${project.id}`,
-        tone: 'warning',
-        kind: 'deadline',
-        title: project.name,
-        reason: `Deadline ${relativeDayText(project.deadline, today).toLowerCase()}`,
-        projectId: project.id,
-        action: null,
-      });
-    }
-
     if (project.status === 'planned' && project.startDate && project.tasksTotal === 0) {
       const inDays = daysBetween(today, project.startDate);
       if (inDays >= 0 && inDays <= 7) {
@@ -125,11 +105,119 @@ export function buildAlerts(input: {
     });
   }
 
-  // Un projet déjà signalé en rouge ou en ambre n'a pas besoin d'un rappel secondaire en plus.
-  const flagged = new Set(alerts.filter((a) => a.tone !== 'muted' && a.projectId).map((a) => a.projectId));
+  // Un projet déjà signalé en rouge ou en ambre (ici ou dans « Deadlines ») n'a pas besoin d'un rappel secondaire en plus.
+  const flagged = new Set<string | null>([
+    ...alerts.filter((a) => a.tone !== 'muted' && a.projectId).map((a) => a.projectId),
+    ...projects.filter((p) => ['late', 'soon'].includes(deadlineTone(p, today) ?? '')).map((p) => p.id),
+  ]);
   return alerts
     .filter((a) => a.tone !== 'muted' || !flagged.has(a.projectId))
     .sort((a, b) => TONE_RANK[a.tone] - TONE_RANK[b.tone]);
+}
+
+// ─── Deadlines ──────────────────────────────────────────────────────────────
+
+/** Une deadline entre dans le bloc « Deadlines » 7 jours avant. */
+export const DEADLINE_DAYS = 7;
+
+export type DeadlineEntry = {
+  key: string;
+  source: 'project' | 'task' | 'event';
+  /** Identifiant dans la table d'origine : c'est elle qu'on ouvre au clic. */
+  id: string;
+  title: string;
+  /** Projet d'une tâche ; pour les autres, la nature de la date. */
+  detail: string | null;
+  date: string;
+  /** Tâche sans début, dont la deadline n'est pas aujourd'hui : il reste à lui trouver un moment. */
+  toPlan: boolean;
+};
+
+const SOURCE_RANK: Record<DeadlineEntry['source'], number> = { project: 0, event: 1, task: 2 };
+
+/**
+ * Bloc « Deadlines » du dashboard : tout ce qui doit être fini d'ici 7 jours (aujourd'hui compris),
+ * pour qu'aucune deadline n'arrive par surprise. Les deadlines de projets, de tâches (qu'elles aient
+ * un début ou non) et les échéances saisies dans le calendrier. Un projet en retard y reste en tête.
+ * Les tâches en retard n'y sont pas : elles sont en tête d'« Aujourd'hui ».
+ * La plus proche d'abord ; le même jour, les projets, puis les échéances, puis les tâches prioritaires.
+ */
+export function selectDeadlines(input: {
+  /** Projets ouverts et validés (pas de Proposition). */
+  projects: ProjectListItem[];
+  /** Tâches à faire. */
+  tasks: TaskItem[];
+  /** Agenda des jours à venir : on y prend les événements « Échéance ». */
+  agenda: AgendaItem[];
+  today: string;
+  days?: number;
+}): DeadlineEntry[] {
+  const { projects, tasks, agenda, today, days = DEADLINE_DAYS } = input;
+  const limit = addDaysISO(today, days);
+  const entries: (DeadlineEntry & { priority: number })[] = [];
+
+  for (const project of projects) {
+    if (!project.deadline || project.deadline > limit || CLOSED_STATUSES.includes(project.status)) continue;
+    entries.push({
+      key: `project:${project.id}`,
+      source: 'project',
+      id: project.id,
+      title: project.name,
+      detail: 'deadline du projet',
+      date: project.deadline,
+      toPlan: false,
+      priority: 0,
+    });
+  }
+  for (const task of tasks) {
+    if (task.status === 'done' || !task.dueDate || task.dueDate < today || task.dueDate > limit) continue;
+    entries.push({
+      key: `task:${task.id}`,
+      source: 'task',
+      id: task.id,
+      title: task.title,
+      detail: task.projectName,
+      date: task.dueDate,
+      toPlan: task.scheduledDate === null && task.dueDate > today,
+      priority: task.priority,
+    });
+  }
+  for (const item of agenda) {
+    const date = item.start.slice(0, 10);
+    if (item.source !== 'event' || item.kind !== 'deadline' || date < today || date > limit) continue;
+    entries.push({
+      key: `event:${item.id}`,
+      source: 'event',
+      id: item.id,
+      title: item.title,
+      detail: 'échéance',
+      date,
+      toPlan: false,
+      priority: 0,
+    });
+  }
+
+  return entries
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        SOURCE_RANK[a.source] - SOURCE_RANK[b.source] ||
+        b.priority - a.priority ||
+        a.title.localeCompare(b.title, 'fr'),
+    )
+    .map(({ priority: _priority, ...entry }) => entry);
+}
+
+/** Jours à marquer dans le sélecteur de date du dashboard : une deadline, sinon des tâches prévues. */
+export function dayMarks(input: { projects: ProjectListItem[]; tasks: TaskItem[] }): Map<string, DayMark> {
+  const marks = new Map<string, DayMark>();
+  for (const task of input.tasks) {
+    const day = task.scheduledDate ?? task.dueDate;
+    if (task.status !== 'done' && day && !marks.has(day)) marks.set(day, 'task');
+  }
+  for (const task of input.tasks) if (task.status !== 'done' && task.dueDate) marks.set(task.dueDate, 'deadline');
+  for (const project of input.projects) if (project.deadline) marks.set(project.deadline, 'deadline');
+  return marks;
 }
 
 const EVENT_WORDS: Partial<Record<AgendaKind, string>> = {
@@ -206,9 +294,10 @@ export type UpcomingDay = { day: string; items: AgendaItem[]; tasks: TaskItem[] 
 
 /**
  * « Prochains jours » : l'agenda des 7 jours (aujourd'hui compris) et, à partir de demain, les tâches
- * qui commencent chaque jour. Une tâche qui n'a qu'une deadline n'y est pas : elle est dans « À prévoir ».
- * Celles du jour affiché dans le bloc de tâches (`shownDay`, aujourd'hui par défaut) n'y sont pas
- * répétées. Seuls les jours qui ont quelque chose sont gardés.
+ * qui commencent chaque jour. Les deadlines n'y sont pas (projets, échéances, tâches qui n'ont qu'une
+ * deadline) : elles sont toutes dans le bloc « Deadlines ». Celles du jour affiché dans le bloc de
+ * tâches (`shownDay`, aujourd'hui par défaut) n'y sont pas répétées. Seuls les jours qui ont quelque
+ * chose sont gardés.
  */
 export function upcomingWithTasks(
   items: AgendaItem[],
@@ -217,7 +306,8 @@ export function upcomingWithTasks(
   shownDay = today,
   count = UPCOMING_AGENDA_DAYS,
 ): UpcomingDay[] {
-  const agenda = new Map(upcomingDays(items, today, count).map((group) => [group.day, group.items]));
+  const withoutDeadlines = items.filter((item) => item.kind !== 'project_deadline' && item.kind !== 'deadline');
+  const agenda = new Map(upcomingDays(withoutDeadlines, today, count).map((group) => [group.day, group.items]));
   return Array.from({ length: count }, (_, index) => addDaysISO(today, index))
     .map((day) => ({
       day,

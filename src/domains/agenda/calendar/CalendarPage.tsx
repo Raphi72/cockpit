@@ -6,7 +6,7 @@ import { usePageShortcuts } from '@/app/shortcuts';
 import { useUiStore } from '@/app/ui-store';
 import { useToday } from '@/core/use-today';
 import { Page } from '@/ui/layout/Page';
-import { Menu, MenuCheckboxItem, MenuContent, MenuTrigger } from '@/ui/overlays/Menu';
+import { Menu, MenuCheckboxItem, MenuContent, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { SegmentedTabs } from '@/ui/primitives/SegmentedTabs';
 import { useAgenda } from '../hooks';
@@ -17,6 +17,8 @@ import {
   CALENDAR_VIEWS,
   CALENDAR_VIEW_KEYS,
   CALENDAR_VIEW_LABELS,
+  PLAIN_TASKS_HINT,
+  PLAIN_TASKS_LABEL,
   shiftAnchor,
   viewDays,
   viewRange,
@@ -36,13 +38,19 @@ function filterLabel(hidden: AgendaSource[]): string {
   return shown.map((source) => AGENDA_SOURCE_LABELS[source]).join(', ');
 }
 
+/**
+ * Filtres du calendrier : les quatre sources, puis une option (désactivée par défaut) pour y voir
+ * aussi les tâches ordinaires, qui n'ont qu'une date de début (ni deadline, ni priorité haute).
+ */
 function SourceFilter() {
   const hidden = useUiStore((state) => state.calendarHidden);
   const toggle = useUiStore((state) => state.toggleCalendarSource);
+  const plainTasks = useUiStore((state) => state.calendarPlainTasks);
+  const togglePlainTasks = useUiStore((state) => state.toggleCalendarPlainTasks);
   return (
     <Menu>
       <MenuTrigger asChild>
-        <Button variant="ghost" icon={ListFilter} className={hidden.length > 0 ? '!text-ink' : ''}>
+        <Button variant="ghost" icon={ListFilter} className={hidden.length > 0 || plainTasks ? '!text-ink' : ''}>
           {filterLabel(hidden)}
         </Button>
       </MenuTrigger>
@@ -53,6 +61,15 @@ function SourceFilter() {
             <span className="ml-2 text-meta text-ink-3">{AGENDA_SOURCE_HINTS[source]}</span>
           </MenuCheckboxItem>
         ))}
+        <MenuSeparator />
+        <MenuCheckboxItem
+          checked={plainTasks && !hidden.includes('task')}
+          disabled={hidden.includes('task')}
+          onCheckedChange={togglePlainTasks}
+        >
+          {PLAIN_TASKS_LABEL}
+          <span className="ml-2 text-meta text-ink-3">{PLAIN_TASKS_HINT}</span>
+        </MenuCheckboxItem>
       </MenuContent>
     </Menu>
   );
@@ -65,12 +82,13 @@ export function CalendarPage() {
   const view = useUiStore((state) => state.calendarView);
   const setView = useUiStore((state) => state.setCalendarView);
   const hidden = useUiStore((state) => state.calendarHidden);
+  const plainTasks = useUiStore((state) => state.calendarPlainTasks);
   const openCreate = useCreateStore((state) => state.openCreate);
   const openItem = useOpenAgendaItem();
 
   const anchor = search.date ?? today;
   const days = useMemo(() => viewDays(view, anchor), [view, anchor]);
-  const { data: items } = useAgenda(viewRange(days));
+  const { data: items } = useAgenda(viewRange(days), { plainTasks });
   const visible = useMemo(() => (items ?? []).filter((item) => !hidden.includes(item.source)), [items, hidden]);
   const empty = items !== undefined && visible.length === 0;
 

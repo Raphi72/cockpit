@@ -4,10 +4,11 @@ import { db } from '@/core/db';
 import { nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
+import { useToday } from '@/core/use-today';
 import { invalidateMoney } from '@/domains/finance/hooks';
 import type { PaletteKey } from '@/ui/data/ColorDot';
 import { toast } from '@/ui/overlays/toast';
-import type { ClientChoice, NewProjectInput, ProjectDetail, ProjectPatch, ProjectType } from './model';
+import { statusOn, type ClientChoice, type NewProjectInput, type ProjectDetail, type ProjectPatch, type ProjectType } from './model';
 import {
   deleteProjectType,
   getProject,
@@ -34,14 +35,20 @@ export function useProjectTypesWithUsage() {
   });
 }
 
+/** Projets filtrés sur leur statut du jour (un projet « À venir » commencé est « En cours »). */
 export function useProjects(filter: ProjectFilter) {
-  return useQuery({ queryKey: queryKeys.projects.list(filter), queryFn: () => listProjects(db, filter) });
+  const today = useToday();
+  return useQuery({
+    queryKey: queryKeys.projects.list({ ...filter, today }),
+    queryFn: () => listProjects(db, filter, today),
+  });
 }
 
 export function useProject(id: string) {
+  const today = useToday();
   return useQuery({
-    queryKey: queryKeys.projects.detail(id),
-    queryFn: async () => (await getProject(db, id)) ?? null,
+    queryKey: [...queryKeys.projects.detail(id), today],
+    queryFn: async () => (await getProject(db, id, today)) ?? null,
   });
 }
 
@@ -65,16 +72,25 @@ export function useCreateProject() {
   });
 }
 
-/** Édition sur place : la fiche est mise à jour immédiatement, puis relue depuis la base. */
+/**
+ * Édition sur place : la fiche est mise à jour immédiatement, puis relue depuis la base.
+ * `status` dans le patch est le statut choisi ; celui du jour est recalculé (date de début comprise).
+ */
 export function useUpdateProject(id: string) {
   const queryClient = useQueryClient();
-  const detailKey = queryKeys.projects.detail(id);
+  const today = useToday();
+  const detailKey = [...queryKeys.projects.detail(id), today];
   return useMutation({
     mutationFn: (patch: ProjectPatch) => db.batch([updateProjectStatement(id, patch, nowTimestamp())]),
     onMutate: async (patch) => {
       await queryClient.cancelQueries({ queryKey: detailKey });
       const previous = queryClient.getQueryData<ProjectDetail | null>(detailKey);
-      if (previous) queryClient.setQueryData(detailKey, { ...previous, ...patch });
+      if (previous) {
+        const next: ProjectDetail = { ...previous, ...patch, savedStatus: patch.status ?? previous.savedStatus };
+        next.status = statusOn(next, today);
+        if (patch.status !== undefined) next.completedAt = patch.status === 'done' ? nowTimestamp() : null;
+        queryClient.setQueryData(detailKey, next);
+      }
       return { previous };
     },
     onError: (_error, _patch, context) => {

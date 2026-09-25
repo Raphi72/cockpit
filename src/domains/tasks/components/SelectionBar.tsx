@@ -1,12 +1,10 @@
 import { useRouterState } from '@tanstack/react-router';
 import { CalendarClock, Check, Flag, Trash2, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { addDaysISO, nextMondayISO } from '@/core/dates';
-import { useToday } from '@/core/use-today';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/ui/overlays/Menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/overlays/Popover';
-import { DateField } from '@/ui/primitives/DateField';
+import { DatePickerPanel } from '@/ui/primitives/DatePicker';
 import { useBulkDeleteTasks, useBulkUpdateTasks } from '../hooks';
 import type { TaskPatch } from '../model';
 import { useTaskSelection } from '../selection-store';
@@ -18,37 +16,22 @@ const barButton =
 const choiceClass =
   'flex h-8 w-full items-center rounded-[6px] px-2 text-left outline-none hover:bg-hover focus-visible:bg-hover';
 
-/** Début ou deadline pour toute la sélection : raccourcis, une date au choix, ou retirer la date. */
+/** Début ou deadline pour toute la sélection : le sélecteur de date (raccourcis, saisie, mois), ou retirer la date. */
 function DateChoice({ label, icon: Icon, onPick }: { label: string; icon: LucideIcon; onPick: (date: string | null) => void }) {
-  const today = useToday();
   const [open, setOpen] = useState(false);
   const pick = (date: string | null) => {
     setOpen(false);
     onPick(date);
   };
-  const choices = [
-    { label: 'Aujourd’hui', date: today },
-    { label: 'Demain', date: addDaysISO(today, 1) },
-    { label: 'Lundi prochain', date: nextMondayISO(today) },
-    { label: 'Dans une semaine', date: addDaysISO(today, 7) },
-  ];
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger className={barButton}>
         <Icon className="size-4" strokeWidth={1.75} />
         {label}
       </PopoverTrigger>
-      <PopoverContent side="top">
-        {choices.map((choice) => (
-          <button key={choice.label} type="button" onClick={() => pick(choice.date)} className={choiceClass}>
-            {choice.label}
-          </button>
-        ))}
-        <div className="my-1 h-px bg-line" />
-        <div className="px-2 py-1.5">
-          <DateField value={null} onChange={(date) => date && pick(date)} aria-label={`${label} : autre date`} className="w-full" />
-        </div>
-        <button type="button" onClick={() => pick(null)} className={`${choiceClass} text-ink-3`}>
+      <PopoverContent side="top" className="p-3">
+        <DatePickerPanel value={null} onPick={pick} />
+        <button type="button" onClick={() => pick(null)} className={`${choiceClass} mt-1 text-ink-3`}>
           Retirer la date
         </button>
       </PopoverContent>

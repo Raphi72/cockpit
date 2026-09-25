@@ -65,7 +65,7 @@ export function ProjectTasks({ projectId, today }: { projectId: string; today: s
         <>
           <SortableTaskTree nodes={tree.open} today={today} listKey={queryKeys.tasks.project(projectId)} />
           <InlineAddTask projectId={projectId} />
-          <DoneFold tasks={tree.done} today={today} showProject={false} />
+          <DoneFold tasks={tree.done} today={today} showProject={false} showCompletion />
         </>
       )}
     </section>

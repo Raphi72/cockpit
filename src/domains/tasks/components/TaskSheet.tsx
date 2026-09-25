@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowUpRight, ChevronRight, Trash2, X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
-import { formatShortDate, toISODate } from '@/core/dates';
+import { formatCompletedAt, formatShortDate, toISODate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
@@ -124,7 +124,11 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
       <RadixDialog.Description className="sr-only">Modifier la tâche {task.title}</RadixDialog.Description>
 
       <div className="mt-6">
-        <PropertyRow label="Statut">
+        {/* Terminée : quand. Rouvrir la tâche efface cette date. */}
+        <PropertyRow
+          label="Statut"
+          hint={done && task.completedAt && <span className="text-ink-3">Terminée {formatCompletedAt(task.completedAt, today)}</span>}
+        >
           <TaskStatusMenu value={task.status} onChange={(status) => save({ status })} />
         </PropertyRow>
         <PropertyRow label="Projet">
@@ -161,10 +165,7 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
         aria-label="Notes"
       />
 
-      <p className="mt-8 text-meta text-ink-3">
-        Créée le {formatShortDate(toISODate(new Date(task.createdAt)), today)}
-        {task.completedAt && ` · terminée le ${formatShortDate(toISODate(new Date(task.completedAt)), today)}`}
-      </p>
+      <p className="mt-8 text-meta text-ink-3">Créée le {formatShortDate(toISODate(new Date(task.createdAt)), today)}</p>
     </>
   );
 }

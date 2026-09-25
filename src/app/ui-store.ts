@@ -32,6 +32,9 @@ type UiState = {
   /** Sources masquées par les filtres du calendrier. */
   calendarHidden: AgendaSource[];
   toggleCalendarSource: (source: AgendaSource) => void;
+  /** Calendrier : montrer aussi les tâches ordinaires, qui n'ont qu'un début (désactivé par défaut). */
+  calendarPlainTasks: boolean;
+  toggleCalendarPlainTasks: () => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -60,6 +63,8 @@ export const useUiStore = create<UiState>()(
             ? state.calendarHidden.filter((s) => s !== source)
             : [...state.calendarHidden, source],
         })),
+      calendarPlainTasks: false,
+      toggleCalendarPlainTasks: () => set((state) => ({ calendarPlainTasks: !state.calendarPlainTasks })),
     }),
     {
       name: 'cockpit-ui',
@@ -71,6 +76,7 @@ export const useUiStore = create<UiState>()(
         lastAccountId: state.lastAccountId,
         calendarView: state.calendarView,
         calendarHidden: state.calendarHidden,
+        calendarPlainTasks: state.calendarPlainTasks,
       }),
     },
   ),

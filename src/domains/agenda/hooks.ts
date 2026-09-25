@@ -16,11 +16,15 @@ import {
 
 // ─── Lectures ───────────────────────────────────────────────────────────────
 
-/** Toutes les dates de [from, to[ ; la période précédente reste affichée pendant le chargement. */
-export function useAgenda(range: { from: string; to: string }) {
+/**
+ * Toutes les dates de [from, to[ ; la période précédente reste affichée pendant le chargement.
+ * `plainTasks` : avec les tâches ordinaires qui n'ont qu'un début (option du calendrier).
+ */
+export function useAgenda(range: { from: string; to: string }, options: { plainTasks?: boolean } = {}) {
+  const plainTasks = options.plainTasks ?? false;
   return useQuery({
-    queryKey: queryKeys.agenda.range(range.from, range.to),
-    queryFn: () => listAgenda(db, range.from, range.to),
+    queryKey: [...queryKeys.agenda.range(range.from, range.to), { plainTasks }],
+    queryFn: () => listAgenda(db, range.from, range.to, { plainTasks }),
     placeholderData: keepPreviousData,
   });
 }

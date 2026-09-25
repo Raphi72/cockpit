@@ -30,9 +30,15 @@ const TASK_FIRST_DAY = `CASE WHEN t.scheduled_date < t.due_date THEN t.scheduled
  * Les tâches terminées, les encaissements reçus et les projets clos n'y figurent pas, ni les
  * Propositions (devis pas encore signé) : ni leurs dates, ni leurs encaissements. Leurs tâches restent.
  * Une tâche n'apparaît qu'une fois : du début à la deadline si elle a les deux (une barre dans le
- * calendrier), sinon à sa deadline, sinon (si elle est prioritaire) à son début.
+ * calendrier), sinon à sa deadline, sinon (si elle est prioritaire) à son début. Avec `plainTasks`
+ * (option du calendrier, désactivée par défaut), les tâches ordinaires qui n'ont qu'un début y sont aussi.
  */
-export async function listAgenda(db: Db, from: string, to: string): Promise<AgendaItem[]> {
+export async function listAgenda(
+  db: Db,
+  from: string,
+  to: string,
+  options: { plainTasks?: boolean } = {},
+): Promise<AgendaItem[]> {
   const rows = await db.query<AgendaRow>(
     `SELECT 'event' AS source, e.id, e.kind, e.title, e.location AS detail,
             e.starts_at AS "start", e.ends_at AS "end", e.all_day, e.project_id, pt.color, NULL AS amount_cents
@@ -62,7 +68,7 @@ export async function listAgenda(db: Db, from: string, to: string): Promise<Agen
      LEFT JOIN projects p ON p.id = t.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
      WHERE t.status <> 'done' AND (p.id IS NULL OR (${OPEN_PROJECT}))
-       AND (t.due_date IS NOT NULL OR t.priority >= 2)
+       AND (t.due_date IS NOT NULL OR t.priority >= 2 OR ?)
        AND ${TASK_FIRST_DAY} < ? AND COALESCE(t.due_date, t.scheduled_date) >= ?
 
      UNION ALL
@@ -74,7 +80,7 @@ export async function listAgenda(db: Db, from: string, to: string): Promise<Agen
      LEFT JOIN project_types pt ON pt.id = p.type_id
      LEFT JOIN clients c ON c.id = pay.client_id
      WHERE ${EXPECTED_PAYMENT} AND pay.due_date >= ? AND pay.due_date < ?`,
-    [to, from, from, to, from, to, to, from, from, to],
+    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to],
   );
   return rows
     .map(({ allDay, ...row }) => ({ ...row, key: `${row.source}:${row.id}:${row.kind}`, allDay: allDay === 1 }))

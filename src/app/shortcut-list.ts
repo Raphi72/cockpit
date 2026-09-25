@@ -47,7 +47,8 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
   {
     title: 'Tableau de bord',
     entries: [
-      { keys: ['←', '→'], label: 'Tâches du jour précédent ou suivant' },
+      { keys: ['←', '→'], label: 'Jour précédent ou suivant' },
+      { keys: ['D'], label: 'Choisir un jour dans le calendrier' },
       { keys: ['T'], label: 'Revenir à aujourd’hui' },
     ],
   },

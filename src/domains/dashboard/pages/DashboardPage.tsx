@@ -1,14 +1,13 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
   Euro,
   FolderClosed,
-  Hourglass,
   Play,
   Plus,
-  TriangleAlert,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -26,28 +25,32 @@ import { useOverduePayments } from '@/domains/finance/payments/hooks';
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { ProjectRow } from '@/domains/projects/components/ProjectRow';
 import { useProjects } from '@/domains/projects/hooks';
-import { CONFIRMED_STATUSES } from '@/domains/projects/model';
+import { CONFIRMED_STATUSES, statusOn } from '@/domains/projects/model';
 import { FutureDayTasks, PastDayTasks, TodayTasks, estimateSummary } from '@/domains/tasks/components/TaskGroups';
 import { useDoneOn, useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
 import { selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
+import { DatePicker, type DayMark } from '@/ui/primitives/DatePicker';
+import { Deadlines } from '../components/Deadlines';
 import { UpcomingDays } from '../components/UpcomingDays';
 import {
+  DEADLINE_DAYS,
   buildAlerts,
   dashboardSummary,
   dashboardTitle,
+  dayMarks,
   dayTasksHeading,
   nextTimedEvent,
   otherDaySummary,
+  selectDeadlines,
   upcomingWithTasks,
   type Alert,
   type AlertAction,
 } from '../model';
 
 const ALERT_ICONS: Record<Alert['kind'], LucideIcon> = {
-  deadline: TriangleAlert,
   payment: Euro,
   start: Play,
   budget: Wallet,
@@ -111,7 +114,7 @@ function AlertTitle({ alert }: { alert: Alert }) {
 }
 
 function AlertRow({ alert }: { alert: Alert }) {
-  const Icon = alert.kind === 'deadline' && alert.tone === 'warning' ? Hourglass : ALERT_ICONS[alert.kind];
+  const Icon = ALERT_ICONS[alert.kind];
   return (
     <div className="group relative -mx-2.5 flex items-start gap-3 rounded-md px-2.5 py-3 transition-colors duration-[120ms] ease-soft hover:bg-hover">
       <Icon className={`mt-0.5 size-4 shrink-0 ${TONE_CLASS[alert.tone]}`} strokeWidth={1.75} />
@@ -164,22 +167,49 @@ function DaySummary(props: { todayCount: number; overdueCount: number; agenda: A
 }
 
 /**
- * Date en titre, entre deux flèches pour passer d'un jour à l'autre (← → au clavier).
- * La flèche de gauche déborde dans la marge : la date reste alignée sur le contenu. La date a une
- * largeur minimale pour que la flèche de droite ne bouge pas d'un jour à l'autre.
+ * Date en titre, entre deux flèches pour passer d'un jour à l'autre (← → au clavier), puis le
+ * calendrier pour aller directement à un jour (D) : on y voit les jours qui ont des tâches (point
+ * gris) ou une deadline (point rouge). La flèche de gauche déborde dans la marge : la date reste
+ * alignée sur le contenu. La date a une largeur minimale pour que la flèche de droite ne bouge pas.
  */
-function DayTitle({ day, today, onShift }: { day: string; today: string; onShift: (delta: number) => void }) {
-  const arrow =
-    'grid size-8 shrink-0 place-items-center rounded-md text-ink-3 transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink';
+function DayTitle(props: {
+  day: string;
+  today: string;
+  marks: Map<string, DayMark>;
+  onGo: (day: string) => void;
+  pickerOpen: boolean;
+  onPickerOpenChange: (open: boolean) => void;
+}) {
+  const { day, today, onGo } = props;
+  const button =
+    'grid size-8 shrink-0 place-items-center rounded-md text-ink-3 transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink ' +
+    'data-[state=open]:bg-hover data-[state=open]:text-ink';
   return (
     <span className="-ml-10 flex items-center gap-2">
-      <button type="button" onClick={() => onShift(-1)} aria-label="Jour précédent" title="Jour précédent · ←" className={arrow}>
+      <button
+        type="button"
+        onClick={() => onGo(addDaysISO(day, -1))}
+        aria-label="Jour précédent"
+        title="Jour précédent · ←"
+        className={button}
+      >
         <ChevronLeft className="size-[18px]" strokeWidth={1.75} />
       </button>
       <span className="min-w-[232px]">{dashboardTitle(day, today)}</span>
-      <button type="button" onClick={() => onShift(1)} aria-label="Jour suivant" title="Jour suivant · →" className={arrow}>
+      <button type="button" onClick={() => onGo(addDaysISO(day, 1))} aria-label="Jour suivant" title="Jour suivant · →" className={button}>
         <ChevronRight className="size-[18px]" strokeWidth={1.75} />
       </button>
+      <DatePicker
+        value={day}
+        marks={props.marks}
+        onPick={(picked) => picked && onGo(picked)}
+        open={props.pickerOpen}
+        onOpenChange={props.onPickerOpenChange}
+      >
+        <button type="button" aria-label="Choisir un jour" title="Choisir un jour · D" className={button}>
+          <CalendarDays className="size-[18px]" strokeWidth={1.75} />
+        </button>
+      </DatePicker>
     </span>
   );
 }
@@ -205,7 +235,8 @@ function DayTasksSection(props: { day: string; today: string; openTasks: TaskIte
           Toutes les tâches →
         </Link>
       </div>
-      {diff === 0 && <TodayTasks open={openTasks} doneToday={doneToday} today={today} />}
+      {/* « À prévoir » n'y est pas : ces tâches sont dans le bloc « Deadlines ». */}
+      {diff === 0 && <TodayTasks open={openTasks} doneToday={doneToday} today={today} showToPlan={false} />}
       {diff > 0 && (
         <FutureDayTasks
           open={openTasks}
@@ -225,7 +256,12 @@ export function DashboardPage() {
   const navigate = useNavigate({ from: '/' });
   const day = search.day ?? today;
   const openCreate = useCreateStore((state) => state.openCreate);
-  const agendaRange = useMemo(() => ({ from: today, to: addDaysISO(today, UPCOMING_AGENDA_DAYS) }), [today]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  // Prochains jours (7 jours, aujourd'hui compris) et Deadlines (jusqu'à J+7 inclus).
+  const agendaRange = useMemo(
+    () => ({ from: today, to: addDaysISO(today, Math.max(UPCOMING_AGENDA_DAYS, DEADLINE_DAYS + 1)) }),
+    [today],
+  );
   const { data: projects } = useProjects({ statuses: CONFIRMED_STATUSES });
   const { data: overduePayments = [] } = useOverduePayments(today);
   const { data: openTasks } = useOpenTasks();
@@ -240,17 +276,29 @@ export function DashboardPage() {
     arrowleft: () => goTo(addDaysISO(day, -1)),
     arrowright: () => goTo(addDaysISO(day, 1)),
     t: () => goTo(today),
+    d: () => setPickerOpen(true),
   });
 
   if (!projects || !openTasks || !finance || !agenda || showAmounts === undefined) return null;
 
   // Les Propositions (devis pas encore signé) n'y sont pas : elles restent dans la page Projets.
   const alerts = buildAlerts({ projects, overduePayments, today, showAmounts });
-  const active = projects.filter((p) => p.status === 'active');
-  const upcoming = projects.filter((p) => p.status === 'planned');
+  const deadlines = selectDeadlines({ projects, tasks: openTasks, agenda, today });
+  // Les projets suivent le jour affiché : un projet « À venir » est « En cours » à partir de sa date de début.
+  const active = projects.filter((p) => statusOn(p, day) === 'active');
+  const upcoming = projects.filter((p) => statusOn(p, day) === 'planned');
   const todayGroups = selectToday(openTasks, today);
   const todayTasks = [...todayGroups.overdue, ...todayGroups.today];
-  const title = <DayTitle day={day} today={today} onShift={(delta) => goTo(addDaysISO(day, delta))} />;
+  const title = (
+    <DayTitle
+      day={day}
+      today={today}
+      marks={dayMarks({ projects, tasks: openTasks })}
+      onGo={goTo}
+      pickerOpen={pickerOpen}
+      onPickerOpenChange={setPickerOpen}
+    />
+  );
 
   const nothingYet =
     day === today &&
@@ -300,8 +348,8 @@ export function DashboardPage() {
       {showAmounts && <FinanceFigures summary={finance} today={today} className="mb-12" />}
 
       {/*
-        Deux colonnes indépendantes. « Prochains jours » est sous « À surveiller » (3 points au plus) :
-        il reste visible sans défiler, quel que soit le nombre de tâches du jour.
+        Deux colonnes indépendantes. À droite, les Deadlines d'abord (4 au plus d'emblée), puis
+        « À surveiller » (3 points au plus) et « Prochains jours » : rien ne dépend du nombre de tâches du jour.
       */}
       <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
         <div className="min-w-0">
@@ -310,6 +358,7 @@ export function DashboardPage() {
           <section className="mt-14">
             <div className="mb-3.5 flex items-baseline gap-2.5">
               <h2 className="font-semibold">Projets en cours</h2>
+              {day !== today && <span className="text-meta text-ink-3">{dayTasksHeading(day, today).toLowerCase()}</span>}
               <Link to="/projects" className="ml-auto text-meta text-ink-3 hover:text-ink">
                 Tous →
               </Link>
@@ -331,9 +380,13 @@ export function DashboardPage() {
         </div>
 
         <div className="min-w-0">
-          <Attention alerts={alerts} />
+          <Deadlines entries={deadlines} today={today} />
 
-          <div className="mt-14">
+          <div className="mt-12">
+            <Attention alerts={alerts} />
+          </div>
+
+          <div className="mt-12">
             <UpcomingDays
               days={upcomingWithTasks(agenda, openTasks, today, day)}
               today={today}

@@ -1,7 +1,8 @@
 import { useEffect, useState, type KeyboardEvent } from 'react';
-import { DATE_INPUT_BOUNDS, isISODate, isTime } from '@/core/dates';
+import { isTime } from '@/core/dates';
 import { formatMoney, moneyToInput, parseMoneyInput } from '@/core/money';
 import { toast } from '../overlays/toast';
+import { DateButton } from './DatePicker';
 
 /**
  * Champs « éditables sur place » : ils ressemblent à du texte, deviennent un champ au clic,
@@ -140,6 +141,9 @@ export function InlineAmount({
 type InlineDateProps = {
   value: string | null;
   onSave: (value: string | null) => void;
+  /** Faux pour une date obligatoire : pas de « Retirer la date ». */
+  clearable?: boolean;
+  placeholder?: string;
   'aria-label': string;
 };
 
@@ -183,20 +187,15 @@ export function InlineTime({ value, onSave, ...aria }: InlineTimeProps) {
   );
 }
 
-/** Sélecteur de date natif, habillé comme du texte. */
-export function InlineDate({ value, onSave, ...aria }: InlineDateProps) {
+/** Date habillée comme du texte (« ven. 25 sept. ») ; le sélecteur maison s'ouvre au clic. */
+export function InlineDate({ value, onSave, clearable = true, placeholder = 'Aucune', ...aria }: InlineDateProps) {
   return (
-    <input
-      type="date"
-      {...DATE_INPUT_BOUNDS}
-      value={value ?? ''}
-      onChange={(e) => {
-        const next = e.target.value || null;
-        // Une date incomplète ou hors bornes n'est jamais enregistrée.
-        if (next !== null && !isISODate(next)) return;
-        if (next !== value) onSave(next);
-      }}
-      className={`date-quiet tnum h-8 ${inlineClass} ${value ? '' : 'text-ink-3'}`}
+    <DateButton
+      variant="inline"
+      value={value}
+      onChange={onSave}
+      clearable={clearable}
+      placeholder={placeholder}
       {...aria}
     />
   );

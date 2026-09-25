@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { useUiStore } from '@/app/ui-store';
-import { DATE_INPUT_BOUNDS, formatShortDate, todayISO } from '@/core/dates';
+import { formatShortDate, todayISO } from '@/core/dates';
 import { formatMoney, parseMoneyInput } from '@/core/money';
 import { ClientPicker } from '@/domains/clients/components/ClientPicker';
 import type { ClientChoice } from '@/domains/clients/model';
@@ -13,7 +13,8 @@ import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '@
 import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
-import { Input, Textarea, fieldClass } from '@/ui/primitives/Input';
+import { DateField } from '@/ui/primitives/DateField';
+import { Input, Textarea } from '@/ui/primitives/Input';
 import { PropertyButton } from '@/ui/primitives/PropertyButton';
 import { useCreateProject, useProjectTypes } from '../hooks';
 import {
@@ -54,8 +55,8 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
   const [typeId, setTypeId] = useState<string | null>(null);
   const [client, setClient] = useState<ClientChoice>({ kind: 'none' });
   const [status, setStatus] = useState<ProjectStatus>('active');
-  const [startDate, setStartDate] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [deadline, setDeadline] = useState<string | null>(null);
   const [budgetText, setBudgetText] = useState('');
   const [schedule, setSchedule] = useState<SchedulePreset>('single');
   const [moreOptions, setMoreOptions] = useState(false);
@@ -72,8 +73,8 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
     client,
     status,
     priority,
-    startDate: startDate || null,
-    deadline: deadline || null,
+    startDate,
+    deadline,
     budgetCents: budgetCents ?? null,
     schedule,
     description: description || null,
@@ -172,25 +173,14 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
 
         <Row label="Dates">
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              {...DATE_INPUT_BOUNDS}
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              aria-label="Date de début"
-              className={`tnum h-9 ${fieldClass} ${startDate ? '' : 'text-ink-3'}`}
-            />
+            <DateField value={startDate} onChange={setStartDate} placeholder="Début" aria-label="Date de début" />
             <ChevronRight className="size-4 shrink-0 text-ink-3" strokeWidth={1.75} />
-            <input
-              type="date"
-              {...DATE_INPUT_BOUNDS}
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              aria-label="Deadline"
-              className={`tnum h-9 ${fieldClass} ${deadline ? '' : 'text-ink-3'}`}
-            />
+            <DateField value={deadline} onChange={setDeadline} placeholder="Deadline" aria-label="Deadline" />
           </div>
-          <p className="mt-1.5 text-meta text-ink-3">Début → deadline, facultatifs.</p>
+          <p className="mt-1.5 text-meta text-ink-3">
+            Début → deadline, facultatifs.
+            {status === 'planned' && ' À sa date de début, le projet passe tout seul En cours.'}
+          </p>
           <FieldError message={submitted ? (errors.startDate ?? errors.deadline) : undefined} />
         </Row>
 

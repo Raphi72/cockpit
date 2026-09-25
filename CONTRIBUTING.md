@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 et 2 de la V1.1 sont faits. La suite de la V1.1 est en cours.
+Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 à 3 de la V1.1 sont faits. La suite de la V1.1 est en cours.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -21,6 +21,21 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 - [x] Catégories de tâches et sous-tâches (« Tâches admin » › « Faire la refonte graphique », « Ajout de graphiques »…).
 - [x] Échéances : distinguer « à faire aujourd'hui » et « deadline qui approche ». Texte calculé partout (« Aujourd'hui », « Demain », « Dans 3 jours », « En retard de 2 jours », « Terminée ») avec sa couleur ; les deadlines proches visibles sur le dashboard sans entrer dans les tâches du jour ; une tâche avec une date de début et une deadline dessinée en barre dans le calendrier.
 
+### Étape 3 : dates et deadlines (branche `v1.1-dates`)
+
+- [x] Les deadlines se remarquent : un bloc **Deadlines** sur le dashboard (tout ce qui doit être fini d'ici 7 jours, projets et tâches, avec un compte à rebours coloré) et des deadlines colorées selon leur urgence dans le calendrier.
+- [x] Un projet **À venir passe En cours** à sa date de début ; sur le dashboard, il suit le jour affiché (et redevient À venir si l'on revient avant).
+- [x] Un **sélecteur de date maison** partout, qui comprend « auj. », « demain », « +3j », « lundi » ou « 25/10 » ; une icône calendrier à côté de la date du dashboard (touche `D`).
+- [x] La **date de fin** d'une tâche ou d'un projet terminé est affichée, et effacée quand on les rouvre.
+- [x] Calendrier : option « Tâches sans deadline » dans le filtre, désactivée par défaut.
+
+### Étape 4 : glisser-déposer
+
+- [ ] Calendrier : prendre une tâche, un encaissement, un projet (début ou deadline) ou un événement et le déposer sur un autre jour pour changer sa date.
+- [ ] Fiche projet : glisser une tâche dans les idées, et une idée dans les tâches.
+- [ ] Fiche projet : déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir).
+- [ ] Réordonner les tâches au clavier (Alt+↑ / Alt+↓).
+
 ### Étapes suivantes
 
 - [ ] **Planning** : une ligne par projet en cours ou à venir, avec une barre du début à la deadline, une ligne « aujourd'hui », des losanges pour les encaissements, une bande qui montre combien de projets se chevauchent chaque semaine, et un zoom mois ou trimestre. La page existe mais elle est vide.
@@ -30,14 +45,12 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 
 ## Petits défauts à reprendre (§7.3 de la conception)
 
-- [ ] Remplacer le sélecteur de date natif, gênant au clic, par un sélecteur maison qui comprend « auj. », « demain » ou « +3j ».
-- [ ] Réordonner les tâches au clavier (Alt+↑ / Alt+↓).
+- [x] Remplacer le sélecteur de date natif, gênant au clic, par un sélecteur maison qui comprend « auj. », « demain » ou « +3j » (étape 3).
 - [ ] Supprimer avec Suppr aussi dans les panneaux latéraux et sur la fiche projet.
 - [ ] Clients : archivage, total encaissé et montant à recevoir sur la fiche.
 - [ ] Comptes : en créer, en renommer ou en archiver depuis l'interface.
 - [ ] Fiche projet : afficher ses prochains événements.
 - [x] Calendrier : un événement sur plusieurs jours en une seule barre continue.
-- [ ] Calendrier : glisser pour déplacer un élément.
 - [ ] Une erreur dans une fenêtre (création, panneau de tâche) remplace toute l'app par l'écran d'erreur ; elle devrait rester dans la fenêtre.
 - [ ] Vue mois : un mois chargé dépasse de quelques pixels en 1080p à 125 %.
 - [ ] `Ctrl+N` à vérifier dans la vraie fenêtre (la touche `N` seule fonctionne).

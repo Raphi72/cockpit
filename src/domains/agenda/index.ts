@@ -2,6 +2,8 @@ export type { AgendaItem, AgendaKind, AgendaSource } from './model';
 export {
   UPCOMING_AGENDA_DAYS,
   agendaTooltip,
+  deadlineDay,
+  isDeadlineItem,
   itemTime,
   upcomingDayLabel,
   upcomingDays,

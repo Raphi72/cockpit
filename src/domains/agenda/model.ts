@@ -210,6 +210,10 @@ export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
   payment: 'échéances non reçues',
 };
 
+/** Option du filtre « Tâches » : les tâches ordinaires, sans deadline ni priorité, à leur début. */
+export const PLAIN_TASKS_LABEL = 'Tâches sans deadline';
+export const PLAIN_TASKS_HINT = 'à leur date de début';
+
 export type AgendaKind =
   | EventKind
   | 'project_start'
@@ -241,12 +245,22 @@ const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
   project_start: 'Début du projet',
   project_deadline: 'Deadline du projet',
   task_due: 'Deadline de la tâche',
-  task_scheduled: 'Tâche prioritaire',
+  task_scheduled: 'Début de la tâche',
   payment_due: 'Encaissement attendu',
 };
 
 export function agendaKindLabel(kind: AgendaKind): string {
   return kind in EVENT_KIND_LABELS ? EVENT_KIND_LABELS[kind as EventKind] : KIND_LABELS[kind as keyof typeof KIND_LABELS];
+}
+
+/** Une date à tenir : deadline de projet ou de tâche, ou événement « Échéance ». */
+export function isDeadlineItem(item: Pick<AgendaItem, 'kind'>): boolean {
+  return item.kind === 'project_deadline' || item.kind === 'task_due' || item.kind === 'deadline';
+}
+
+/** Jour de la deadline : la fin d'une tâche dessinée du début à la deadline, sinon le jour de l'élément. */
+export function deadlineDay(item: Pick<AgendaItem, 'kind' | 'start' | 'end'>): string {
+  return (item.kind === 'task_due' && item.end ? item.end : item.start).slice(0, 10);
 }
 
 /** Premier et dernier jour couverts ('YYYY-MM-DD'). */

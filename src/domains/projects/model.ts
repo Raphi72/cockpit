@@ -52,7 +52,13 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 export type ProjectListItem = {
   id: string;
   name: string;
+  /**
+   * Statut du jour (voir statusOn) : un projet « À venir » est « En cours » dès sa date de début.
+   * C'est lui qu'on affiche et qu'on filtre.
+   */
   status: ProjectStatus;
+  /** Statut choisi, tel qu'il est enregistré. */
+  savedStatus: ProjectStatus;
   priority: Priority;
   startDate: string | null;
   deadline: string | null;
@@ -66,13 +72,14 @@ export type ProjectListItem = {
   tasksDone: number;
   receivedCents: number;
   scheduledCents: number;
+  /** Horodatage du passage en Terminé ; effacé si le projet est rouvert. */
+  completedAt: string | null;
 };
 
 export type ProjectDetail = ProjectListItem & {
   description: string | null;
   notes: string | null;
   createdAt: string;
-  completedAt: string | null;
 };
 
 /** Champs modifiables d'un projet (édition sur place). */
@@ -88,6 +95,21 @@ export type ProjectPatch = Partial<{
   deadline: string | null;
   budgetCents: number | null;
 }>;
+
+/**
+ * Statut d'un projet un jour donné : un projet « À venir » passe « En cours » à sa date de début.
+ * Rien n'est écrit en base : sur un jour antérieur (flèches du dashboard), il redevient « À venir ».
+ * Les autres statuts sont ceux qu'on a choisis.
+ */
+export function statusOn(project: Pick<ProjectListItem, 'savedStatus' | 'startDate'>, day: string): ProjectStatus {
+  const started = project.startDate !== null && project.startDate <= day;
+  return project.savedStatus === 'planned' && started ? 'active' : project.savedStatus;
+}
+
+/** En cours seulement parce que sa date de début est arrivée (il est enregistré « À venir »). */
+export function isAutoStarted(project: Pick<ProjectListItem, 'savedStatus' | 'startDate'>, day: string): boolean {
+  return project.savedStatus === 'planned' && statusOn(project, day) === 'active';
+}
 
 /** Progression automatique : tâches terminées / tâches totales. `null` s'il n'y a aucune tâche. */
 export function projectProgress(project: Pick<ProjectListItem, 'status' | 'tasksTotal' | 'tasksDone'>): number | null {

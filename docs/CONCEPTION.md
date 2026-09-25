@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2).
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 3 faites.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -30,7 +30,7 @@ Dès l'ouverture, l'app doit répondre en quelques secondes à cinq questions :
 |---|---|---|
 | 1 | Qu'est-ce que je dois faire aujourd'hui ? | Dashboard › Aujourd'hui |
 | 2 | Qu'est-ce qui arrive dans les prochains jours ? | Dashboard › Prochains jours |
-| 3 | Qu'est-ce qui dérape ? | Dashboard › À surveiller |
+| 3 | Qu'est-ce qui dérape ? | Dashboard › Deadlines (V1.1) et À surveiller |
 | 4 | Où en sont mes projets ? | Dashboard › Projets en cours, page Projets |
 | 5 | Combien j'ai et combien on me doit ? | Bandeau de chiffres du dashboard, page Finances |
 
@@ -101,6 +101,7 @@ Un statut **Proposition** (devis envoyé, pas encore signé) permet de suivre le
 - budget non planifié.
 
 Chaque ligne propose une action directe (ouvrir, marquer reçu, créer la tâche).
+*V1.1, étape 3* : les deux règles de deadline ont désormais leur propre bloc, « Deadlines » (§5.2). La règle « sans activité depuis 14 jours » n'est pas encore écrite.
 
 **P12. Mettre les sauvegardes automatiques dans le MVP.**
 Toutes les données sont sur un seul disque, donc la sécurité ne peut pas dépendre de ta mémoire. L'app fait une copie automatique chaque jour (les 14 dernières sont conservées) et une copie avant chaque mise à jour du schéma. Le dossier de sauvegarde peut être un dossier OneDrive : tu obtiens une copie hors de la machine sans que l'app dépende du cloud. La base active reste hors de OneDrive pour éviter les conflits de synchronisation.
@@ -498,6 +499,8 @@ Au premier lancement, une seule question est posée : « Quel est le solde actue
 | CA prévu (période) | Σ encaissements non reçus dont la date prévue tombe dans la période |
 | Dépenses pro | Σ transactions `expense` des comptes pro (hors virements et ajustements) |
 | Tâches d'aujourd'hui | Non terminées et (début ≤ aujourd'hui ou deadline ≤ aujourd'hui) |
+| Statut du jour d'un projet | « À venir » et date de début ≤ le jour regardé → « En cours » ; sinon le statut choisi (`statusOn`, et `STATUS_ON` en SQL) |
+| Deadlines du dashboard | Deadlines de projets (en retard comprises), de tâches et événements « Échéance » d'aujourd'hui à J+7 (`selectDeadlines`) |
 | À prévoir | Non terminées, sans début, deadline dans les 7 prochains jours (pas aujourd'hui) |
 | Texte d'une deadline | « En retard de 3 jours », « Aujourd'hui » (rouge), « Demain », « Dans 3 jours » (ambre), « Dans 6 jours » (bleu, jusqu'à 7), puis la date, « Terminée » (vert) : `core/deadline.ts` |
 
@@ -671,17 +674,18 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 **Dashboard « Aujourd'hui »** (voir la maquette, version aérée) :
 
-- **En-tête** : la date, entre deux flèches pour voir les tâches d'un autre jour (V1.1), et une phrase de synthèse courte (« 5 tâches aujourd'hui, dont 1 en retard · rendez-vous à 14:00 »).
+- **En-tête** : la date, entre deux flèches pour voir les tâches d'un autre jour (V1.1), le calendrier pour aller à un jour précis (`D`, V1.1), et une phrase de synthèse courte (« 5 tâches aujourd'hui, dont 1 en retard · rendez-vous à 14:00 »).
 - **4 chiffres clés**, sans cartes ; les chiffres secondaires sont en sous-titre :
   - compte pro (avec les dépenses pro du mois) ;
   - compte perso (avec la variation du mois) ;
   - à recevoir (avec le montant en retard) ;
   - encaissé ce mois (avec le prévu sur 30 jours).
-- **4 blocs**, lus dans l'ordre des questions du §1.1 :
-  1. **Aujourd'hui** : les tâches à cocher sur place, celles en retard en tête. Chaque ligne affiche seulement le titre, le projet et une date quand elle compte (retard, deadline proche). Les tâches terminées sont repliées. Dessous, « À prévoir » (V1.1) : les deadlines de la semaine qui n'ont pas encore de début.
-  2. **À surveiller** : 3 points au maximum, les plus graves d'abord (règles de P11), puis un lien « N autres points ». L'action directe apparaît au survol.
-  3. **Prochains jours** : l'agenda des 7 prochains jours (rendez-vous, deadlines, encaissements attendus, débuts de projet) et, à partir de demain, les tâches prévues (V1.1), groupé par jour.
-  4. **Projets en cours** : nom, barre de progression, deadline ; puis les projets à venir. Les Propositions n'apparaissent nulle part sur le dashboard (V1.1).
+- **5 blocs**, lus dans l'ordre des questions du §1.1 :
+  1. **Aujourd'hui** : les tâches à cocher sur place, celles en retard en tête. Chaque ligne affiche seulement le titre, le projet et une date quand elle compte (retard, deadline proche). Les tâches terminées sont repliées.
+  2. **Deadlines** (V1.1) : tout ce qui doit être fini d'ici 7 jours (projets, tâches, échéances), avec un compte à rebours coloré ; « Prévoir… » pour une tâche qui n'a pas encore de début.
+  3. **À surveiller** : 3 points au maximum, les plus graves d'abord (règles de P11, sans les deadlines depuis la V1.1), puis un lien « N autres points ». L'action directe apparaît au survol.
+  4. **Prochains jours** : l'agenda des 7 prochains jours (rendez-vous, encaissements attendus, débuts de projet) et, à partir de demain, les tâches prévues (V1.1), groupé par jour.
+  5. **Projets en cours** : nom, barre de progression, deadline ; puis les projets à venir. Ils suivent le jour affiché (V1.1). Les Propositions n'apparaissent nulle part sur le dashboard (V1.1).
 - Il n'y a pas de liste « À recevoir » séparée : le total est dans les chiffres clés, les prochains paiements sont dans l'agenda, et le détail est sur la page Finances.
 
 **Projets** :
@@ -694,7 +698,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 - **Colonne principale** : titre et description éditables, tâches (bascule Liste / Kanban, ajout sur place, glisser-déposer), idées (V1.1), notes.
 - **Panneau de propriétés**, toutes éditables sur place :
-  - statut, type, client, priorité, dates, progression ;
+  - statut (avec « Terminé le … » ou « Depuis le …, sa date de début »), type, client, priorité, dates, progression ;
   - **Finances** : budget, reçu, restant, % payé, non planifié, liste des encaissements (« Marquer reçu » en un clic), dépenses liées ;
   - prochains événements.
 
@@ -707,7 +711,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 **Calendrier** :
 
 - Vues Mois / Semaine / Jour, éléments colorés selon leur source. Ce qui dure plusieurs jours (événement, tâche du début à la deadline) est une barre continue (V1.1).
-- Filtres : événements, deadlines, tâches, encaissements.
+- Filtres : événements, deadlines, tâches, encaissements ; en option, les tâches sans deadline (V1.1).
 - Un clic sur un créneau vide crée un événement pré-rempli. La navigation (← →, `T` pour aujourd'hui) se fait au clavier.
 
 **Planning** (V1.1) :
@@ -832,7 +836,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **4. Calendrier** | ✓ Fait | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
-| **V1.1** | En cours | Retours d'usage, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
+| **V1.1** | En cours | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V2** | Si besoin | Google Agenda dans le calendrier (lecture seule, adresse iCal secrète), zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
@@ -847,12 +851,23 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
    - **flèches autour de la date** du dashboard pour voir les tâches d'hier, de demain ou de n'importe quel jour ;
    - **tâches des prochains jours** dans le bloc Prochains jours.
 2. **Retours d'usage, suite** (✓ fait, branche `v1.1-taches`) : corbeille et croix du panneau de tâche plus grandes, sélection de plusieurs tâches (date, deadline, priorité en une fois), catégories et sous-tâches, échéances (texte calculé « Dans 3 jours », deadlines proches sur le dashboard, barre début → deadline dans le calendrier).
-3. **Planning**.
-4. **Notifications Windows**.
-5. **Exports et paramètres complets**.
-6. **Petits défauts** du §7.3.
+3. **Dates et deadlines** (✓ fait, branche `v1.1-dates`) :
+   - bloc **Deadlines** sur le dashboard : tout ce qui doit être fini d'ici 7 jours, projets et tâches (avec ou sans début) ;
+   - deadlines colorées selon leur urgence dans le calendrier ;
+   - un projet **À venir passe En cours** à sa date de début, aussi quand on change de jour sur le dashboard ;
+   - **sélecteur de date maison** partout (« auj. », « demain », « +3j », « lundi », « 25/10 »…), et une icône calendrier à côté de la date du dashboard (`D`) ;
+   - **date de fin** d'une tâche et d'un projet terminés, effacée quand on les rouvre ;
+   - calendrier : option « Tâches sans deadline » (désactivée par défaut).
+4. **Glisser-déposer** :
+   - calendrier : prendre une tâche, un encaissement, un début ou une deadline de projet, un événement, et le déposer sur un autre jour pour changer sa date ;
+   - fiche projet : glisser une tâche dans les idées et une idée dans les tâches ; déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir) ;
+   - réordonner les tâches au clavier (Alt+↑ / Alt+↓).
+5. **Planning**.
+6. **Notifications Windows**.
+7. **Exports et paramètres complets**.
+8. **Petits défauts** du §7.3.
 
-Détail des étapes 3 à 5 :
+Détail des étapes 5 à 7 :
 
 - **Planning** : une ligne par projet en cours ou à venir, une barre du début à la deadline, une ligne « aujourd'hui », des losanges pour les encaissements, une bande de densité (projets simultanés par semaine) et un zoom mois / trimestre.
 - **Notifications Windows** : plugin `notification`, règles du §2.8, dédoublonnage par `notification_log`, chacune désactivable.
@@ -864,21 +879,32 @@ Détail des étapes 3 à 5 :
 
 ### 7.3 Points à reprendre, issus des jalons terminés
 
-- **Sélecteur de date natif** : un clic au milieu du champ commence la saisie par le mois. À remplacer par un `DatePicker` maison avec raccourcis (« auj. », « demain », « +3j »).
 - **Ctrl+N** : non vérifié dans la fenêtre WebView2. La touche `N` seule fonctionne partout.
-- **Réordonnancement au clavier** : les tâches ne se réordonnent pas au clavier (piste : Alt+↑ / Alt+↓).
+- **Réordonnancement au clavier** : les tâches ne se réordonnent pas au clavier (Alt+↑ / Alt+↓, prévu à l'étape 4).
 - **Clients** : pas encore d'archivage.
 - **Erreurs dans les fenêtres globales** : une erreur dans une fenêtre globale (création, panneau de tâche) remplace toute l'app par l'écran d'erreur. Il faudrait des « error boundaries » locales.
 - **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
 - **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
 - **Export CSV des transactions** : prévu avec les exports (V1.1).
-- **Calendrier** : glisser pour replanifier reste à faire (les barres continues sont faites en V1.1, étape 2).
+- **Calendrier** : glisser pour replanifier, prévu à l'étape 4 (les barres continues sont faites en V1.1, étape 2).
 - **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
 - **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main.
 - **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
+
+**Choix faits en V1.1, étape 3 (dates et deadlines)**, à confirmer à l'usage :
+- **Bloc « Deadlines »** (`dashboard/components/Deadlines.tsx`, règle `selectDeadlines`) : en haut de la colonne de droite, avant À surveiller. Il réunit les deadlines de projets, de tâches (qu'elles aient un début ou non) et les événements « Échéance », d'aujourd'hui à J+7 : une deadline y entre 7 jours avant. Un projet en retard y reste en tête (rouge) ; les tâches en retard n'y sont pas, elles sont déjà en tête d'Aujourd'hui. Compte à rebours coloré (règle de `core/deadline.ts`), 4 lignes d'emblée puis « N autres deadlines ». Une ligne sur deux niveaux : le titre en entier, puis le projet. Un clic ouvre la source.
+- **« À prévoir » fusionné dans Deadlines** sur le dashboard : une tâche sans début y est marquée « pas encore prévue », avec « Prévoir… » au survol (le sélecteur de date, qui lui donne un début). La page Tâches garde son groupe « À prévoir ».
+- **Plus de deadlines ailleurs sur le dashboard** : À surveiller n'a plus « Deadline dépassée » ni « Deadline dans 3 jours » ; Prochains jours n'a plus les deadlines de projet ni les échéances. Un projet dont la deadline est dépassée ou à 3 jours ou moins ne reçoit toujours pas de rappel secondaire (budget, prochaine action) dans À surveiller.
+- **Disposition revue** : à droite, Deadlines, À surveiller, puis Prochains jours. En 1080p à 125 %, Prochains jours demande désormais un court défilement : les deadlines passent avant.
+- **Calendrier** : revient sur le choix du jalon 4 (« seul le retard est coloré »). Une deadline (projet, tâche, échéance) est en gras, avec un drapeau de la couleur de son urgence ; en retard, aujourd'hui ou à 3 jours, elle a en plus un fond teinté (rouge ou ambre). Même chose pour le drapeau au bout d'une barre début → deadline.
+- **Projet « À venir » → « En cours »** : rien n'est écrit en base (pas de valeur dérivée stockée). Le statut du jour est calculé à la lecture (`STATUS_ON` dans `projects/repository.ts`, `statusOn` dans `model.ts`) et tous les filtres l'utilisent : liste des projets, barre latérale, dashboard. Le statut choisi reste lisible (`savedStatus`). Sur le dashboard, les projets suivent le jour affiché : le jour du début, le projet est « En cours » ; en revenant avant, il redevient « À venir ». Seul « À venir » bascule : Proposition, En pause, Terminé et Annulé ne bougent jamais. La fiche indique « Depuis le 24 sept., sa date de début », et sous la date de début d'un projet à venir « Passera En cours ce jour-là ». Choisir « À venir » quand la date de début est passée affiche pourquoi il reste En cours.
+- **Sélecteur de date maison** (`ui/primitives/DatePicker.tsx`, lecture de la saisie dans `core/date-input.ts`) : tous les champs date de l'app (fiches, fenêtres, barre de sélection). Un champ de saisie en tête (« auj. », « demain », « après-demain », « +3j », « 2 sem », « +1m », « dans 5 jours », « lundi », « 25 », « 25/10 », « 25 oct. », « 1er novembre 2027 »), avec la date comprise en aperçu et surlignée dans la grille ; Entrée la valide. Un jour de la semaine est toujours à venir ; sans année (ou sans mois), c'est la date la plus proche d'aujourd'hui. Puis quatre raccourcis, et le mois (flèches, Page préc. / suiv.). « Retirer la date » pour les champs facultatifs. Les champs affichent « ven. 25 sept. ».
+- **Calendrier du dashboard** : icône à droite des flèches, ou `D`. Un point rouge sous les jours qui ont une deadline, gris sous ceux qui ont des tâches prévues.
+- **Date de fin** : dans le panneau d'une tâche terminée, sous le statut (« Terminée aujourd'hui à 14:32 ») ; dans la fiche d'un projet terminé, sous le statut ; dans les tâches terminées repliées de la fiche projet (« hier », l’heure au survol) et dans l'onglet Terminés des projets (« Terminé le 12 sept. »). Rouvrir efface la date (c'était déjà le cas en base).
+- **Tâches sans deadline dans le calendrier** : option du menu Filtrer, désactivée par défaut et mémorisée ; les tâches ordinaires y sont à leur date de début.
 
 **Choix faits en V1.1, étape 2 (tâches et échéances)**, à confirmer à l'usage :
 - **Texte des deadlines** : une seule règle (`core/deadline.ts`) pour les lignes et cartes de tâches, le panneau de tâche (sous la deadline), les lignes de projet (version courte : « Dans 6 j », « 3 j de retard ») et la fiche projet. Rouge pour un retard ou aujourd'hui, ambre de 1 à 3 jours, bleu de 4 à 7, neutre au-delà (la date), vert « Terminée ». Sous une deadline lointaine, rien : la date est déjà affichée. Les textes d'À surveiller suivent (« Deadline dans 3 jours », « En retard de 2 jours »).
@@ -920,7 +946,7 @@ Détail des étapes 3 à 5 :
 - Une catégorie utilisée par des transactions ne se supprime pas, comme un type de projet utilisé.
 
 **Choix faits au jalon 5**, à confirmer à l'usage :
-- **Disposition** : deux colonnes indépendantes. À gauche, Aujourd'hui puis Projets en cours ; à droite, À surveiller puis Prochains jours. C'est un écart avec la maquette, où Prochains jours est sous Aujourd'hui : À surveiller est limité à 3 points, donc Prochains jours reste visible sans défilement quel que soit le nombre de tâches du jour. Les projets en cours sont aussi dans la sidebar.
+- **Disposition** (revue en V1.1, étape 3 : Deadlines en haut à droite) : deux colonnes indépendantes. À gauche, Aujourd'hui puis Projets en cours ; à droite, À surveiller puis Prochains jours. C'est un écart avec la maquette, où Prochains jours est sous Aujourd'hui : À surveiller est limité à 3 points, donc Prochains jours reste visible sans défilement quel que soit le nombre de tâches du jour. Les projets en cours sont aussi dans la sidebar.
 - **Vérification 1080p à 125 %** (fenêtre par défaut 1280 × 780 et plein écran 1536 × 785), sur une journée chargée (5 tâches et 1 terminée, 3 points à surveiller) : les chiffres, les tâches du jour, les points à surveiller et le début de Prochains jours (aujourd'hui, demain en plein écran) sont visibles sans défiler ; la suite de la semaine et la liste des projets demandent un court défilement. Sur une journée plus légère, tout tient.
 - **Prochains jours** : 7 jours, aujourd'hui compris ; seuls les jours qui ont quelque chose sont montrés. Les tâches n'y figurent pas (revu en V1.1 : elles y sont à partir de demain, voir plus haut), ni les retards (ils sont dans À surveiller). Un événement sur plusieurs jours n'apparaît qu'une fois, avec « jusqu'à … ». Un clic ouvre la source, comme dans le calendrier.
 - **Synthèse sous la date** : les tâches du jour (dont en retard) et le prochain rendez-vous à heure fixe pas encore commencé ; elle suit l'heure. Le nombre de projets en cours et de paiements en retard n'y figure plus : ils sont déjà dans les blocs et les chiffres clés.
@@ -932,7 +958,7 @@ Détail des étapes 3 à 5 :
 - Une tâche apparaît une seule fois : à sa deadline, sinon à sa date prévue si elle est Haute ou Urgente. Les tâches ordinaires sans deadline n'y figurent pas. (V1.1 : avec un début et une deadline, en barre de l'un à l'autre.)
 - Les projets terminés, annulés ou archivés sortent du calendrier ; leurs encaissements non reçus restent.
 - Un encaissement y porte le nom du projet (ou du client), son libellé au survol, et son montant.
-- Seul le retard est coloré (rouge) : une deadline ou un encaissement passé. Pas d'ambre « bientôt » dans le calendrier.
+- Seul le retard est coloré (rouge) : une deadline ou un encaissement passé. Pas d'ambre « bientôt » dans le calendrier. (Revu en V1.1, étape 3 : les deadlines prennent la couleur de leur urgence.)
 - Un nouvel événement est à heure fixe, pour 1 h : 9 h, ou l'heure pleine suivante s'il est pour aujourd'hui. Un clic sur un créneau prend sa demi-heure ; un clic dans la ligne « Journée » crée un événement sur la journée ; le type « Échéance » coche « Journée entière ».
 - Plusieurs jours : seulement en journée entière (« Jusqu'au »). À heure fixe, la fin est le même jour et facultative. Changer l'heure de début déplace la fin (la durée est conservée).
 - La vue et les filtres sont mémorisés d'une visite à l'autre ; le jour affiché est dans l'URL interne, si bien qu'on revient au même endroit après avoir ouvert une fiche.

@@ -39,7 +39,7 @@ function UpcomingRow({
   const detail = upcomingDetail(item, today);
   return (
     <button type="button" title={agendaTooltip(item, showAmounts)} onClick={() => onOpen(item)} className={rowClass(withTimes)}>
-      <AgendaMarker item={item} late={false} />
+      <AgendaMarker item={item} />
       {withTimes && <span className="tnum text-meta text-ink-3">{itemTime(item)}</span>}
       <span className="truncate">
         <span className={item.kind === 'project_deadline' ? 'font-medium' : ''}>{item.title}</span>

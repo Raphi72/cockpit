@@ -6,9 +6,6 @@ export function isISODate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && isValid(parseISO(value));
 }
 
-/** Bornes des champs date : limitent l'année à 4 chiffres dans le sélecteur natif. */
-export const DATE_INPUT_BOUNDS = { min: '1900-01-01', max: '2999-12-31' } as const;
-
 /** Date locale au format stocké en base : 'YYYY-MM-DD'. */
 export function toISODate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
@@ -43,6 +40,27 @@ export function formatShortDate(iso: string, today: string): string {
   const date = parseISO(iso);
   const sameYear = iso.slice(0, 4) === today.slice(0, 4);
   return format(date, sameYear ? 'd MMM' : 'd MMM yyyy', { locale: fr });
+}
+
+/** Date d'un champ : « ven. 25 sept. », ou « ven. 25 sept. 2027 » si l'année diffère. */
+export function formatDateField(iso: string, today: string): string {
+  if (!isISODate(iso)) return iso;
+  return format(parseISO(iso), iso.slice(0, 4) === today.slice(0, 4) ? 'EEE d MMM' : 'EEE d MMM yyyy', { locale: fr });
+}
+
+/**
+ * Moment où une tâche ou un projet a été terminé (horodatage UTC, affiché en heure locale) :
+ * « aujourd'hui à 14:32 », « hier à 09:10 », « le 12 sept. à 18:00 ».
+ */
+export function formatCompletedAt(timestamp: string, today: string): string {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return timestamp;
+  const day = toISODate(date);
+  const time = format(date, 'HH:mm');
+  const diff = daysBetween(today, day);
+  if (diff === 0) return `aujourd’hui à ${time}`;
+  if (diff === -1) return `hier à ${time}`;
+  return `le ${formatShortDate(day, today)} à ${time}`;
 }
 
 /**

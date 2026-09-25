@@ -3,14 +3,39 @@ import type { AgendaItem } from '@/domains/agenda';
 import {
   dashboardSummary,
   dashboardTitle,
+  dayMarks,
   dayTasksHeading,
   nextTimedEvent,
   otherDaySummary,
+  selectDeadlines,
   upcomingWithTasks,
 } from '@/domains/dashboard/model';
+import type { ProjectListItem } from '@/domains/projects/model';
 import type { TaskItem } from '@/domains/tasks/model';
 
 const TODAY = '2026-09-24';
+
+const task = (overrides: Partial<TaskItem>): TaskItem => ({
+  id: 't',
+  projectId: null,
+  projectName: null,
+  projectColor: null,
+  title: 'Tâche',
+  notes: null,
+  status: 'todo',
+  priority: 1,
+  scheduledDate: null,
+  dueDate: null,
+  estimateMin: null,
+  sortOrder: 1,
+  completedAt: null,
+  createdAt: '2026-09-20T08:00:00.000Z',
+  parentId: null,
+  parentTitle: null,
+  subtasksTotal: 0,
+  subtasksDone: 0,
+  ...overrides,
+});
 
 const event = (overrides: Partial<AgendaItem>): AgendaItem => ({
   key: 'k',
@@ -80,28 +105,6 @@ describe('de jour en jour', () => {
 });
 
 describe('prochains jours', () => {
-  const task = (overrides: Partial<TaskItem>): TaskItem => ({
-    id: 't',
-    projectId: null,
-    projectName: null,
-    projectColor: null,
-    title: 'Tâche',
-    notes: null,
-    status: 'todo',
-    priority: 1,
-    scheduledDate: null,
-    dueDate: null,
-    estimateMin: null,
-    sortOrder: 1,
-    completedAt: null,
-    createdAt: '2026-09-20T08:00:00.000Z',
-    parentId: null,
-    parentTitle: null,
-    subtasksTotal: 0,
-    subtasksDone: 0,
-    ...overrides,
-  });
-
   it('ajoute les tâches qui commencent à partir de demain, et ne garde que les jours qui ont quelque chose', () => {
     const agenda = [event({ key: 'rdv', start: '2026-09-26T10:00' })];
     const tasks = [
@@ -122,5 +125,86 @@ describe('prochains jours', () => {
       ['2026-09-25', 1],
       ['2026-09-26', 0],
     ]);
+  });
+
+  it('laisse les deadlines au bloc « Deadlines »', () => {
+    const agenda = [
+      event({ key: 'deadline', source: 'project', kind: 'project_deadline', allDay: true, start: '2026-09-26' }),
+      event({ key: 'échéance', kind: 'deadline', allDay: true, start: '2026-09-26' }),
+      event({ key: 'début', source: 'project', kind: 'project_start', allDay: true, start: '2026-09-26' }),
+    ];
+    expect(upcomingWithTasks(agenda, [], TODAY).map((d) => d.items.map((i) => i.key))).toEqual([['début']]);
+  });
+});
+
+describe('bloc « Deadlines »', () => {
+  const project = (overrides: Partial<ProjectListItem>): ProjectListItem => ({
+    id: 'p',
+    name: 'Projet',
+    status: 'active',
+    savedStatus: 'active',
+    priority: 1,
+    startDate: null,
+    deadline: null,
+    budgetCents: null,
+    typeId: 'type-freelance',
+    typeName: 'Freelance',
+    typeColor: 'blue',
+    clientId: null,
+    clientName: null,
+    tasksTotal: 1,
+    tasksDone: 0,
+    receivedCents: 0,
+    scheduledCents: 0,
+    completedAt: null,
+    ...overrides,
+  });
+
+  it('réunit les deadlines des 7 prochains jours : projets, tâches et échéances, la plus proche d’abord', () => {
+    const entries = selectDeadlines({
+      today: TODAY,
+      projects: [
+        project({ id: 'late', name: 'Audit', deadline: '2026-09-20' }),
+        project({ id: 'j7', name: 'Site', deadline: '2026-10-01' }),
+        project({ id: 'j8', name: 'Trop loin', deadline: '2026-10-02' }),
+        project({ id: 'none', name: 'Sans deadline' }),
+      ],
+      tasks: [
+        task({ id: 'a', title: 'Maquette', projectName: 'Site', dueDate: '2026-09-26', scheduledDate: '2026-09-22' }),
+        task({ id: 'b', title: 'Devis', dueDate: '2026-09-26', priority: 3 }),
+        task({ id: 'c', title: 'Aujourd’hui sans début', dueDate: TODAY }),
+        task({ id: 'd', title: 'En retard', dueDate: '2026-09-23' }),
+        task({ id: 'e', title: 'Faite', dueDate: '2026-09-26', status: 'done' }),
+      ],
+      agenda: [
+        event({ id: 'ev', title: 'Dossier de bourse', kind: 'deadline', allDay: true, start: '2026-09-26' }),
+        event({ id: 'rdv', title: 'Rendez-vous', start: '2026-09-26T10:00' }),
+      ],
+    });
+    expect(entries.map((e) => [e.title, e.date, e.detail, e.toPlan])).toEqual([
+      ['Audit', '2026-09-20', 'deadline du projet', false],
+      ['Aujourd’hui sans début', TODAY, null, false],
+      ['Dossier de bourse', '2026-09-26', 'échéance', false],
+      ['Devis', '2026-09-26', null, true],
+      ['Maquette', '2026-09-26', 'Site', false],
+      ['Site', '2026-10-01', 'deadline du projet', false],
+    ]);
+  });
+
+  it('marque les jours du sélecteur : deadlines en priorité, puis tâches prévues', () => {
+    const marks = dayMarks({
+      projects: [project({ deadline: '2026-10-01' })],
+      tasks: [
+        task({ id: 'a', scheduledDate: '2026-09-26' }),
+        task({ id: 'b', scheduledDate: '2026-09-27', dueDate: '2026-09-29' }),
+        task({ id: 'c', dueDate: '2026-09-26', status: 'done' }),
+      ],
+    });
+    expect(Object.fromEntries(marks)).toEqual({
+      '2026-09-26': 'task',
+      '2026-09-27': 'task',
+      '2026-09-29': 'deadline',
+      '2026-10-01': 'deadline',
+    });
   });
 });

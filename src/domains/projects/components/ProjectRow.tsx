@@ -1,14 +1,25 @@
 import { Link } from '@tanstack/react-router';
 import { memo } from 'react';
-import { formatShortDate } from '@/core/dates';
+import { formatCompletedAt, formatShortDate, toISODate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { ProgressBar } from '@/ui/data/ProgressBar';
 import { CLOSED_STATUSES, projectProgress, type ProjectListItem } from '../model';
 
-/** Deadline d'un projet : même texte et mêmes couleurs que pour les tâches, en version courte. */
+/**
+ * Deadline d'un projet : même texte et mêmes couleurs que pour les tâches, en version courte.
+ * Un projet terminé montre plutôt quand il l'a été.
+ */
 export function DeadlineLabel({ project, today }: { project: ProjectListItem; today: string }) {
+  if (project.status === 'done' && project.completedAt) {
+    const deadline = project.deadline ? ` · deadline : ${formatShortDate(project.deadline, today)}` : '';
+    return (
+      <span className="tnum text-meta text-ink-3" title={`Terminé ${formatCompletedAt(project.completedAt, today)}${deadline}`}>
+        Terminé le {formatShortDate(toISODate(new Date(project.completedAt)), today)}
+      </span>
+    );
+  }
   if (!project.deadline) return <span className="text-meta text-ink-3">—</span>;
   // Un projet clos garde sa date, sans urgence.
   const closed = CLOSED_STATUSES.includes(project.status);

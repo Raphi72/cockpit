@@ -76,7 +76,7 @@ describe('tâches', () => {
       updateTaskStatement('a', { status: 'done' }, NOW),
     ]);
     expect(await getTask(db, 'a')).toMatchObject({ status: 'done', completedAt: NOW });
-    expect(await getProject(db, projectId)).toMatchObject({ tasksTotal: 2, tasksDone: 1 });
+    expect(await getProject(db, projectId, '2026-09-24')).toMatchObject({ tasksTotal: 2, tasksDone: 1 });
 
     await db.batch([updateTaskStatement('a', { status: 'todo' }, NOW)]);
     expect(await getTask(db, 'a')).toMatchObject({ status: 'todo', completedAt: null });

@@ -52,12 +52,19 @@ export function deleteProjectType(db: Db, id: string) {
 
 // ─── Projets ────────────────────────────────────────────────────────────────
 
+/**
+ * Statut du jour (voir statusOn dans model.ts) : « À venir » devient « En cours » à la date de début.
+ * Calculé à la lecture, jamais enregistré ; le seul paramètre est « aujourd'hui ».
+ */
+const STATUS_ON = `CASE WHEN p.status = 'planned' AND p.start_date <= ? THEN 'active' ELSE p.status END`;
+
 const LIST_COLUMNS = `
-  p.id, p.name, p.status, p.priority, p.start_date, p.deadline, p.budget_cents,
+  p.id, p.name, ${STATUS_ON} AS status, p.status AS saved_status, p.priority, p.start_date, p.deadline, p.budget_cents,
   p.type_id, t.name AS type_name, t.color AS type_color,
   p.client_id, c.name AS client_name,
   COALESCE(pp.tasks_total, 0) AS tasks_total, COALESCE(pp.tasks_done, 0) AS tasks_done,
-  COALESCE(pm.received_cents, 0) AS received_cents, COALESCE(pm.scheduled_cents, 0) AS scheduled_cents`;
+  COALESCE(pm.received_cents, 0) AS received_cents, COALESCE(pm.scheduled_cents, 0) AS scheduled_cents,
+  p.completed_at`;
 
 const LIST_FROM = `
   FROM projects p
@@ -72,10 +79,13 @@ export type ProjectFilter = {
   clientId?: string;
 };
 
-/** Projets triés par deadline (les projets sans deadline en dernier). */
-export function listProjects(db: Db, filter: ProjectFilter): Promise<ProjectListItem[]> {
-  const where = [`p.archived_at IS NULL`, `p.status IN (${filter.statuses.map(() => '?').join(', ')})`];
-  const params: SqlValue[] = [...filter.statuses];
+/**
+ * Projets triés par deadline (les projets sans deadline en dernier). Le filtre porte sur le statut
+ * du jour `today` : un projet « À venir » dont la date de début est passée compte parmi les « En cours ».
+ */
+export function listProjects(db: Db, filter: ProjectFilter, today: string): Promise<ProjectListItem[]> {
+  const where = [`p.archived_at IS NULL`, `${STATUS_ON} IN (${filter.statuses.map(() => '?').join(', ')})`];
+  const params: SqlValue[] = [today, today, ...filter.statuses];
   if (filter.typeId) {
     where.push('p.type_id = ?');
     params.push(filter.typeId);
@@ -93,12 +103,13 @@ export function listProjects(db: Db, filter: ProjectFilter): Promise<ProjectList
   );
 }
 
-export function getProject(db: Db, id: string): Promise<ProjectDetail | undefined> {
+/** Fiche d'un projet, avec son statut du jour `today`. */
+export function getProject(db: Db, id: string, today: string): Promise<ProjectDetail | undefined> {
   return db.queryOne<ProjectDetail>(
-    `SELECT ${LIST_COLUMNS}, p.description, p.notes, p.created_at, p.completed_at
+    `SELECT ${LIST_COLUMNS}, p.description, p.notes, p.created_at
      ${LIST_FROM}
      WHERE p.id = ?`,
-    [id],
+    [today, id],
   );
 }
 

@@ -191,7 +191,7 @@ function TransactionForm({
         )}
 
         <FormRow label="Date" error={submitted ? errors.date : undefined}>
-          <DateField value={date} onChange={setDate} aria-label="Date" />
+          <DateField value={date} onChange={setDate} clearable={false} aria-label="Date" />
         </FormRow>
 
         {!adjustment && kind !== 'transfer' && (

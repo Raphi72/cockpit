@@ -1,14 +1,15 @@
 import { addDays, parseISO } from 'date-fns';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
-import { DATE_INPUT_BOUNDS, toISODate, todayISO } from '@/core/dates';
+import { toISODate, todayISO } from '@/core/dates';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
-import { Input, Textarea, fieldClass } from '@/ui/primitives/Input';
+import { DateField } from '@/ui/primitives/DateField';
+import { Input, Textarea } from '@/ui/primitives/Input';
 import { useCreateTask } from '../hooks';
 import { validateNewTask } from '../model';
 import { TaskEstimateMenu } from './TaskFields';
@@ -32,7 +33,7 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
   const [title, setTitle] = useState('');
   const [projectId, setProjectId] = useState<string | null>(defaults.projectId ?? null);
   const [scheduledDate, setScheduledDate] = useState<string | null>(defaults.scheduledDate ?? null);
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState<string | null>(null);
   const [moreOptions, setMoreOptions] = useState(false);
   const [priority, setPriority] = useState<Priority>(1);
   const [estimateMin, setEstimateMin] = useState<number | null>(null);
@@ -45,7 +46,7 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
     title,
     projectId,
     scheduledDate,
-    dueDate: dueDate || null,
+    dueDate,
     priority,
     estimateMin,
     notes: notes || null,
@@ -102,27 +103,19 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
               value={when === 'custom' ? null : when}
               onChange={(v) => setScheduledDate(v === 'today' ? today : v === 'tomorrow' ? tomorrow : null)}
             />
-            <input
-              type="date"
-              {...DATE_INPUT_BOUNDS}
-              value={when === 'custom' && scheduledDate ? scheduledDate : ''}
-              onChange={(e) => setScheduledDate(e.target.value || null)}
+            <DateField
+              value={when === 'custom' ? scheduledDate : null}
+              onChange={setScheduledDate}
+              placeholder="Autre date…"
               aria-label="Autre date de début"
-              className={`tnum h-8 w-[150px] ${fieldClass} ${when === 'custom' ? '' : 'text-ink-3'}`}
+              className="w-[170px]"
             />
           </div>
           {submitted && errors.scheduledDate && <p className="mt-1.5 text-meta text-danger">{errors.scheduledDate}</p>}
         </Row>
 
         <Row label="Deadline">
-          <input
-            type="date"
-            {...DATE_INPUT_BOUNDS}
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            aria-label="Deadline"
-            className={`tnum h-9 max-w-[200px] ${fieldClass} ${dueDate ? '' : 'text-ink-3'}`}
-          />
+          <DateField value={dueDate} onChange={setDueDate} placeholder="Aucune" aria-label="Deadline" />
           {submitted && errors.dueDate && <p className="mt-1.5 text-meta text-danger">{errors.dueDate}</p>}
         </Row>
       </div>

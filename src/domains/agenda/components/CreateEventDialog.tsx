@@ -101,6 +101,7 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
               onChange={(date) =>
                 setTiming(date && isISODate(date) ? moveTimingDate(timing, date) : { ...timing, date: date ?? '' })
               }
+              clearable={false}
               aria-label="Date"
             />
             <Checkbox checked={timing.allDay} onChange={setAllDay}>

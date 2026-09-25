@@ -116,7 +116,7 @@ function PaymentForm({
 
         {received ? (
           <FormRow label="Reçu le" error={submitted ? errors.receivedDate : undefined}>
-            <DateField value={receivedDate} onChange={setReceivedDate} aria-label="Date de réception" />
+            <DateField value={receivedDate} onChange={setReceivedDate} clearable={false} aria-label="Date de réception" />
             <p className="mt-1.5 text-meta text-ink-3">
               {payment?.transactionAccountName
                 ? `Sur ${payment.transactionAccountName} : la transaction suit les changements de montant et de date.`

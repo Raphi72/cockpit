@@ -121,6 +121,7 @@ function EventSheetContent({ event, onClose }: { event: AgendaEvent; onClose: ()
           <InlineDate
             value={timing.date}
             onSave={(date) => date && saveTiming(moveTimingDate(timing, date))}
+            clearable={false}
             aria-label="Date"
           />
         </PropertyRow>

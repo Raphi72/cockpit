@@ -67,9 +67,9 @@ describe('sous-tâches : enregistrement', () => {
 
   it('la progression du projet compte les sous-tâches, pas la tâche qui les regroupe', async () => {
     const db = await setup();
-    expect(await getProject(db, 'p1')).toMatchObject({ tasksTotal: 3, tasksDone: 0 });
+    expect(await getProject(db, 'p1', '2026-09-24')).toMatchObject({ tasksTotal: 3, tasksDone: 0 });
     await db.batch(updateTaskStatements('refonte', { status: 'done' }, NOW));
-    expect(await getProject(db, 'p1')).toMatchObject({ tasksTotal: 3, tasksDone: 1 });
+    expect(await getProject(db, 'p1', '2026-09-24')).toMatchObject({ tasksTotal: 3, tasksDone: 1 });
   });
 });
 

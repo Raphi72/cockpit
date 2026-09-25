@@ -64,7 +64,7 @@ function ReceiveForm({ payment, onDone }: { payment: PaymentListItem; onDone: ()
                 onChange={setReceivedDate}
               />
             )}
-            <DateField value={receivedDate} onChange={setReceivedDate} aria-label="Date de réception" className="w-[150px]" />
+            <DateField value={receivedDate} onChange={setReceivedDate} clearable={false} aria-label="Date de réception" className="w-[170px]" />
           </div>
         </FormRow>
       </div>

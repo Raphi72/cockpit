@@ -5,8 +5,10 @@ import { buildAlerts } from '@/domains/dashboard/model';
 import {
   buildSchedule,
   deadlineTone,
+  isAutoStarted,
   projectMoney,
   projectProgress,
+  statusOn,
   validateNewProject,
   type NewProjectInput,
   type ProjectListItem,
@@ -32,7 +34,9 @@ const project = (overrides: Partial<ProjectListItem> = {}): ProjectListItem => (
   tasksDone: 0,
   receivedCents: 0,
   scheduledCents: 0,
+  completedAt: null,
   ...overrides,
+  savedStatus: overrides.savedStatus ?? overrides.status ?? 'active',
 });
 
 describe('échéancier à la création', () => {
@@ -77,6 +81,19 @@ describe('valeurs calculées d’un projet', () => {
       percentPaid: 25,
       unplanned: 25000,
     });
+  });
+
+  it('statut du jour : « À venir » est « En cours » à partir de sa date de début', () => {
+    const planned = project({ status: 'planned', startDate: '2026-09-26' });
+    expect(statusOn(planned, TODAY)).toBe('planned');
+    expect(statusOn(planned, '2026-09-26')).toBe('active');
+    expect(statusOn(planned, '2026-10-10')).toBe('active');
+    expect(isAutoStarted(planned, '2026-09-26')).toBe(true);
+    // Choisi « En cours » : il l'est, quel que soit le jour.
+    expect(isAutoStarted(project({ status: 'active', startDate: '2026-09-01' }), TODAY)).toBe(false);
+    expect(statusOn(project({ status: 'active', startDate: '2026-10-01' }), TODAY)).toBe('active');
+    expect(statusOn(project({ status: 'planned' }), '2030-01-01')).toBe('planned');
+    expect(statusOn(project({ status: 'on_hold', startDate: '2026-09-01' }), TODAY)).toBe('on_hold');
   });
 
   it('deadline : retard, bientôt, normal ; jamais de retard pour un projet terminé', () => {
@@ -176,14 +193,26 @@ describe('bloc « À surveiller »', () => {
     });
 
     expect(alerts.find((a) => a.kind === 'payment')?.action).toMatchObject({ kind: 'receive', payment: { id: 'pay' } });
+    // Les deadlines (dépassée, dans 3 ou 4 jours) sont dans le bloc « Deadlines », plus ici.
     expect(alerts.map((a) => [a.tone, a.reason])).toEqual([
-      ['danger', 'Deadline dépassée de 2 jours'],
       ['danger', 'En retard de 11 jours'],
-      ['warning', 'Deadline dans 3 jours'],
       ['muted', 'Commence 1 oct. · aucune tâche créée'],
       ['muted', expect.stringMatching(/^500\s€ du budget sans échéance$/)],
       ['muted', 'Toutes les tâches sont faites : terminer le projet ?'],
     ]);
+  });
+
+  it('ne répète pas les rappels secondaires d’un projet dont la deadline est dépassée ou proche', () => {
+    const alerts = buildAlerts({
+      today: TODAY,
+      projects: [
+        project({ id: 'late', deadline: '2026-09-22', tasksTotal: 0 }),
+        project({ id: 'soon', deadline: '2026-09-26', budgetCents: 200000, scheduledCents: 0 }),
+        project({ id: 'week', deadline: '2026-09-30', budgetCents: 200000, scheduledCents: 0 }),
+      ],
+      overduePayments: [],
+    });
+    expect(alerts.map((a) => [a.projectId, a.kind])).toEqual([['week', 'budget']]);
   });
 
   it('n’affiche aucun montant quand le réglage les masque', () => {

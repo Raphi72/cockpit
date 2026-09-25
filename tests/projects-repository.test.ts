@@ -36,7 +36,7 @@ describe('création d’un projet', () => {
     const { projectId, statements } = buildCreateProjectBatch(baseInput, context());
     await db.batch(statements);
 
-    const project = await getProject(db, projectId);
+    const project = await getProject(db, projectId, TODAY);
     expect(project).toMatchObject({
       name: 'Site vitrine',
       clientName: 'Boulangerie Marchal',
@@ -62,7 +62,7 @@ describe('création d’un projet', () => {
     const [deposit] = await listProjectPayments(db, projectId);
     await db.batch(buildReceivePaymentBatch(deposit!, { receivedDate: TODAY, accountId: null }, context()).statements);
 
-    expect(await getProject(db, projectId)).toMatchObject({ receivedCents: 60000 });
+    expect(await getProject(db, projectId, TODAY)).toMatchObject({ receivedCents: 60000 });
     const [client] = await listClients(db);
     expect(client).toMatchObject({ name: 'Boulangerie Marchal', projectCount: 1, dueCents: 140000 });
   });
@@ -78,12 +78,40 @@ describe('modification et filtres', () => {
     await db.batch(statements);
 
     await db.batch([updateProjectStatement(projectId, { status: 'done', deadline: null }, NOW)]);
-    const done = await getProject(db, projectId);
+    const done = await getProject(db, projectId, TODAY);
     expect(done).toMatchObject({ status: 'done', deadline: null, completedAt: NOW });
 
-    expect(await listProjects(db, { statuses: ['active'] })).toHaveLength(0);
-    expect(await listProjects(db, { statuses: ['done', 'cancelled'] })).toHaveLength(1);
-    expect(await listProjects(db, { statuses: ['done'], typeId: 'type-mission' })).toHaveLength(0);
+    expect(await listProjects(db, { statuses: ['active'] }, TODAY)).toHaveLength(0);
+    expect(await listProjects(db, { statuses: ['done', 'cancelled'] }, TODAY)).toHaveLength(1);
+    expect(await listProjects(db, { statuses: ['done'], typeId: 'type-mission' }, TODAY)).toHaveLength(0);
+    // Rouvert : la date de fin disparaît.
+    await db.batch([updateProjectStatement(projectId, { status: 'active' }, NOW)]);
+    expect(await getProject(db, projectId, TODAY)).toMatchObject({ status: 'active', completedAt: null });
+  });
+
+  it('« À venir » passe « En cours » à sa date de début, sans rien écrire', async () => {
+    const { db } = createTestDb();
+    // Début le 25 septembre.
+    const { projectId, statements } = buildCreateProjectBatch(
+      { ...baseInput, status: 'planned', client: { kind: 'none' }, budgetCents: null },
+      context(),
+    );
+    await db.batch(statements);
+
+    expect(await getProject(db, projectId, '2026-09-24')).toMatchObject({ status: 'planned', savedStatus: 'planned' });
+    expect(await getProject(db, projectId, '2026-09-25')).toMatchObject({ status: 'active', savedStatus: 'planned' });
+    // Les filtres suivent le statut du jour.
+    expect(await listProjects(db, { statuses: ['active'] }, '2026-09-24')).toHaveLength(0);
+    expect(await listProjects(db, { statuses: ['active'] }, '2026-09-26')).toHaveLength(1);
+    expect(await listProjects(db, { statuses: ['planned'] }, '2026-09-26')).toHaveLength(0);
+    // Sans date de début, il reste « À venir » ; une date repoussée le remet « À venir ».
+    await db.batch([updateProjectStatement(projectId, { startDate: null }, NOW)]);
+    expect(await getProject(db, projectId, '2026-12-31')).toMatchObject({ status: 'planned' });
+    await db.batch([updateProjectStatement(projectId, { startDate: '2026-10-05' }, NOW)]);
+    expect(await getProject(db, projectId, '2026-09-26')).toMatchObject({ status: 'planned' });
+    // Les autres statuts ne bougent pas avec la date.
+    await db.batch([updateProjectStatement(projectId, { status: 'on_hold', startDate: '2026-09-01' }, NOW)]);
+    expect(await getProject(db, projectId, '2026-09-26')).toMatchObject({ status: 'on_hold' });
   });
 
   it('change de client en le créant à la volée', async () => {
@@ -93,7 +121,7 @@ describe('modification et filtres', () => {
     await db.batch(statements);
     await db.batch(buildSetClientBatch(projectId, { kind: 'new', name: 'Studio Lumen' }, ctx));
 
-    expect(await getProject(db, projectId)).toMatchObject({ clientName: 'Studio Lumen' });
+    expect(await getProject(db, projectId, TODAY)).toMatchObject({ clientName: 'Studio Lumen' });
   });
 });
 
@@ -104,7 +132,7 @@ describe('suppression', () => {
     await db.batch(statements);
 
     expect(await deleteProject(db, projectId)).toMatchObject({ status: 'deleted' });
-    expect(await getProject(db, projectId)).toBeUndefined();
+    expect(await getProject(db, projectId, TODAY)).toBeUndefined();
     expect(await db.query('SELECT id FROM payments')).toEqual([]);
   });
 
@@ -121,7 +149,7 @@ describe('suppression', () => {
       sql`INSERT INTO transactions (id, account_id, kind, amount_cents, date, label, project_id, created_at, updated_at)
           VALUES ('t1', 'account-business', 'expense', -1500, '2026-09-20', 'Police de caractères', ${projectId}, ${NOW}, ${NOW})`,
     ]);
-    const before = await getProject(db, projectId);
+    const before = await getProject(db, projectId, TODAY);
 
     const result = await deleteProject(db, projectId);
     if (result.status !== 'deleted') throw new Error('suppression attendue');
@@ -130,7 +158,7 @@ describe('suppression', () => {
     expect(await db.query('SELECT id FROM tasks')).toEqual([]);
 
     await db.batch(buildRestoreProjectBatch(result.snapshot, NOW));
-    expect(await getProject(db, projectId)).toEqual(before);
+    expect(await getProject(db, projectId, TODAY)).toEqual(before);
     expect(await db.query('SELECT id, status, sort_order FROM tasks ORDER BY sort_order')).toEqual([
       { id: 'k1', status: 'done', sortOrder: 1 },
       { id: 'k2', status: 'todo', sortOrder: 2 },
@@ -152,12 +180,12 @@ describe('suppression', () => {
     const [client] = await listClients(db);
 
     const snapshot = await deleteClient(db, client!.id);
-    expect(await getProject(db, projectId)).toMatchObject({ clientName: null });
+    expect(await getProject(db, projectId, TODAY)).toMatchObject({ clientName: null });
     expect(await listClients(db)).toEqual([]);
 
     await db.batch(buildRestoreClientBatch(snapshot!, NOW));
     expect(await listClients(db)).toEqual([client]);
-    expect(await getProject(db, projectId)).toMatchObject({ clientName: 'Boulangerie Marchal' });
+    expect(await getProject(db, projectId, TODAY)).toMatchObject({ clientName: 'Boulangerie Marchal' });
     expect(await db.query("SELECT client_id FROM payments WHERE id = 'm9'")).toEqual([{ clientId: client!.id }]);
   });
 
@@ -169,6 +197,6 @@ describe('suppression', () => {
     await db.batch(buildReceivePaymentBatch(deposit!, { receivedDate: TODAY, accountId: null }, context()).statements);
 
     expect(await deleteProject(db, projectId)).toEqual({ status: 'has-received-payments' });
-    expect(await getProject(db, projectId)).toBeDefined();
+    expect(await getProject(db, projectId, TODAY)).toBeDefined();
   });
 });

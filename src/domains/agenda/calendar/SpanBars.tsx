@@ -1,7 +1,8 @@
 import { Circle, Flag } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { agendaTooltip, isAgendaItemLate, type AgendaItem, type SpanSegment } from '../model';
-import { AgendaMarker } from './AgendaChip';
+import { AgendaMarker, URGENT_TINT, agendaDeadlineTone } from './AgendaChip';
 
 /** Hauteur d'un couloir : une puce (22 px) et l'espace qui la sépare de la suivante. */
 export const LANE_HEIGHT = 23;
@@ -25,6 +26,9 @@ function SpanBar({
   const { item } = span;
   const late = isAgendaItemLate(item, today);
   const isTask = item.source === 'task';
+  // Une tâche du début à la deadline : le drapeau du bout prend la couleur de l'urgence (core/deadline.ts).
+  const tone = agendaDeadlineTone(item, today);
+  const tint = tone ? URGENT_TINT[tone] : undefined;
   // Une barre coupée par le bord de la rangée touche le bord : elle continue sur la rangée voisine.
   const inset = { left: span.continuesBefore ? 0 : 4, right: span.continuesAfter ? 0 : 4 };
   return (
@@ -41,21 +45,26 @@ function SpanBar({
         width: `calc(${((span.endCol - span.startCol + 1) / columns) * 100}% - ${inset.left + inset.right}px)`,
       }}
       className={
-        'pointer-events-auto absolute flex h-[22px] min-w-0 items-center gap-1.5 bg-hover px-1.5 text-left text-meta ' +
-        'transition-colors duration-[120ms] ease-soft hover:bg-active ' +
-        (span.continuesBefore ? 'rounded-l-none ' : 'rounded-l-sm ') +
-        (span.continuesAfter ? 'rounded-r-none' : 'rounded-r-sm')
+        'pointer-events-auto absolute flex h-[22px] min-w-0 items-center gap-1.5 px-1.5 text-left text-meta ' +
+        'transition-colors duration-[120ms] ease-soft ' +
+        (tint ?? 'bg-hover hover:bg-active') +
+        (span.continuesBefore ? ' rounded-l-none' : ' rounded-l-sm') +
+        (span.continuesAfter ? ' rounded-r-none' : ' rounded-r-sm')
       }
     >
       {/* Une tâche : un rond au début, le drapeau de la deadline au bout. */}
       {isTask ? (
         <Circle aria-hidden className="size-3 shrink-0 text-ink-3" strokeWidth={2} />
       ) : (
-        <AgendaMarker item={item} late={false} />
+        <AgendaMarker item={item} today={today} />
       )}
-      <span className={`truncate ${late ? 'text-danger' : ''}`}>{item.title}</span>
+      <span className={`truncate ${late || tone === 'today' ? 'text-danger' : ''} ${tone ? 'font-medium' : ''}`}>{item.title}</span>
       {isTask && !span.continuesAfter && (
-        <Flag aria-label="Deadline" className={`ml-auto size-3 shrink-0 ${late ? 'text-danger' : 'text-ink-3'}`} strokeWidth={2} />
+        <Flag
+          aria-label="Deadline"
+          className={`ml-auto size-3 shrink-0 ${tone ? DEADLINE_TONE_CLASS[tone] : 'text-ink-3'}`}
+          strokeWidth={2}
+        />
       )}
     </button>
   );

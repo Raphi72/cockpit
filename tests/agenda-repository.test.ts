@@ -165,6 +165,13 @@ describe('agenda (P8)', () => {
     const double = (await listAgenda(db, '2026-09-13', '2026-09-14')).find((i) => i.id === 'double');
     // Visible sur toute sa période, même quand la plage n'en montre que le milieu.
     expect(double).toMatchObject({ start: '2026-09-11', end: '2026-09-14', allDay: true });
+    // Option du calendrier : les tâches ordinaires, à leur début (jamais les terminées).
+    const withPlain = await listAgenda(db, '2026-09-10', '2026-09-20', { plainTasks: true });
+    expect(withPlain.filter((i) => i.source === 'task').map((i) => `${i.kind}:${i.title}`)).toEqual([
+      'task_due:Double',
+      'task_scheduled:Ordinaire',
+      'task_scheduled:Prioritaire',
+    ]);
 
     await db.batch([markReceivedStatement(libre.paymentId, '2026-09-15', NOW)]);
     expect(await keysOf(db, { from: '2026-09-15', to: '2026-09-16' })).toEqual([]);

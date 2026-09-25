@@ -13,8 +13,18 @@ export function GroupHeading({ children, tone = 'default' }: { children: ReactNo
   );
 }
 
-/** Tâches terminées repliées : présentes, mais sans encombrer. */
-export function DoneFold({ tasks, today, showProject = true }: { tasks: TaskItem[]; today: string; showProject?: boolean }) {
+/** Tâches terminées repliées : présentes, mais sans encombrer. `showCompletion` : quand chacune l'a été. */
+export function DoneFold({
+  tasks,
+  today,
+  showProject = true,
+  showCompletion = false,
+}: {
+  tasks: TaskItem[];
+  today: string;
+  showProject?: boolean;
+  showCompletion?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   if (tasks.length === 0) return null;
   return (
@@ -27,7 +37,7 @@ export function DoneFold({ tasks, today, showProject = true }: { tasks: TaskItem
         <ChevronRight className={`size-3.5 transition-transform duration-[120ms] ${open ? 'rotate-90' : ''}`} strokeWidth={2} />
         {tasks.length} terminée{tasks.length > 1 ? 's' : ''}
       </button>
-      {open && <TaskList tasks={tasks} today={today} showProject={showProject} nested />}
+      {open && <TaskList tasks={tasks} today={today} showProject={showProject} showCompletion={showCompletion} nested />}
     </div>
   );
 }
@@ -40,11 +50,22 @@ export function estimateSummary(tasks: TaskItem[]): string | null {
 
 /**
  * Vue « Aujourd'hui » : retards, puis le jour, ajout express et terminées repliées ;
- * enfin « À prévoir », les deadlines de la semaine qui n'ont pas encore de début.
+ * enfin « À prévoir », les deadlines de la semaine qui n'ont pas encore de début
+ * (sauf `showToPlan={false}` : sur le dashboard, elles sont dans le bloc « Deadlines »).
  */
-export function TodayTasks({ open, doneToday, today }: { open: TaskItem[]; doneToday: TaskItem[]; today: string }) {
+export function TodayTasks({
+  open,
+  doneToday,
+  today,
+  showToPlan = true,
+}: {
+  open: TaskItem[];
+  doneToday: TaskItem[];
+  today: string;
+  showToPlan?: boolean;
+}) {
   const groups = selectToday(open, today);
-  const toPlan = selectToPlan(open, today);
+  const toPlan = showToPlan ? selectToPlan(open, today) : [];
   const empty = groups.overdue.length === 0 && groups.today.length === 0;
 
   return (

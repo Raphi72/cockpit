@@ -1,6 +1,6 @@
 import { CalendarClock, Flag, ListPlus } from 'lucide-react';
 import { memo, type CSSProperties, type HTMLAttributes, type MouseEvent, type Ref } from 'react';
-import { relativeDateLabel, toISODate } from '@/core/dates';
+import { formatCompletedAt, relativeDateLabel, toISODate } from '@/core/dates';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
@@ -142,7 +142,9 @@ export const TaskRow = memo(function TaskRow({
           </span>
         )}
         {showCompletion && done && task.completedAt && (
-          <span className="tnum">{relativeDateLabel(toISODate(new Date(task.completedAt)), today)}</span>
+          <span className="tnum" title={`Terminée ${formatCompletedAt(task.completedAt, today)}`}>
+            {relativeDateLabel(toISODate(new Date(task.completedAt)), today)}
+          </span>
         )}
       </span>
     </div>
