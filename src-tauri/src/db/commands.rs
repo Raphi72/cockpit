@@ -27,7 +27,12 @@ pub struct ExecResult {
 #[serde(rename_all = "camelCase")]
 pub struct AppInfo {
     db_path: String,
+    /// Dossier où partent les sauvegardes en ce moment.
     backup_dir: String,
+    /// Dossier choisi dans Paramètres (absent : dossier par défaut dans AppData).
+    chosen_backup_dir: Option<String>,
+    /// Le dossier choisi est injoignable : les sauvegardes vont dans le dossier par défaut.
+    chosen_backup_dir_unavailable: bool,
     schema_version: i64,
     last_backup: Option<String>,
 }
@@ -100,10 +105,13 @@ pub async fn app_info(db: State<'_, Database>) -> Result<AppInfo, String> {
         conn.pragma_query_value(None, "user_version", |row| row.get::<_, i64>(0))
             .map_err(err)?
     };
+    let dirs = db.backup_dirs()?;
     Ok(AppInfo {
         db_path: db.path.display().to_string(),
-        backup_dir: db.backup_dir.display().to_string(),
+        backup_dir: dirs.active().display().to_string(),
+        chosen_backup_dir: dirs.chosen.as_ref().map(|dir| dir.display().to_string()),
+        chosen_backup_dir_unavailable: dirs.chosen_unavailable(),
         schema_version,
-        last_backup: backup::latest_stamp(&db.backup_dir),
+        last_backup: backup::latest_stamp(dirs.active()),
     })
 }

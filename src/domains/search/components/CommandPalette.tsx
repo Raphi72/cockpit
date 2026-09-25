@@ -21,6 +21,7 @@ import { formatMoney, formatSignedMoney } from '@/core/money';
 import { useToday } from '@/core/use-today';
 import { useEventSheet } from '@/domains/agenda/event-sheet-store';
 import { useClientEditor } from '@/domains/clients/editor-store';
+import { useBackupNow } from '@/domains/data';
 import { usePaymentEditor } from '@/domains/finance/payments/editor-store';
 import { useOpenPayments } from '@/domains/finance/payments/hooks';
 import { PaymentDate } from '@/domains/finance/payments/components/PaymentRow';
@@ -137,6 +138,7 @@ function usePaletteActions(close: () => void) {
   const openClient = useClientEditor((state) => state.openClient);
   const openTransaction = useTransactionEditor((state) => state.openTransaction);
   const openReceive = useReceiveDialog((state) => state.openReceive);
+  const backupNow = useBackupNow();
 
   const openResult = (result: SearchResult) => {
     close();
@@ -178,6 +180,7 @@ function usePaletteActions(close: () => void) {
         toggleSidebar();
         break;
       case 'backup':
+        backupNow.mutate();
         break;
     }
   };

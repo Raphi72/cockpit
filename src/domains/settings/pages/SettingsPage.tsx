@@ -1,9 +1,25 @@
-import type { ReactNode } from 'react';
-import { formatBackupDate, parseBackupStamp, useAppInfo } from '@/domains/data';
+import { useRef, useState, type ReactNode } from 'react';
+import {
+  cancelRestore,
+  describeCandidate,
+  formatBackupDate,
+  openBackupDir,
+  openDataDir,
+  parseBackupStamp,
+  useAppInfo,
+  useBackupNow,
+  useChooseBackupDir,
+  useResetBackupDir,
+  useRestoreConfirm,
+  useRestorePick,
+  type RestoreCandidate,
+} from '@/domains/data';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
 import { Page } from '@/ui/layout/Page';
 import { Section } from '@/ui/layout/Section';
+import { ConfirmDialog } from '@/ui/overlays/ConfirmDialog';
+import { Button } from '@/ui/primitives/Button';
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -16,6 +32,13 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 
 function DataSection() {
   const { data: info, isError } = useAppInfo();
+  const backupNow = useBackupNow();
+  const chooseDir = useChooseBackupDir();
+  const resetDir = useResetBackupDir();
+  const restorePick = useRestorePick();
+  const restoreConfirm = useRestoreConfirm();
+  const [candidate, setCandidate] = useState<RestoreCandidate | null>(null);
+  const confirmed = useRef(false);
 
   if (isError) {
     return (
@@ -27,24 +50,90 @@ function DataSection() {
   if (!info) return null;
 
   const lastBackup = info.lastBackup ? parseBackupStamp(info.lastBackup) : null;
+  const pickRestore = () =>
+    restorePick.mutate(undefined, {
+      onSuccess: (picked) => {
+        confirmed.current = false;
+        setCandidate(picked);
+      },
+    });
 
   return (
     <Section title="Données" meta="tout est stocké sur cet ordinateur">
-      <InfoRow label="Sauvegarde automatique">
+      <InfoRow label="Sauvegardes">
         Chaque jour, les 14 dernières sont conservées
         <span className="block text-meta text-ink-3">
           {lastBackup ? `Dernière : ${formatBackupDate(lastBackup)}` : 'Aucune sauvegarde pour le moment'}
         </span>
-      </InfoRow>
-      <InfoRow label="Base de données">
-        <span className="text-meta">{info.dbPath}</span>
+        <span className="mt-3 flex gap-2">
+          <Button onClick={() => backupNow.mutate()} disabled={backupNow.isPending}>
+            Sauvegarder maintenant…
+          </Button>
+          <Button variant="ghost" onClick={pickRestore} disabled={restorePick.isPending || restoreConfirm.isPending}>
+            Restaurer une sauvegarde…
+          </Button>
+        </span>
       </InfoRow>
       <InfoRow label="Dossier des sauvegardes">
         <span className="text-meta">{info.backupDir}</span>
+        {info.chosenBackupDirUnavailable ? (
+          <span className="mt-1 block text-meta text-warning">
+            Le dossier choisi est introuvable ({info.chosenBackupDir}) : les sauvegardes vont dans le dossier par
+            défaut en attendant.
+          </span>
+        ) : (
+          !info.chosenBackupDir && (
+            <span className="mt-1 block text-meta text-ink-3">
+              Un dossier OneDrive en garde une copie hors de cet ordinateur.
+            </span>
+          )
+        )}
+        <span className="mt-3 flex gap-2">
+          <Button onClick={() => chooseDir.mutate()} disabled={chooseDir.isPending}>
+            Changer…
+          </Button>
+          <Button variant="ghost" onClick={openBackupDir}>
+            Ouvrir
+          </Button>
+          {info.chosenBackupDir && (
+            <Button variant="ghost" onClick={() => resetDir.mutate()} disabled={resetDir.isPending}>
+              Revenir au dossier par défaut
+            </Button>
+          )}
+        </span>
+      </InfoRow>
+      <InfoRow label="Base de données">
+        <span className="text-meta">{info.dbPath}</span>
+        <span className="mt-3 flex">
+          <Button variant="ghost" onClick={openDataDir} className="-ml-3">
+            Ouvrir le dossier des données
+          </Button>
+        </span>
       </InfoRow>
       <InfoRow label="Version du schéma">
         <span className="tnum">{info.schemaVersion}</span>
       </InfoRow>
+
+      <ConfirmDialog
+        open={candidate !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          // Fermée sans confirmer : la copie vérifiée est effacée.
+          if (!confirmed.current) cancelRestore();
+          setCandidate(null);
+        }}
+        title="Restaurer cette sauvegarde ?"
+        description={
+          candidate
+            ? `${describeCandidate(candidate)} Elle remplacera toutes tes données actuelles, qui sont d’abord copiées dans le dossier des sauvegardes.`
+            : ''
+        }
+        confirmLabel="Restaurer"
+        onConfirm={() => {
+          confirmed.current = true;
+          restoreConfirm.mutate();
+        }}
+      />
     </Section>
   );
 }
