@@ -22,6 +22,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 - En développement (`npm run tauri dev`), l'app utilise **`cockpit-dev.db`** (voir `src-tauri/src/lib.rs`) : les essais ne touchent jamais les vraies données.
 - `.gitignore` bloque `*.db`, `*.sqlite*`, `backups/`, `exports/` et `cockpit-export*`. Tout futur export doit être nommé `cockpit-export-…`.
 - Ne jamais committer de données réelles, de captures d'écran de données réelles ni d'identifiants.
+- **Écrire dans une vraie base** (à la demande de l'utilisateur) : app fermée, sauvegarde d'abord (`backups\cockpit_…_manuelle.db`), une seule transaction, avec **Python `sqlite3`**. Jamais `node:sqlite` : sur cette machine, il ne voit pas le journal WAL écrit par l'app et lit une version périmée de la base (vide ou au mauvais schéma). Les tests Vitest, sur une base en mémoire, ne sont pas concernés.
 - Les commits utilisent l'e-mail masqué GitHub (réglé dans la config locale du dépôt) : ne pas le changer.
 
 ## Stack et commandes
