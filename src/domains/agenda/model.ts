@@ -276,9 +276,9 @@ export function itemTimeRange(item: Pick<AgendaItem, 'start' | 'end' | 'allDay'>
 }
 
 /** Texte complet, montré au survol : « Deadline du projet · Site vitrine ». */
-export function agendaTooltip(item: AgendaItem): string {
+export function agendaTooltip(item: AgendaItem, withAmount = true): string {
   const parts = [agendaKindLabel(item.kind), itemTimeRange(item), item.title, item.detail];
-  if (item.amountCents !== null) parts.push(formatMoney(item.amountCents));
+  if (withAmount && item.amountCents !== null) parts.push(formatMoney(item.amountCents));
   return parts.filter(Boolean).join(' · ');
 }
 

@@ -186,6 +186,38 @@ describe('bloc « À surveiller »', () => {
     ]);
   });
 
+  it('n’affiche aucun montant quand le réglage les masque', () => {
+    const alerts = buildAlerts({
+      today: TODAY,
+      showAmounts: false,
+      projects: [project({ id: 'budget', name: 'Site', budgetCents: 200000, scheduledCents: 150000 })],
+      overduePayments: [
+        {
+          id: 'pay',
+          projectId: null,
+          clientId: 'c',
+          label: 'Facture',
+          amountCents: 75000,
+          dueDate: '2026-09-13',
+          status: 'pending',
+          receivedDate: null,
+          invoiceRef: null,
+          notes: null,
+          projectName: null,
+          projectColor: null,
+          clientName: 'Agence Nordik',
+          transactionId: null,
+          transactionAccountName: null,
+        },
+      ],
+    });
+    expect(alerts.map((a) => [a.title, a.reason])).toEqual([
+      ['Agence Nordik', 'Paiement en retard de 11 j'],
+      ['Site', 'Une partie du budget sans échéance'],
+    ]);
+    expect(alerts.some((a) => /€/.test(a.title + a.reason))).toBe(false);
+  });
+
   it('propose une action directe : marquer reçu, ou créer la première tâche', () => {
     const alerts = buildAlerts({
       today: TODAY,

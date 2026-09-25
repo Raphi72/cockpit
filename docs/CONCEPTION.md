@@ -843,7 +843,8 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 
 **Choix faits après le MVP**, à confirmer à l'usage :
 - **Propositions** : leurs encaissements ne comptent ni dans « À recevoir » (chiffre, retards, prévu sur 30 jours), ni dans les listes À recevoir / En retard, ni dans À surveiller, ni dans le « à recevoir » des clients. Ils restent visibles dans la fiche du projet et dans le calendrier, et comptent dès que le projet passe en Prévu ou En cours. La règle SQL est unique : `EXPECTED_PAYMENT` (`finance/payments/repository.ts`).
-- **Paramètres › Tableau de bord** : « Afficher les chiffres clés » (soldes, à recevoir, encaissé du mois ; réglage `dashboard.showFigures`, activé par défaut). Masqués, le dashboard commence directement par ses blocs. La page Finances les montre toujours.
+- **Paramètres › Tableau de bord** : « Afficher les montants » (réglage `dashboard.showAmounts`, activé par défaut). Désactivé, le dashboard ne montre plus aucun montant, pour pouvoir rester à l'écran sans dévoiler l'argent : ni les chiffres clés, ni les montants dans À surveiller (« Paiement en retard de 5 j », « Une partie du budget sans échéance ») et Prochains jours, info-bulles comprises. Les éléments eux-mêmes restent.
+- **Page Finances** : les chiffres clés sont toujours affichés. Tant que les soldes de départ n'ont pas été saisis, la question « Quel est le solde actuel de tes comptes ? » s'ajoute en dessous au lieu de les remplacer.
 
 **Choix faits au jalon 6**, à confirmer à l'usage :
 - **Palette Ctrl+K** : sans saisie, trois créations, « Marquer un encaissement reçu… » et les pages. En tapant : jusqu'à 5 commandes, puis les résultats groupés par type (5 au plus par type), le groupe de la meilleure correspondance en tête. Un projet ou un client trouvé fait remonter ses éléments liés, après les correspondances directes et ce qui est encore ouvert d'abord.
@@ -857,7 +858,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - **Sécurité** : les fenêtres de fichier sont ouvertes par Rust ; l'interface ne passe jamais de chemin aux commandes natives.
 
 **Choix faits au jalon 3**, à confirmer à l'usage :
-- La question « Quel est le solde actuel de tes comptes ? » est posée en haut de la page Finances (pas au démarrage), tant qu'aucun ajustement n'existe ; « Plus tard » la masque jusqu'à la prochaine visite. Le réglage `finance.initialBalancesAsked` retient qu'on y a répondu.
+- La question « Quel est le solde actuel de tes comptes ? » est posée sur la page Finances, sous les chiffres (pas au démarrage), tant qu'aucun ajustement n'existe ; « Plus tard » la masque jusqu'à la prochaine visite. Le réglage `finance.initialBalancesAsked` retient qu'on y a répondu.
 - L'écart d'un ajustement est calculé par SQLite au moment de l'écriture, jamais à partir du solde affiché. Un solde négatif (découvert) est accepté.
 - Le revenu créé à la réception reprend le libellé de l'encaissement (suivi du client s'il n'a pas de projet) et la catégorie « Revenus client ». Modifier le montant ou la date de réception d'un encaissement reçu met à jour cette transaction. Modifier la transaction seule reste possible (frais bancaires) : les deux montants peuvent alors différer.
 - Supprimer un encaissement supprime sa transaction liée, et « Annuler » remet les deux. Annuler une réception ramène l'encaissement à « En attente » s'il a un n° de facture, sinon à « Prévu ».

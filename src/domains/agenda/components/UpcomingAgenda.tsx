@@ -16,18 +16,20 @@ function UpcomingRow({
   item,
   today,
   withTimes,
+  showAmounts,
   onOpen,
 }: {
   item: AgendaItem;
   today: string;
   withTimes: boolean;
+  showAmounts: boolean;
   onOpen: (item: AgendaItem) => void;
 }) {
   const detail = upcomingDetail(item, today);
   return (
     <button
       type="button"
-      title={agendaTooltip(item)}
+      title={agendaTooltip(item, showAmounts)}
       onClick={() => onOpen(item)}
       className={
         '-mx-2.5 grid min-h-10 w-[calc(100%+20px)] items-center gap-2.5 rounded-md px-2.5 text-left ' +
@@ -41,7 +43,7 @@ function UpcomingRow({
         <span className={item.kind === 'project_deadline' ? 'font-medium' : ''}>{item.title}</span>
         {detail && <span className="ml-2 text-meta text-ink-3">{detail}</span>}
       </span>
-      <span className="tnum font-medium">{item.amountCents !== null && formatMoney(item.amountCents)}</span>
+      <span className="tnum font-medium">{showAmounts && item.amountCents !== null && formatMoney(item.amountCents)}</span>
     </button>
   );
 }
@@ -51,7 +53,16 @@ function UpcomingRow({
  * attendus, groupés par jour. Seuls les jours qui ont quelque chose sont montrés, chacun sous
  * un petit intitulé : la liste tient dans la colonne étroite du dashboard.
  */
-export function UpcomingAgenda({ items, today }: { items: AgendaItem[]; today: string }) {
+export function UpcomingAgenda({
+  items,
+  today,
+  showAmounts = true,
+}: {
+  items: AgendaItem[];
+  today: string;
+  /** Faux : les encaissements restent listés, sans leur montant. */
+  showAmounts?: boolean;
+}) {
   const open = useOpenAgendaItem();
   const days = upcomingDays(items, today);
   // La colonne des heures n'apparaît que si un élément en a une.
@@ -79,7 +90,14 @@ export function UpcomingAgenda({ items, today }: { items: AgendaItem[]; today: s
                 {date && <span className="font-normal text-ink-3">{date}</span>}
               </h3>
               {dayItems.map((item) => (
-                <UpcomingRow key={item.key} item={item} today={today} withTimes={withTimes} onOpen={open} />
+                <UpcomingRow
+                  key={item.key}
+                  item={item}
+                  today={today}
+                  withTimes={withTimes}
+                  showAmounts={showAmounts}
+                  onOpen={open}
+                />
               ))}
             </div>
           );

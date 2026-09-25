@@ -217,11 +217,9 @@ export function FinancesPage() {
         )
       }
     >
-      {needsInitialBalances && !later ? (
-        <InitialBalances onLater={() => setLater(true)} />
-      ) : (
-        <FinanceFigures summary={summary} today={today} className="mb-16" />
-      )}
+      {/* Les chiffres sont toujours là ; tant que les soldes de départ manquent, la question s'y ajoute. */}
+      <FinanceFigures summary={summary} today={today} className="mb-16" />
+      {needsInitialBalances && !later && <InitialBalances onLater={() => setLater(true)} />}
 
       <div className="mb-6">
         <SegmentedTabs

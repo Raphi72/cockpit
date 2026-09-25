@@ -159,11 +159,11 @@ export function DashboardPage() {
   const { data: doneToday = [] } = useDoneToday(today);
   const { data: finance } = useFinanceSummary(today);
   const { data: agenda } = useAgenda(agendaRange);
-  const { data: showFigures } = useSetting(SETTINGS.dashboardShowFigures);
+  const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
 
-  if (!projects || !openTasks || !finance || !agenda || showFigures === undefined) return null;
+  if (!projects || !openTasks || !finance || !agenda || showAmounts === undefined) return null;
 
-  const alerts = buildAlerts({ projects, overduePayments, today });
+  const alerts = buildAlerts({ projects, overduePayments, today, showAmounts });
   const active = projects.filter((p) => p.status === 'active');
   const upcoming = projects.filter((p) => p.status === 'planned' || p.status === 'proposal');
   const todayGroups = selectToday(openTasks, today);
@@ -208,7 +208,8 @@ export function DashboardPage() {
         />
       }
     >
-      {showFigures && <FinanceFigures summary={finance} today={today} className="mb-12" />}
+      {/* Montants masquables (réglage) : le dashboard peut rester à l'écran sans dévoiler l'argent. */}
+      {showAmounts && <FinanceFigures summary={finance} today={today} className="mb-12" />}
 
       {/*
         Deux colonnes indépendantes. « Prochains jours » est sous « À surveiller » (3 points au plus) :
@@ -254,7 +255,7 @@ export function DashboardPage() {
           <Attention alerts={alerts} />
 
           <div className="mt-14">
-            <UpcomingAgenda items={agenda} today={today} />
+            <UpcomingAgenda items={agenda} today={today} showAmounts={showAmounts} />
           </div>
         </div>
       </div>

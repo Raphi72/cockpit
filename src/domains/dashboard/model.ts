@@ -33,8 +33,10 @@ export function buildAlerts(input: {
   projects: ProjectListItem[];
   overduePayments: PaymentListItem[];
   today: string;
+  /** Faux : aucun montant dans les textes (réglage « Afficher les montants sur le tableau de bord »). */
+  showAmounts?: boolean;
 }): Alert[] {
-  const { projects, overduePayments, today } = input;
+  const { projects, overduePayments, today, showAmounts = true } = input;
   const alerts: Alert[] = [];
 
   for (const project of projects) {
@@ -95,7 +97,7 @@ export function buildAlerts(input: {
         tone: 'muted',
         kind: 'budget',
         title: project.name,
-        reason: `${formatMoney(money.unplanned)} du budget sans échéance`,
+        reason: showAmounts ? `${formatMoney(money.unplanned)} du budget sans échéance` : 'Une partie du budget sans échéance',
         projectId: project.id,
         action: null,
       });
@@ -108,8 +110,10 @@ export function buildAlerts(input: {
       key: `payment:${payment.id}`,
       tone: 'danger',
       kind: 'payment',
-      title: `${payment.clientName ?? payment.projectName ?? payment.label} · ${formatMoney(payment.amountCents)}`,
-      reason: `En retard de ${daysBetween(payment.dueDate, today)} j`,
+      title: showAmounts
+        ? `${payment.clientName ?? payment.projectName ?? payment.label} · ${formatMoney(payment.amountCents)}`
+        : (payment.clientName ?? payment.projectName ?? payment.label),
+      reason: `${showAmounts ? 'En retard' : 'Paiement en retard'} de ${daysBetween(payment.dueDate, today)} j`,
       projectId: payment.projectId,
       action: { kind: 'receive', payment },
     });

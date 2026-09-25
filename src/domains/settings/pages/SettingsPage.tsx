@@ -142,15 +142,17 @@ function DataSection() {
 }
 
 function DashboardSection() {
-  const { data: showFigures } = useSetting(SETTINGS.dashboardShowFigures);
-  const save = useSaveSetting(SETTINGS.dashboardShowFigures);
-  if (showFigures === undefined) return null;
+  const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
+  const save = useSaveSetting(SETTINGS.dashboardShowAmounts);
+  if (showAmounts === undefined) return null;
   return (
     <Section title="Tableau de bord">
-      <Checkbox checked={showFigures} onChange={(checked) => save.mutate(checked)}>
-        Afficher les chiffres clés : soldes, à recevoir et encaissé du mois
+      <Checkbox checked={showAmounts} onChange={(checked) => save.mutate(checked)}>
+        Afficher les montants
       </Checkbox>
-      <p className="mt-1.5 pl-[26px] text-meta text-ink-3">Ils restent toujours visibles dans Finances.</p>
+      <p className="mt-1.5 pl-[26px] text-meta text-ink-3">
+        Soldes, à recevoir, encaissé du mois et montants des paiements. Ils restent toujours visibles dans Finances.
+      </p>
     </Section>
   );
 }
