@@ -159,9 +159,9 @@ export function DashboardPage() {
   const { data: doneToday = [] } = useDoneToday(today);
   const { data: finance } = useFinanceSummary(today);
   const { data: agenda } = useAgenda(agendaRange);
-  const { data: showAccounts } = useSetting(SETTINGS.dashboardShowAccounts);
+  const { data: showFigures } = useSetting(SETTINGS.dashboardShowFigures);
 
-  if (!projects || !openTasks || !finance || !agenda || showAccounts === undefined) return null;
+  if (!projects || !openTasks || !finance || !agenda || showFigures === undefined) return null;
 
   const alerts = buildAlerts({ projects, overduePayments, today });
   const active = projects.filter((p) => p.status === 'active');
@@ -208,7 +208,7 @@ export function DashboardPage() {
         />
       }
     >
-      <FinanceFigures summary={finance} today={today} showAccounts={showAccounts} className="mb-12" />
+      {showFigures && <FinanceFigures summary={finance} today={today} className="mb-12" />}
 
       {/*
         Deux colonnes indépendantes. « Prochains jours » est sous « À surveiller » (3 points au plus) :

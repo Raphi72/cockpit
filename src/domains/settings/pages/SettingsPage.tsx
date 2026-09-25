@@ -142,13 +142,13 @@ function DataSection() {
 }
 
 function DashboardSection() {
-  const { data: showAccounts } = useSetting(SETTINGS.dashboardShowAccounts);
-  const save = useSaveSetting(SETTINGS.dashboardShowAccounts);
-  if (showAccounts === undefined) return null;
+  const { data: showFigures } = useSetting(SETTINGS.dashboardShowFigures);
+  const save = useSaveSetting(SETTINGS.dashboardShowFigures);
+  if (showFigures === undefined) return null;
   return (
     <Section title="Tableau de bord">
-      <Checkbox checked={showAccounts} onChange={(checked) => save.mutate(checked)}>
-        Afficher les soldes des comptes
+      <Checkbox checked={showFigures} onChange={(checked) => save.mutate(checked)}>
+        Afficher les chiffres clés : soldes, à recevoir et encaissé du mois
       </Checkbox>
       <p className="mt-1.5 pl-[26px] text-meta text-ink-3">Ils restent toujours visibles dans Finances.</p>
     </Section>

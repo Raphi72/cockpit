@@ -843,7 +843,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 
 **Choix faits après le MVP**, à confirmer à l'usage :
 - **Propositions** : leurs encaissements ne comptent ni dans « À recevoir » (chiffre, retards, prévu sur 30 jours), ni dans les listes À recevoir / En retard, ni dans À surveiller, ni dans le « à recevoir » des clients. Ils restent visibles dans la fiche du projet et dans le calendrier, et comptent dès que le projet passe en Prévu ou En cours. La règle SQL est unique : `EXPECTED_PAYMENT` (`finance/payments/repository.ts`).
-- **Paramètres › Tableau de bord** : « Afficher les soldes des comptes » (réglage `dashboard.showAccounts`, activé par défaut). La page Finances les montre toujours.
+- **Paramètres › Tableau de bord** : « Afficher les chiffres clés » (soldes, à recevoir, encaissé du mois ; réglage `dashboard.showFigures`, activé par défaut). Masqués, le dashboard commence directement par ses blocs. La page Finances les montre toujours.
 
 **Choix faits au jalon 6**, à confirmer à l'usage :
 - **Palette Ctrl+K** : sans saisie, trois créations, « Marquer un encaissement reçu… » et les pages. En tapant : jusqu'à 5 commandes, puis les résultats groupés par type (5 au plus par type), le groupe de la meilleure correspondance en tête. Un projet ou un client trouvé fait remonter ses éléments liés, après les correspondances directes et ce qui est encore ouvert d'abord.

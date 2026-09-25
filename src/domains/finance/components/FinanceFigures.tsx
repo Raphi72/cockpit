@@ -43,23 +43,18 @@ function BalanceFigure({ account }: { account: AccountFigure }) {
   );
 }
 
-type FinanceFiguresProps = {
-  summary: FinanceSummary;
-  today: string;
-  /** Faux sur le dashboard si le réglage les masque ; la page Finances les montre toujours. */
-  showAccounts?: boolean;
-  className?: string;
-};
 
 /**
  * Chiffres clés, sans cartes : soldes, à recevoir (dont retards), encaissé du mois.
  * En-tête de la page Finances, et bandeau du dashboard.
  */
-export function FinanceFigures({ summary, today, showAccounts = true, className = '' }: FinanceFiguresProps) {
+export function FinanceFigures({ summary, today, className = '' }: { summary: FinanceSummary; today: string; className?: string }) {
   const month = formatMonth(monthOf(today), today).toLowerCase();
   return (
     <div className={`grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-x-10 gap-y-8 ${className}`}>
-      {showAccounts && summary.accounts.map((account) => <BalanceFigure key={account.id} account={account} />)}
+      {summary.accounts.map((account) => (
+        <BalanceFigure key={account.id} account={account} />
+      ))}
       <Figure
         label="À recevoir"
         sub={
