@@ -41,6 +41,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['Entrée'], label: 'Ouvrir' },
       { keys: ['Espace'], label: 'Cocher la tâche' },
       { keys: ['Suppr'], label: 'Supprimer' },
+      { keys: ['Ctrl clic', 'Maj clic'], label: 'Sélectionner plusieurs tâches' },
     ],
   },
   {

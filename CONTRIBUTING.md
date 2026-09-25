@@ -14,12 +14,12 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 - [x] **Flèches autour de la date** du dashboard pour voir les tâches d'hier, de demain ou de n'importe quel jour.
 - [x] **Tâches des prochains jours** dans le bloc Prochains jours du dashboard.
 
-### Étape 2 : retours d'usage, suite
+### Étape 2 : retours d'usage, suite (branche `v1.1-taches`)
 
-- [ ] Corbeille et croix du panneau de tâche trop petites.
-- [ ] Sélectionner plusieurs tâches et leur appliquer la même date, deadline ou priorité en une fois.
-- [ ] Catégories de tâches et sous-tâches (« Tâches admin » › « Faire la refonte graphique », « Ajout de graphiques »…).
-- [ ] Échéances : distinguer « à faire aujourd'hui » et « deadline qui approche ». Texte calculé partout (« Aujourd'hui », « Demain », « Dans 3 jours », « En retard de 2 jours », « Terminée ») avec sa couleur ; les deadlines proches visibles sur le dashboard sans entrer dans les tâches du jour ; une tâche avec une date de début et une deadline dessinée en barre dans le calendrier.
+- [x] Corbeille et croix du panneau de tâche trop petites.
+- [x] Sélectionner plusieurs tâches (Ctrl+clic, Maj+clic) et leur appliquer la même date, deadline ou priorité en une fois.
+- [x] Catégories de tâches et sous-tâches (« Tâches admin » › « Faire la refonte graphique », « Ajout de graphiques »…).
+- [x] Échéances : distinguer « à faire aujourd'hui » et « deadline qui approche ». Texte calculé partout (« Aujourd'hui », « Demain », « Dans 3 jours », « En retard de 2 jours », « Terminée ») avec sa couleur ; les deadlines proches visibles sur le dashboard sans entrer dans les tâches du jour ; une tâche avec une date de début et une deadline dessinée en barre dans le calendrier.
 
 ### Étapes suivantes
 
@@ -36,7 +36,8 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 - [ ] Clients : archivage, total encaissé et montant à recevoir sur la fiche.
 - [ ] Comptes : en créer, en renommer ou en archiver depuis l'interface.
 - [ ] Fiche projet : afficher ses prochains événements.
-- [ ] Calendrier : un événement sur plusieurs jours en une seule barre continue, et glisser pour le déplacer.
+- [x] Calendrier : un événement sur plusieurs jours en une seule barre continue.
+- [ ] Calendrier : glisser pour déplacer un élément.
 - [ ] Une erreur dans une fenêtre (création, panneau de tâche) remplace toute l'app par l'écran d'erreur ; elle devrait rester dans la fenêtre.
 - [ ] Vue mois : un mois chargé dépasse de quelques pixels en 1080p à 125 %.
 - [ ] `Ctrl+N` à vérifier dans la vraie fenêtre (la touche `N` seule fonctionne).

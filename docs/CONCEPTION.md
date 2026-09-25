@@ -81,7 +81,7 @@ Un statut « En retard » saisi à la main devient faux dès le lendemain. Les s
 Les débuts de projet, deadlines de projet, deadlines de tâche et échéances de paiement existent déjà dans leurs tables : le calendrier et le planning les affichent directement. Si tu décales une deadline, elle bouge partout. Seuls les vrais événements (rendez-vous, réunions, événements perso, échéances libres comme « dossier de bourse avant le 30/10 ») sont créés dans la table `events`.
 
 **P9. Donner deux dates aux tâches et permettre les tâches sans projet.**
-La date « prévue le » indique quand tu comptes faire la tâche et alimente la vue Aujourd'hui. La « deadline » indique quand elle doit être finie. Une tâche prévue hier et non faite reste dans Aujourd'hui, comme un report.
+La date « prévue le » (affichée « Début » depuis la V1.1) indique quand tu comptes faire la tâche et alimente la vue Aujourd'hui. La « deadline » indique quand elle doit être finie. Une tâche prévue hier et non faite reste dans Aujourd'hui, comme un report. Une deadline seule ne fait pas entrer la tâche dans Aujourd'hui avant le jour même : elle est « À prévoir » (V1.1).
 Une tâche peut aussi n'appartenir à aucun projet (« Appeler la banque ») : sans cela, la vue Aujourd'hui serait incomplète.
 *Simplification associée* : pour les tâches, « description » et « notes » sont fusionnées en un seul champ **Notes**.
 
@@ -256,7 +256,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 ```
 clients ──1:N── projects ──N:1── project_types
    │               │
-   │               ├─1:N─ tasks          (project_id NULL = tâche libre)
+   │               ├─1:N─ tasks          (project_id NULL = tâche libre ; parent_id : sous-tâche, V1.1)
    │               ├─1:N─ ideas          (V1.1 : idées pour plus tard)
    │               ├─1:N─ payments ─1:0..1─ transactions  (via payment_id)
    │               ├─1:N─ events         (lien facultatif)
@@ -465,6 +465,11 @@ CREATE TABLE ideas (
   updated_at  TEXT NOT NULL
 );
 -- + index (project_id, created_at) et triggers de recherche (entité 'idea').
+
+-- 0004_subtasks.sql (V1.1) : sous-tâches sur un seul niveau, la parente sert de catégorie.
+ALTER TABLE tasks ADD COLUMN parent_id TEXT REFERENCES tasks(id) ON DELETE CASCADE;
+-- + index (parent_id, sort_order) ; project_progress recréée : une tâche qui a des
+--   sous-tâches ne compte pas elle-même, ce sont ses sous-tâches qui comptent.
 ```
 
 **Données initiales** :
@@ -480,7 +485,7 @@ Au premier lancement, une seule question est posée : « Quel est le solde actue
 
 | Valeur | Calcul |
 |---|---|
-| Progression d'un projet | Tâches terminées ÷ tâches totales (100 % si le projet est terminé ; « — » s'il n'a aucune tâche) |
+| Progression d'un projet | Tâches terminées ÷ tâches totales, sans compter une tâche qui a des sous-tâches (ses sous-tâches comptent à sa place) ; 100 % si le projet est terminé ; « — » s'il n'a aucune tâche |
 | Reçu (projet) | Σ encaissements reçus |
 | Reste à recevoir (projet) | Budget − reçu |
 | % payé | Reçu ÷ budget |
@@ -492,7 +497,9 @@ Au premier lancement, une seule question est posée : « Quel est le solde actue
 | CA encaissé (période) | Σ encaissements reçus dont la date de réception tombe dans la période |
 | CA prévu (période) | Σ encaissements non reçus dont la date prévue tombe dans la période |
 | Dépenses pro | Σ transactions `expense` des comptes pro (hors virements et ajustements) |
-| Tâches d'aujourd'hui | Non terminées et (prévue ≤ aujourd'hui ou deadline ≤ aujourd'hui) |
+| Tâches d'aujourd'hui | Non terminées et (début ≤ aujourd'hui ou deadline ≤ aujourd'hui) |
+| À prévoir | Non terminées, sans début, deadline dans les 7 prochains jours (pas aujourd'hui) |
+| Texte d'une deadline | « En retard de 3 jours », « Aujourd'hui » (rouge), « Demain », « Dans 3 jours » (ambre), « Dans 6 jours » (bleu, jusqu'à 7), puis la date, « Terminée » (vert) : `core/deadline.ts` |
 
 ### 3.5 L'agenda : une seule source pour le calendrier, le planning et le dashboard
 
@@ -657,6 +664,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | `← →` · `T` · `M` `S` `J` | Calendrier : période précédente ou suivante, aujourd'hui, vue mois, semaine ou jour |
 | `← →` · `T` | Dashboard : tâches du jour précédent ou suivant, retour à aujourd'hui |
 | `Suppr` | Supprimer, avec « Annuler » dans le toast (`Ctrl Z`) |
+| `Ctrl clic` · `Maj clic` | Sélectionner plusieurs tâches (puis `Échap` pour vider, `Suppr` pour les supprimer) |
 | `?` | Afficher tous les raccourcis |
 
 ### 5.2 Pages
@@ -670,7 +678,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
   - à recevoir (avec le montant en retard) ;
   - encaissé ce mois (avec le prévu sur 30 jours).
 - **4 blocs**, lus dans l'ordre des questions du §1.1 :
-  1. **Aujourd'hui** : les tâches à cocher sur place, celles en retard en tête. Chaque ligne affiche seulement le titre, le projet et une date quand elle compte (retard, deadline proche). Les tâches terminées sont repliées.
+  1. **Aujourd'hui** : les tâches à cocher sur place, celles en retard en tête. Chaque ligne affiche seulement le titre, le projet et une date quand elle compte (retard, deadline proche). Les tâches terminées sont repliées. Dessous, « À prévoir » (V1.1) : les deadlines de la semaine qui n'ont pas encore de début.
   2. **À surveiller** : 3 points au maximum, les plus graves d'abord (règles de P11), puis un lien « N autres points ». L'action directe apparaît au survol.
   3. **Prochains jours** : l'agenda des 7 prochains jours (rendez-vous, deadlines, encaissements attendus, débuts de projet) et, à partir de demain, les tâches prévues (V1.1), groupé par jour.
   4. **Projets en cours** : nom, barre de progression, deadline ; puis les projets à venir. Les Propositions n'apparaissent nulle part sur le dashboard (V1.1).
@@ -698,7 +706,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 **Calendrier** :
 
-- Vues Mois / Semaine / Jour, éléments colorés selon leur source.
+- Vues Mois / Semaine / Jour, éléments colorés selon leur source. Ce qui dure plusieurs jours (événement, tâche du début à la deadline) est une barre continue (V1.1).
 - Filtres : événements, deadlines, tâches, encaissements.
 - Un clic sur un créneau vide crée un événement pré-rempli. La navigation (← →, `T` pour aujourd'hui) se fait au clavier.
 
@@ -838,7 +846,7 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
    - **idées** dans la fiche projet, transformables en tâche ;
    - **flèches autour de la date** du dashboard pour voir les tâches d'hier, de demain ou de n'importe quel jour ;
    - **tâches des prochains jours** dans le bloc Prochains jours.
-2. **Retours d'usage, suite** : corbeille et croix du panneau de tâche plus grandes, sélection de plusieurs tâches (date, deadline, priorité en une fois), catégories et sous-tâches, échéances (texte calculé « Dans 3 jours », deadlines proches sur le dashboard, barre début → deadline dans le calendrier).
+2. **Retours d'usage, suite** (✓ fait, branche `v1.1-taches`) : corbeille et croix du panneau de tâche plus grandes, sélection de plusieurs tâches (date, deadline, priorité en une fois), catégories et sous-tâches, échéances (texte calculé « Dans 3 jours », deadlines proches sur le dashboard, barre début → deadline dans le calendrier).
 3. **Planning**.
 4. **Notifications Windows**.
 5. **Exports et paramètres complets**.
@@ -864,7 +872,7 @@ Détail des étapes 3 à 5 :
 - **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
 - **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
 - **Export CSV des transactions** : prévu avec les exports (V1.1).
-- **Calendrier** : un événement sur plusieurs jours est répété dans chaque case (pas de barre continue). Glisser pour replanifier reste prévu en V1.1.
+- **Calendrier** : glisser pour replanifier reste à faire (les barres continues sont faites en V1.1, étape 2).
 - **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
 - **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main.
@@ -872,10 +880,19 @@ Détail des étapes 3 à 5 :
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 
+**Choix faits en V1.1, étape 2 (tâches et échéances)**, à confirmer à l'usage :
+- **Texte des deadlines** : une seule règle (`core/deadline.ts`) pour les lignes et cartes de tâches, le panneau de tâche (sous la deadline), les lignes de projet (version courte : « Dans 6 j », « 3 j de retard ») et la fiche projet. Rouge pour un retard ou aujourd'hui, ambre de 1 à 3 jours, bleu de 4 à 7, neutre au-delà (la date), vert « Terminée ». Sous une deadline lointaine, rien : la date est déjà affichée. Les textes d'À surveiller suivent (« Deadline dans 3 jours », « En retard de 2 jours »).
+- **« Début »** remplace « Prévue le » à l'écran (la colonne reste `scheduled_date`). Une tâche qui a un début et une deadline occupe la période entre les deux : une barre dans le calendrier, rond au début, drapeau au bout.
+- **« À prévoir »** (sous Aujourd'hui, au dashboard et dans la page Tâches) : tâches sans début dont la deadline tombe dans les 7 jours, la plus proche d'abord ; elles entrent dans Aujourd'hui le jour de la deadline. Prochains jours ne montre plus que les tâches qui commencent ce jour-là, pour ne rien afficher deux fois.
+- **Sous-tâches** (migration 0004) : un seul niveau ; la parente sert de catégorie et affiche « 1/3 ». Une sous-tâche garde ses dates, sa priorité et sa case, et suit le projet de sa parente (elle s'en détache si on la change de projet). Terminer la dernière sous-tâche termine la parente, en rouvrir une la rouvre, terminer la parente termine ses sous-tâches : écrit en SQL dans le même lot (`updateTaskStatements`). Fiche projet : liste en arbre, glisser-déposer à chaque niveau, « Ajouter une sous-tâche » au survol. Vues globales : « Parente › » devant le titre. Panneau : lien vers la parente, « Sous-tâche de » pour ranger une tâche, section Sous-tâches. Supprimer une parente emporte ses sous-tâches, « Annuler » les ramène.
+- **Sélection multiple** : Ctrl+clic et Maj+clic sur les lignes de tâches (pas les cartes du kanban). Une barre en bas de l'écran applique le même début, la même deadline (aujourd'hui, demain, lundi prochain, dans une semaine, une date au choix, ou retirer), la même priorité, termine ou supprime. Échap vide la sélection, changer de page aussi ; Suppr supprime la sélection. « Annuler » remet chaque tâche touchée, parentes et sous-tâches comprises.
+- **Supprimer et Fermer** des panneaux de tâche et d'événement : boutons de 40 px, icônes de 20 px.
+- **Barres continues** : semaine par semaine (`layoutRow`), rangées en couloirs, la plus ancienne puis la plus longue en haut ; une barre coupée par le bord de la semaine touche le bord. Dans une case, 3 éléments au plus barres comprises, puis « +N ».
+
 **Choix faits en V1.1, étape 1 (retours d'usage)**, à confirmer à l'usage :
 - **Propositions hors du dashboard et du calendrier** : un devis non signé n'a pas lieu d'y être. Le dashboard ne lit que les projets En cours, À venir et En pause (`CONFIRMED_STATUSES`) : ni « À venir », ni À surveiller. Le calendrier (et donc Prochains jours) ne montre ni leur début, ni leur deadline, ni leurs encaissements (règle `EXPECTED_PAYMENT`). Leurs tâches et les événements qui leur sont liés restent : ce sont de vraies choses à faire. Tout réapparaît dès que le projet passe en Prévu ou En cours.
 - **Idées** : table `ideas` (migration 0003), une ligne par idée, sans date ni statut. Section « Idées » sous les tâches de la fiche projet : « Noter une idée » (Entrée pour enchaîner), un clic pour la reformuler, au survol « En faire une tâche » (tâche sans date, en fin de liste ; l'idée disparaît) et la corbeille ; Suppr supprime. Les deux actions ont « Annuler ». Les idées ne comptent pas dans la progression et partent avec le projet (et reviennent avec « Annuler »). Elles sont dans la recherche Ctrl+K (groupe Idées) : le résultat ouvre le projet.
-- **Tâches de jour en jour** : flèches autour de la date du dashboard (← → au clavier, `T` ou le bouton « Aujourd'hui » pour revenir). Le jour est dans l'URL interne (`?day=`). Seul le bloc de tâches suit le jour choisi ; les chiffres, À surveiller et Prochains jours restent ceux d'aujourd'hui. Un jour à venir montre les tâches situées ce jour-là (« prévue le », sinon la deadline) et l'ajout express pour ce jour. Un jour passé montre ce qui a été terminé ce jour-là, puis ce qui y était prévu et n'est pas fait (« reportées à aujourd'hui »).
+- **Tâches de jour en jour** : flèches autour de la date du dashboard (← → au clavier, `T` ou le bouton « Aujourd'hui » pour revenir). Le jour est dans l'URL interne (`?day=`). Seul le bloc de tâches suit le jour choisi ; les chiffres, À surveiller et Prochains jours restent ceux d'aujourd'hui. Un jour à venir montre les tâches situées ce jour-là (début, sinon la deadline) et l'ajout express pour ce jour. Un jour passé montre ce qui a été terminé ce jour-là, puis ce qui y était prévu et n'est pas fait (« reportées à aujourd'hui »).
 - **Tâches dans Prochains jours** : à partir de demain, les tâches prévues chaque jour (un rond, le projet en gris, un drapeau si c'est la deadline), 3 au plus par jour, puis « +N tâches » qui ouvre ce jour dans le bloc de tâches. Celles du jour affiché dans le bloc de tâches n'y sont pas répétées. Ce bloc vit désormais dans `domains/dashboard/components/UpcomingDays.tsx`.
 
 **Choix faits après le MVP**, à confirmer à l'usage :
@@ -912,7 +929,7 @@ Détail des étapes 3 à 5 :
 
 **Choix faits au jalon 4**, à confirmer à l'usage :
 - Les filtres sont Événements · Projets (débuts et deadlines) · Tâches · Encaissements. Les deadlines de tâches sont sous « Tâches ».
-- Une tâche apparaît une seule fois : à sa deadline, sinon à sa date prévue si elle est Haute ou Urgente. Les tâches ordinaires sans deadline n'y figurent pas.
+- Une tâche apparaît une seule fois : à sa deadline, sinon à sa date prévue si elle est Haute ou Urgente. Les tâches ordinaires sans deadline n'y figurent pas. (V1.1 : avec un début et une deadline, en barre de l'un à l'autre.)
 - Les projets terminés, annulés ou archivés sortent du calendrier ; leurs encaissements non reçus restent.
 - Un encaissement y porte le nom du projet (ou du client), son libellé au survol, et son montant.
 - Seul le retard est coloré (rouge) : une deadline ou un encaissement passé. Pas d'ambre « bientôt » dans le calendrier.
