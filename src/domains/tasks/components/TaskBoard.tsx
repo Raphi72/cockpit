@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { useState } from 'react';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
+import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { useDeleteTask, useUpdateTask } from '../hooks';
 import { TASK_STATUSES, TASK_STATUS_LABELS, taskDateLabel, type TaskItem, type TaskStatus } from '../model';
@@ -107,6 +108,7 @@ export function TaskBoard({ tasks, today }: { tasks: TaskItem[]; today: string }
   return (
     <DndContext
       sensors={sensors}
+      accessibility={DND_ACCESSIBILITY}
       onDragStart={({ active: started }: DragStartEvent) => setActiveId(String(started.id))}
       onDragEnd={onDragEnd}
       onDragCancel={() => setActiveId(null)}

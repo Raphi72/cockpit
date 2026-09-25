@@ -113,6 +113,14 @@ export function addDaysISO(iso: string, days: number): string {
   return toISODate(addDays(parseISO(iso), days));
 }
 
+/**
+ * Modificateur SQLite pour décaler une date en SQL : `date(due_date, ?)` avec '+3 days' ou '-2 days'.
+ * Une date absente (NULL) le reste.
+ */
+export function sqlDaysModifier(days: number): string {
+  return `${days >= 0 ? '+' : ''}${days} days`;
+}
+
 /** Lundi qui suit `iso` (celui de la semaine prochaine si `iso` est un lundi). */
 export function nextMondayISO(iso: string): string {
   const weekday = parseISO(iso).getDay(); // 0 = dimanche … 6 = samedi

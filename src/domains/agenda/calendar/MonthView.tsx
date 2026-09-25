@@ -3,6 +3,7 @@ import { fr } from 'date-fns/locale';
 import { formatLongDate, monthOf } from '@/core/dates';
 import { layoutRow, weekdayShort, type AgendaItem } from '../model';
 import { DayItems } from './AgendaChip';
+import { useDayDrop } from './drag';
 import { SpanBars, lanesSpacer } from './SpanBars';
 
 /** 3 éléments au plus par jour (barres comprises), puis « +N ». */
@@ -21,6 +22,73 @@ type MonthViewProps = {
   onCreate: (day: string) => void;
   onShowDay: (day: string) => void;
 };
+
+/**
+ * Une case du mois : le numéro du jour (qui ouvre la journée), les éléments du jour, et un clic dans
+ * le vide pour créer un événement. On peut y déposer un élément pris ailleurs (glisser-déposer).
+ */
+function MonthDay(props: {
+  day: string;
+  first: boolean;
+  inMonth: boolean;
+  today: string;
+  /** Couloirs de barres de la semaine : la place à réserver en haut. */
+  lanes: number;
+  items: AgendaItem[];
+  onOpen: (item: AgendaItem) => void;
+  onCreate: (day: string) => void;
+  onShowDay: (day: string) => void;
+}) {
+  const { day, today } = props;
+  const drop = useDayDrop(day);
+  const isToday = day === today;
+  // Le 1er de chaque mois porte le nom du mois : on s'y retrouve dans les jours voisins.
+  const label = day.endsWith('-01') ? format(parseISO(day), 'd MMM', { locale: fr }) : String(Number(day.slice(8)));
+  return (
+    <div
+      ref={drop.setNodeRef}
+      data-day={day}
+      onClick={() => props.onCreate(day)}
+      title="Clic : nouvel événement ce jour-là"
+      className={
+        'flex min-h-[92px] min-w-0 cursor-default flex-col gap-px border-t border-line px-1 pt-1 pb-1.5 ' +
+        'transition-colors duration-[120ms] ease-soft ' +
+        (drop.isOver ? 'bg-accent-soft ' : 'hover:bg-hover/50 ') +
+        (props.first ? '' : 'border-l')
+      }
+    >
+      <div className="px-0.5 pb-0.5">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            props.onShowDay(day);
+          }}
+          title={`Voir la journée · ${formatLongDate(parseISO(day))}`}
+          className={
+            'tnum grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-meta transition-colors duration-[120ms] ease-soft ' +
+            (isToday
+              ? 'bg-accent font-semibold text-canvas'
+              : props.inMonth
+                ? 'text-ink-2 hover:bg-active hover:text-ink'
+                : 'text-ink-3 hover:bg-active hover:text-ink')
+          }
+        >
+          {label}
+        </button>
+      </div>
+      {props.lanes > 0 && <div className="shrink-0" style={{ height: lanesSpacer(props.lanes) }} />}
+      <DayItems
+        day={day}
+        items={props.items}
+        limit={Math.max(MAX_PER_DAY - props.lanes, 1)}
+        today={today}
+        onOpen={props.onOpen}
+        onShowDay={() => props.onShowDay(day)}
+      />
+    </div>
+  );
+}
 
 /**
  * Grille de 6 semaines × 7 jours, séparée par des filets fins, sans cadre. Chaque semaine est une
@@ -42,54 +110,29 @@ export function MonthView({ anchor, days, items, today, onOpen, onCreate, onShow
         const row = layoutRow(items, week);
         return (
           <div key={week[0]} className="relative grid grid-cols-7">
-            {week.map((day, index) => {
-              const isToday = day === today;
-              const inMonth = monthOf(day) === month;
-              // Le 1er de chaque mois porte le nom du mois : on s'y retrouve dans les jours voisins.
-              const label = day.endsWith('-01') ? format(parseISO(day), 'd MMM', { locale: fr }) : String(Number(day.slice(8)));
-              return (
-                <div
-                  key={day}
-                  onClick={() => onCreate(day)}
-                  title="Clic : nouvel événement ce jour-là"
-                  className={
-                    'flex min-h-[92px] min-w-0 cursor-default flex-col gap-px border-t border-line px-1 pt-1 pb-1.5 ' +
-                    'transition-colors duration-[120ms] ease-soft hover:bg-hover/50 ' +
-                    (index === 0 ? '' : 'border-l')
-                  }
-                >
-                  <div className="px-0.5 pb-0.5">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onShowDay(day);
-                      }}
-                      title={`Voir la journée · ${formatLongDate(parseISO(day))}`}
-                      className={
-                        'tnum grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-meta transition-colors duration-[120ms] ease-soft ' +
-                        (isToday
-                          ? 'bg-accent font-semibold text-canvas'
-                          : inMonth
-                            ? 'text-ink-2 hover:bg-active hover:text-ink'
-                            : 'text-ink-3 hover:bg-active hover:text-ink')
-                      }
-                    >
-                      {label}
-                    </button>
-                  </div>
-                  {row.lanes > 0 && <div className="shrink-0" style={{ height: lanesSpacer(row.lanes) }} />}
-                  <DayItems
-                    items={row.singles.get(day) ?? []}
-                    limit={Math.max(MAX_PER_DAY - row.lanes, 1)}
-                    today={today}
-                    onOpen={onOpen}
-                    onShowDay={() => onShowDay(day)}
-                  />
-                </div>
-              );
-            })}
-            <SpanBars spans={row.spans} columns={7} today={today} onOpen={onOpen} className="inset-x-0" style={{ top: SPANS_TOP }} />
+            {week.map((day, index) => (
+              <MonthDay
+                key={day}
+                day={day}
+                first={index === 0}
+                inMonth={monthOf(day) === month}
+                today={today}
+                lanes={row.lanes}
+                items={row.singles.get(day) ?? []}
+                onOpen={onOpen}
+                onCreate={onCreate}
+                onShowDay={onShowDay}
+              />
+            ))}
+            <SpanBars
+              spans={row.spans}
+              columns={7}
+              today={today}
+              onOpen={onOpen}
+              rowKey={week[0]!}
+              className="inset-x-0"
+              style={{ top: SPANS_TOP }}
+            />
           </div>
         );
       })}

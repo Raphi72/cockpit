@@ -423,6 +423,65 @@ export function layoutRow(items: AgendaItem[], days: string[]): RowLayout {
   };
 }
 
+// ─── Glisser-déposer dans le calendrier ─────────────────────────────────────
+
+/**
+ * Où l'on dépose un élément : un jour, et une heure si c'est un créneau de la grille horaire.
+ * L'élément se décale du nombre de jours entre le jour où on l'a pris et celui-ci.
+ */
+export type CalendarDrop = { day: string; time: string | null };
+
+/** Un événement à heure fixe déposé sur un créneau change d'heure ; le reste change seulement de jour. */
+export function isRetimed(item: Pick<AgendaItem, 'source' | 'allDay'>, drop: CalendarDrop): boolean {
+  return item.source === 'event' && !item.allDay && drop.time !== null;
+}
+
+/** 'YYYY-MM-DD' ou 'YYYY-MM-DDTHH:MM' décalé de `days` jours, l'heure gardée. */
+function shiftStamp(stamp: string, days: number): string {
+  return addDaysISO(stamp.slice(0, 10), days) + stamp.slice(10);
+}
+
+/**
+ * L'élément tel qu'il sera une fois déplacé, pour l'afficher tout de suite à sa nouvelle place.
+ * Tout se décale d'autant (une tâche du début à la deadline garde sa durée) ; un événement à heure
+ * fixe déposé sur un créneau prend cette heure et garde sa durée.
+ */
+export function movedAgendaItem(item: AgendaItem, days: number, time: string | null = null): AgendaItem {
+  if (time !== null && item.source === 'event' && !item.allDay) {
+    const date = addDaysISO(item.start.slice(0, 10), days);
+    const duration = item.end ? timeToMinutes(item.end.slice(11, 16)) - timeToMinutes(item.start.slice(11, 16)) : null;
+    const endMinutes = duration === null ? null : timeToMinutes(time) + duration;
+    const end = endMinutes !== null && endMinutes < 24 * 60 ? `${date}T${minutesToTime(endMinutes)}` : null;
+    return { ...item, start: `${date}T${time}`, end };
+  }
+  return { ...item, start: shiftStamp(item.start, days), end: item.end ? shiftStamp(item.end, days) : null };
+}
+
+/**
+ * Refus d'un déplacement de début ou de deadline de projet qui les mettrait dans le désordre ;
+ * `null` si tout va bien.
+ */
+export function projectMoveProblem(
+  project: { startDate: string | null; deadline: string | null },
+  kind: 'project_start' | 'project_deadline',
+  days: number,
+): string | null {
+  if (!project.startDate || !project.deadline) return null;
+  if (kind === 'project_start' && addDaysISO(project.startDate, days) > project.deadline) {
+    return 'Le début du projet passerait après sa deadline.';
+  }
+  if (kind === 'project_deadline' && addDaysISO(project.deadline, days) < project.startDate) {
+    return 'La deadline du projet passerait avant son début.';
+  }
+  return null;
+}
+
+/** Heure d'un bloc déposé dans la grille, arrondie au quart d'heure : sa position en minutes depuis minuit. */
+export function snapTime(minutes: number, step = 15): string {
+  const snapped = Math.round(minutes / step) * step;
+  return minutesToTime(Math.min(Math.max(snapped, 0), 24 * 60 - step));
+}
+
 // ─── Prochains jours (dashboard) ────────────────────────────────────────────
 
 /** Jours couverts par « Prochains jours », aujourd'hui compris. */

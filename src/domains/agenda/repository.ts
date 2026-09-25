@@ -1,3 +1,4 @@
+import { sqlDaysModifier } from '@/core/dates';
 import type { Db, SqlValue, Statement } from '@/core/db';
 import { EXPECTED_PAYMENT } from '@/domains/finance/payments/repository';
 import {
@@ -169,6 +170,22 @@ export function updateEventStatement(id: string, patch: EventPatch, now: string)
   sets.push('updated_at = ?');
   params.push(now);
   return { sql: `UPDATE events SET ${sets.join(', ')} WHERE id = ?`, params: [...params, id] };
+}
+
+/**
+ * Glisser dans le calendrier : l'événement change de jour, ses heures gardées ; un événement sur
+ * plusieurs jours garde sa durée.
+ */
+export function shiftEventStatement(id: string, days: number, now: string): Statement {
+  const modifier = sqlDaysModifier(days);
+  return {
+    sql: `UPDATE events
+          SET starts_at = date(substr(starts_at, 1, 10), ?) || substr(starts_at, 11),
+              ends_at = date(substr(ends_at, 1, 10), ?) || substr(ends_at, 11),
+              updated_at = ?
+          WHERE id = ?`,
+    params: [modifier, modifier, now, id],
+  };
 }
 
 export function deleteEventStatement(id: string): Statement {

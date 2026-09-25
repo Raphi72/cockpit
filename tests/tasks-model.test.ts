@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  computeReorder,
   dayHeading,
   formatDuration,
   groupByProject,
@@ -153,30 +152,11 @@ describe('affichage', () => {
 });
 
 describe('ordre manuel', () => {
-  const items = [
-    { id: 'a', sortOrder: 1 },
-    { id: 'b', sortOrder: 2 },
-    { id: 'c', sortOrder: 3 },
-  ];
-
-  it('place l’élément entre ses nouveaux voisins en ne modifiant qu’une ligne', () => {
-    expect(computeReorder(items, 2, 0)).toEqual([{ id: 'c', sortOrder: 0 }]);
-    expect(computeReorder(items, 0, 1)).toEqual([{ id: 'a', sortOrder: 2.5 }]);
-    expect(computeReorder(items, 0, 2)).toEqual([{ id: 'a', sortOrder: 4 }]);
-    expect(computeReorder(items, 1, 1)).toEqual([]);
-  });
-
-  it('renumérote toute la liste quand deux ordres sont identiques', () => {
-    const tied = [
-      { id: 'a', sortOrder: 1 },
-      { id: 'b', sortOrder: 1 },
-      { id: 'c', sortOrder: 1 },
-    ];
-    expect(computeReorder(tied, 2, 1)).toEqual([
-      { id: 'a', sortOrder: 1 },
-      { id: 'c', sortOrder: 2 },
-      { id: 'b', sortOrder: 3 },
-    ]);
+  it('une valeur entre deux voisins, ou rien si la précision est épuisée', () => {
+    expect(sortOrderBetween(1, 2)).toBe(1.5);
+    expect(sortOrderBetween(undefined, 2)).toBe(1);
+    expect(sortOrderBetween(3, undefined)).toBe(4);
+    expect(sortOrderBetween()).toBe(1);
     expect(sortOrderBetween(1, 1)).toBeUndefined();
   });
 });

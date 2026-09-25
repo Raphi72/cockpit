@@ -1,5 +1,5 @@
 import { CalendarClock, Flag, ListPlus } from 'lucide-react';
-import { memo, type CSSProperties, type HTMLAttributes, type MouseEvent, type Ref } from 'react';
+import { memo, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
 import { formatCompletedAt, relativeDateLabel, toISODate } from '@/core/dates';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
@@ -25,11 +25,9 @@ type TaskRowProps = {
   shownDay?: string;
   /** Si fourni : « Ajouter une sous-tâche » au survol. */
   onAddSubtask?: () => void;
-  /** Propriétés de glisser-déposer, fournies par la liste triable. */
+  /** Propriétés de glisser-déposer, fournies par l'arbre des tâches d'un projet. */
   dragProps?: HTMLAttributes<HTMLDivElement>;
-  dragRef?: Ref<HTMLDivElement>;
   style?: CSSProperties;
-  dragging?: boolean;
 };
 
 /**
@@ -46,9 +44,7 @@ export const TaskRow = memo(function TaskRow({
   shownDay,
   onAddSubtask,
   dragProps,
-  dragRef,
   style,
-  dragging = false,
 }: TaskRowProps) {
   const update = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -69,7 +65,6 @@ export const TaskRow = memo(function TaskRow({
 
   return (
     <div
-      ref={dragRef}
       style={style}
       role="button"
       tabIndex={0}
@@ -87,8 +82,7 @@ export const TaskRow = memo(function TaskRow({
         'group -mx-2.5 grid min-h-11 cursor-default grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-md pr-2.5 outline-none ' +
         'transition-colors duration-[120ms] ease-soft focus-visible:ring-2 focus-visible:ring-accent-soft ' +
         (depth === 1 ? 'pl-[38px] ' : 'pl-2.5 ') +
-        (selected ? 'bg-accent-soft ' : 'hover:bg-hover ') +
-        (dragging ? 'relative z-10 bg-elevated shadow-overlay' : '')
+        (selected ? 'bg-accent-soft' : 'hover:bg-hover')
       }
     >
       <TaskCheckbox status={task.status} onToggle={toggle} />

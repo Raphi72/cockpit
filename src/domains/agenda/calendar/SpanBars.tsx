@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { agendaTooltip, isAgendaItemLate, type AgendaItem, type SpanSegment } from '../model';
 import { AgendaMarker, URGENT_TINT, agendaDeadlineTone } from './AgendaChip';
+import { useAgendaDrag } from './drag';
 
 /** Hauteur d'un couloir : une puce (22 px) et l'espace qui la sépare de la suivante. */
 export const LANE_HEIGHT = 23;
@@ -17,13 +18,17 @@ function SpanBar({
   columns,
   today,
   onOpen,
+  rowKey,
 }: {
   span: SpanSegment;
   columns: number;
   today: string;
   onOpen: (item: AgendaItem) => void;
+  rowKey: string;
 }) {
   const { item } = span;
+  // Une barre coupée par les semaines apparaît dans plusieurs rangées : un identifiant par rangée.
+  const drag = useAgendaDrag(item, `${item.key}@${rowKey}`);
   const late = isAgendaItemLate(item, today);
   const isTask = item.source === 'task';
   // Une tâche du début à la deadline : le drapeau du bout prend la couleur de l'urgence (core/deadline.ts).
@@ -33,6 +38,8 @@ function SpanBar({
   const inset = { left: span.continuesBefore ? 0 : 4, right: span.continuesAfter ? 0 : 4 };
   return (
     <button
+      ref={drag.setNodeRef}
+      {...drag.listeners}
       type="button"
       title={agendaTooltip(item)}
       onClick={(event) => {
@@ -49,7 +56,8 @@ function SpanBar({
         'transition-colors duration-[120ms] ease-soft ' +
         (tint ?? 'bg-hover hover:bg-active') +
         (span.continuesBefore ? ' rounded-l-none' : ' rounded-l-sm') +
-        (span.continuesAfter ? ' rounded-r-none' : ' rounded-r-sm')
+        (span.continuesAfter ? ' rounded-r-none' : ' rounded-r-sm') +
+        (drag.isDragging ? ' opacity-40' : '')
       }
     >
       {/* Une tâche : un rond au début, le drapeau de la deadline au bout. */}
@@ -80,6 +88,8 @@ export function SpanBars(props: {
   columns: number;
   today: string;
   onOpen: (item: AgendaItem) => void;
+  /** Premier jour de la rangée : sert à distinguer les morceaux d'une même barre. */
+  rowKey: string;
   className?: string;
   style?: CSSProperties;
 }) {
@@ -87,7 +97,14 @@ export function SpanBars(props: {
   return (
     <div className={`pointer-events-none absolute ${props.className ?? ''}`} style={props.style}>
       {props.spans.map((span) => (
-        <SpanBar key={span.item.key} span={span} columns={props.columns} today={props.today} onOpen={props.onOpen} />
+        <SpanBar
+          key={span.item.key}
+          span={span}
+          columns={props.columns}
+          today={props.today}
+          onOpen={props.onOpen}
+          rowKey={props.rowKey}
+        />
       ))}
     </div>
   );

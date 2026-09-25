@@ -1,3 +1,4 @@
+import { sqlDaysModifier } from '@/core/dates';
 import type { Db, SqlValue, Statement } from '@/core/db';
 import type {
   ProjectDetail,
@@ -177,6 +178,15 @@ export function updateProjectStatement(id: string, patch: ProjectPatch, now: str
   sets.push('updated_at = ?');
   params.push(now);
   return { sql: `UPDATE projects SET ${sets.join(', ')} WHERE id = ?`, params: [...params, id] };
+}
+
+/** Glisser dans le calendrier : le début ou la deadline se décale de `days` jours. */
+export function shiftProjectDateStatement(id: string, field: 'startDate' | 'deadline', days: number, now: string): Statement {
+  const column = field === 'startDate' ? 'start_date' : 'deadline';
+  return {
+    sql: `UPDATE projects SET ${column} = date(${column}, ?), updated_at = ? WHERE id = ?`,
+    params: [sqlDaysModifier(days), now, id],
+  };
 }
 
 /** Nombre d'encaissements déjà reçus : un projet qui en a ne peut pas être supprimé. */

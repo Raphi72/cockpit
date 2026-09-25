@@ -280,23 +280,86 @@ export function sortOrderBetween(before?: number, after?: number): number | unde
   return middle > before && middle < after ? middle : undefined;
 }
 
-/**
- * Déplace l'élément `from` à la position `to` et renvoie les ordres à enregistrer :
- * en général une seule ligne, ou toute la liste renumérotée si les valeurs sont trop serrées.
- */
-export function computeReorder(
-  items: { id: string; sortOrder: number }[],
-  from: number,
-  to: number,
-): { id: string; sortOrder: number }[] {
-  if (from === to || !items[from]) return [];
-  const moved = [...items];
-  const [item] = moved.splice(from, 1);
-  moved.splice(to, 0, item!);
+// ─── Glisser-déposer dans la fiche projet ───────────────────────────────────
 
-  const next = sortOrderBetween(moved[to - 1]?.sortOrder, moved[to + 1]?.sortOrder);
-  if (next === undefined) return moved.map((it, index) => ({ id: it.id, sortOrder: index + 1 }));
-  return [{ id: item!.id, sortOrder: next }];
+/**
+ * Où l'on dépose dans l'arbre des tâches d'un projet : avant ou après une ligne, dans une tâche
+ * (la déposée devient sa sous-tâche), ou en fin de liste.
+ */
+export type TreeDrop = { position: 'before' | 'after' | 'inside'; targetId: string } | { position: 'end' };
+
+/** Nouvelle place : la parente (`null` : premier niveau) et les ordres à enregistrer, la tâche déplacée comprise. */
+export type TreePlacement = { parentId: string | null; orders: { id: string; sortOrder: number }[] };
+
+/** Identifiant, dans `orders`, d'une tâche qui n'existe pas encore (une idée qui devient une tâche). */
+export const NEW_TASK_ID = '';
+
+/**
+ * Place une tâche (ou une idée qui en devient une : `moved.id === NEW_TASK_ID`) dans l'arbre d'un
+ * projet (voir projectTaskTree). Renvoie `null` si le dépôt ne change rien ou n'est pas permis :
+ * un seul niveau de sous-tâches (une tâche qui en a ne descend pas, rien ne se range dans une
+ * sous-tâche), et jamais sur elle-même. En général, seule la tâche déplacée reçoit un nouvel ordre ;
+ * si les valeurs sont trop serrées, ses nouvelles sœurs sont renumérotées.
+ */
+export function placeInTree(nodes: TaskNode[], moved: { id: string; hasSubtasks: boolean }, drop: TreeDrop): TreePlacement | null {
+  const top = nodes.map((node) => node.task);
+  const siblingsOf = (parentId: string | null) =>
+    parentId === null ? top : (nodes.find((node) => node.task.id === parentId)?.children ?? []);
+  const locate = (id: string): { parentId: string | null } | null => {
+    if (top.some((t) => t.id === id)) return { parentId: null };
+    const parent = nodes.find((node) => node.children.some((c) => c.id === id));
+    return parent ? { parentId: parent.task.id } : null;
+  };
+
+  let parentId: string | null = null;
+  let targetIndex: (list: TaskItem[]) => number = (list) => list.length;
+  if (drop.position !== 'end') {
+    const target = locate(drop.targetId);
+    if (!target || drop.targetId === moved.id) return null;
+    if (drop.position === 'inside') {
+      if (target.parentId !== null || moved.hasSubtasks) return null;
+      parentId = drop.targetId;
+    } else {
+      if (target.parentId !== null && moved.hasSubtasks) return null;
+      parentId = target.parentId;
+      const after = drop.position === 'after' ? 1 : 0;
+      targetIndex = (list) => list.findIndex((t) => t.id === drop.targetId) + after;
+    }
+  }
+
+  const all = siblingsOf(parentId);
+  const list = all.filter((t) => t.id !== moved.id);
+  const index = targetIndex(list);
+  // Même place qu'avant : rien à faire.
+  if (all.findIndex((t) => t.id === moved.id) === index && all.length !== list.length) return null;
+
+  const next = sortOrderBetween(list[index - 1]?.sortOrder, list[index]?.sortOrder);
+  if (next !== undefined) return { parentId, orders: [{ id: moved.id, sortOrder: next }] };
+  const ids = [...list.slice(0, index).map((t) => t.id), moved.id, ...list.slice(index).map((t) => t.id)];
+  return { parentId, orders: ids.map((id, i) => ({ id, sortOrder: i + 1 })) };
+}
+
+export type TreeKey = 'up' | 'down' | 'indent' | 'outdent';
+
+/**
+ * Déplacements au clavier dans l'arbre, avec Alt : ↑ ↓ changent de place parmi les sœurs,
+ * → range la tâche dans celle du dessus (sous-tâche), ← la sort de sa parente (juste après elle).
+ */
+export function keyboardDrop(nodes: TaskNode[], taskId: string, key: TreeKey): TreeDrop | null {
+  const parent = nodes.find((node) => node.children.some((c) => c.id === taskId));
+  const siblings = parent ? parent.children : nodes.map((node) => node.task);
+  const index = siblings.findIndex((t) => t.id === taskId);
+  if (index === -1) return null;
+  switch (key) {
+    case 'up':
+      return index > 0 ? { position: 'before', targetId: siblings[index - 1]!.id } : null;
+    case 'down':
+      return index < siblings.length - 1 ? { position: 'after', targetId: siblings[index + 1]!.id } : null;
+    case 'indent':
+      return !parent && index > 0 ? { position: 'inside', targetId: siblings[index - 1]!.id } : null;
+    case 'outdent':
+      return parent ? { position: 'after', targetId: parent.task.id } : null;
+  }
 }
 
 // ─── Création ───────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 3 faites.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 4 faites.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -233,7 +233,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 | État d'interface | Zustand | Sélecteurs fins, pas de re-render global |
 | Formulaires | État local + validation pure dans `model.ts` | Formulaires courts : pas besoin de bibliothèque pour l'instant (React Hook Form si l'un d'eux se complexifie) |
 | Dates | date-fns + locale `fr` | Modulaire |
-| Glisser-déposer | dnd-kit | Réorganisation des tâches, kanban |
+| Glisser-déposer | dnd-kit (`@dnd-kit/core`) | Arbre des tâches et idées de la fiche projet, kanban, calendrier |
 | Longues listes | TanStack Virtual | — |
 | Icônes | Lucide | Cohérentes et légères |
 | SQLite | rusqlite (`bundled`) | FTS5 inclus, une connexion maîtrisée |
@@ -696,7 +696,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 **Projet (détail)**, en deux colonnes comme une fiche :
 
-- **Colonne principale** : titre et description éditables, tâches (bascule Liste / Kanban, ajout sur place, glisser-déposer), idées (V1.1), notes.
+- **Colonne principale** : titre et description éditables, tâches (bascule Liste / Kanban, ajout sur place, glisser-déposer : avant, après, dans une tâche pour en faire une sous-tâche, ou dans les idées), idées (V1.1, qu'on glisse dans les tâches), notes.
 - **Panneau de propriétés**, toutes éditables sur place :
   - statut (avec « Terminé le … » ou « Depuis le …, sa date de début »), type, client, priorité, dates, progression ;
   - **Finances** : budget, reçu, restant, % payé, non planifié, liste des encaissements (« Marquer reçu » en un clic), dépenses liées ;
@@ -713,6 +713,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 - Vues Mois / Semaine / Jour, éléments colorés selon leur source. Ce qui dure plusieurs jours (événement, tâche du début à la deadline) est une barre continue (V1.1).
 - Filtres : événements, deadlines, tâches, encaissements ; en option, les tâches sans deadline (V1.1).
 - Un clic sur un créneau vide crée un événement pré-rempli. La navigation (← →, `T` pour aujourd'hui) se fait au clavier.
+- Glisser un élément sur un autre jour change sa date (V1.1) ; dans la grille horaire, un rendez-vous prend aussi l'heure du créneau.
 
 **Planning** (V1.1) :
 
@@ -858,7 +859,7 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
    - **sélecteur de date maison** partout (« auj. », « demain », « +3j », « lundi », « 25/10 »…), et une icône calendrier à côté de la date du dashboard (`D`) ;
    - **date de fin** d'une tâche et d'un projet terminés, effacée quand on les rouvre ;
    - calendrier : option « Tâches sans deadline » (désactivée par défaut).
-4. **Glisser-déposer** :
+4. **Glisser-déposer** (✓ fait, branche `v1.1-glisser`) :
    - calendrier : prendre une tâche, un encaissement, un début ou une deadline de projet, un événement, et le déposer sur un autre jour pour changer sa date ;
    - fiche projet : glisser une tâche dans les idées et une idée dans les tâches ; déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir) ;
    - réordonner les tâches au clavier (Alt+↑ / Alt+↓).
@@ -880,19 +881,25 @@ Détail des étapes 5 à 7 :
 ### 7.3 Points à reprendre, issus des jalons terminés
 
 - **Ctrl+N** : non vérifié dans la fenêtre WebView2. La touche `N` seule fonctionne partout.
-- **Réordonnancement au clavier** : les tâches ne se réordonnent pas au clavier (Alt+↑ / Alt+↓, prévu à l'étape 4).
 - **Clients** : pas encore d'archivage.
 - **Erreurs dans les fenêtres globales** : une erreur dans une fenêtre globale (création, panneau de tâche) remplace toute l'app par l'écran d'erreur. Il faudrait des « error boundaries » locales.
 - **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
 - **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
 - **Export CSV des transactions** : prévu avec les exports (V1.1).
-- **Calendrier** : glisser pour replanifier, prévu à l'étape 4 (les barres continues sont faites en V1.1, étape 2).
 - **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
 - **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main.
 - **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
+
+**Choix faits en V1.1, étape 4 (glisser-déposer)**, à confirmer à l'usage :
+- **Calendrier** (`agenda/calendar/CalendarDnd.tsx`) : tout ce qui s'y affiche se prend et se dépose sur un autre jour, en vue mois comme dans la ligne « journée » de la semaine et du jour. La date change là où elle est stockée (P8) : une tâche décale son début et sa deadline d'autant (une barre garde sa durée), un projet son début ou sa deadline, un encaissement sa date prévue, un événement ses jours (heures gardées). L'élément se décale du nombre de jours entre la case où on l'a pris et celle où on le dépose : on peut prendre une barre par le milieu. Dans la grille horaire, un événement à heure fixe prend l'heure du haut du bloc, au quart d'heure, et garde sa durée ; les autres éléments n'y changent que de jour. La case visée est surlignée et l'élément glissé montre sa destination (« lun. 28 sept. · 15:30 »). Toast « Déplacé au lundi 28 septembre. » avec « Annuler » (Ctrl+Z). Refus, avec un message, d'un début de projet après sa deadline ou l'inverse. Un encaissement reçu ne bouge jamais (il n'est pas dans le calendrier). Un clic reste un clic (seuil de 6 px) ; la page ne défile qu'à 8 % du bord.
+- **Fiche projet** (`projects/components/ProjectPlan.tsx`, règles `placeInTree` et `dropOnRow`) : tâches et idées partagent un seul glisser-déposer, sans liste qui se réorganise pendant qu'on glisse. Sur une ligne de tâche, le haut du pointeur place avant (un trait), le bas après, le milieu range dedans (la ligne s'encadre : sous-tâche). Un seul niveau reste la règle : rien ne se range dans une sous-tâche (le milieu place alors avant ou après), une tâche qui a des sous-tâches ne descend pas. Déposée entre deux sous-tâches, une tâche devient leur sœur ; une sous-tâche déposée au premier niveau quitte sa parente. Sous l'ajout express : la fin de la liste. L'élément glissé dit ce qui va se passer (« Sous-tâche de « Tâches admin » », « En faire une idée », « En faire une tâche »).
+- **Tâche ↔ idée** : pendant qu'on glisse une tâche, la section Idées est entourée de pointillés (« Déposer ici pour en faire une idée »). La tâche devient une idée à son titre seul ; « Annuler » la remet à l'identique (dates, notes, priorité, place). Une tâche qui a des sous-tâches ne peut pas devenir une idée (message). Une idée déposée dans les tâches y devient une tâche à cette place, ou une sous-tâche ; toujours avec « Annuler ».
+- **Au clavier** (fiche projet) : Alt + ↑ ↓ changent la tâche de place parmi ses sœurs, Alt + → la range dans la tâche du dessus, Alt + ← la sort de sa parente (juste après elle). Le focus reste sur la tâche.
+- **Accessibilité** : les annonces du glisser-déposer pour les lecteurs d'écran sont en français (`ui/data/dnd-accessibility.ts`), kanban compris.
+- Le tri par glisser de l'ancienne liste (`@dnd-kit/sortable`) est remplacé : les dépendances `@dnd-kit/sortable` et `@dnd-kit/utilities` sont retirées.
 
 **Choix faits en V1.1, étape 3 (dates et deadlines)**, à confirmer à l'usage :
 - **Bloc « Deadlines »** (`dashboard/components/Deadlines.tsx`, règle `selectDeadlines`) : en haut de la colonne de droite, avant À surveiller. Il réunit les deadlines de projets, de tâches (qu'elles aient un début ou non) et les événements « Échéance », d'aujourd'hui à J+7 : une deadline y entre 7 jours avant. Un projet en retard y reste en tête (rouge) ; les tâches en retard n'y sont pas, elles sont déjà en tête d'Aujourd'hui. Compte à rebours coloré (règle de `core/deadline.ts`), 4 lignes d'emblée puis « N autres deadlines ». Une ligne sur deux niveaux : le titre en entier, puis le projet. Un clic ouvre la source.

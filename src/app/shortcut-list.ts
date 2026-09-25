@@ -42,6 +42,8 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['Espace'], label: 'Cocher la tâche' },
       { keys: ['Suppr'], label: 'Supprimer' },
       { keys: ['Ctrl clic', 'Maj clic'], label: 'Sélectionner plusieurs tâches' },
+      { keys: ['Alt ↑', 'Alt ↓'], label: 'Déplacer la tâche (fiche projet)' },
+      { keys: ['Alt →', 'Alt ←'], label: 'En faire une sous-tâche, ou l’en sortir' },
     ],
   },
   {

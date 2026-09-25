@@ -1,12 +1,11 @@
 import { Columns3, List } from 'lucide-react';
 import { useUiStore } from '@/app/ui-store';
-import { queryKeys } from '@/core/query-keys';
 import { useProjectTasks } from '../hooks';
 import { leafProgress, projectTaskTree } from '../model';
 import { DoneFold } from './TaskGroups';
 import { InlineAddTask } from './InlineAddTask';
 import { TaskBoard } from './TaskBoard';
-import { SortableTaskTree } from './TaskList';
+import { TaskTree, TreeEndZone } from './TaskTree';
 
 function ModeToggle() {
   const mode = useUiStore((state) => state.projectTasksMode);
@@ -31,8 +30,9 @@ function ModeToggle() {
 }
 
 /**
- * Tâches d'un projet : liste réordonnable (par défaut), chaque tâche suivie de ses sous-tâches,
- * ou kanban. Le compteur suit la progression du projet (les sous-tâches, pas leur catégorie).
+ * Tâches d'un projet : liste en arbre (par défaut), chaque tâche suivie de ses sous-tâches, où l'on
+ * glisse et dépose (voir ProjectPlan), ou kanban. Le compteur suit la progression du projet (les
+ * sous-tâches, pas leur catégorie).
  */
 export function ProjectTasks({ projectId, today }: { projectId: string; today: string }) {
   const { data: tasks = [] } = useProjectTasks(projectId);
@@ -63,8 +63,10 @@ export function ProjectTasks({ projectId, today }: { projectId: string; today: s
         </div>
       ) : (
         <>
-          <SortableTaskTree nodes={tree.open} today={today} listKey={queryKeys.tasks.project(projectId)} />
-          <InlineAddTask projectId={projectId} />
+          <TaskTree nodes={tree.open} today={today} projectId={projectId} />
+          <TreeEndZone>
+            <InlineAddTask projectId={projectId} />
+          </TreeEndZone>
           <DoneFold tasks={tree.done} today={today} showProject={false} showCompletion />
         </>
       )}

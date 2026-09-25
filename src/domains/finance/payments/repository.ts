@@ -1,3 +1,4 @@
+import { sqlDaysModifier } from '@/core/dates';
 import type { Db, SqlValue, Statement } from '@/core/db';
 import type { OpenPaymentStatus, PaymentListItem, PaymentRow } from './model';
 
@@ -168,6 +169,14 @@ export function updatePaymentStatement(id: string, patch: PaymentPatch, now: str
   sets.push('updated_at = ?');
   params.push(now);
   return { sql: `UPDATE payments SET ${sets.join(', ')} WHERE id = ?`, params: [...params, id] };
+}
+
+/** Glisser dans le calendrier : la date prévue se décale de `days` jours (jamais pour un encaissement reçu). */
+export function shiftPaymentDueStatement(id: string, days: number, now: string): Statement {
+  return {
+    sql: `UPDATE payments SET due_date = date(due_date, ?), updated_at = ? WHERE id = ? AND status <> 'received'`,
+    params: [sqlDaysModifier(days), now, id],
+  };
 }
 
 export function markReceivedStatement(id: string, receivedDate: string, now: string): Statement {

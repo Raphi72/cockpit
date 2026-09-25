@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 à 3 de la V1.1 sont faits. La suite de la V1.1 est en cours.
+Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 à 4 de la V1.1 sont faits. La suite de la V1.1 est en cours.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -29,12 +29,12 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 - [x] La **date de fin** d'une tâche ou d'un projet terminé est affichée, et effacée quand on les rouvre.
 - [x] Calendrier : option « Tâches sans deadline » dans le filtre, désactivée par défaut.
 
-### Étape 4 : glisser-déposer
+### Étape 4 : glisser-déposer (branche `v1.1-glisser`)
 
-- [ ] Calendrier : prendre une tâche, un encaissement, un projet (début ou deadline) ou un événement et le déposer sur un autre jour pour changer sa date.
-- [ ] Fiche projet : glisser une tâche dans les idées, et une idée dans les tâches.
-- [ ] Fiche projet : déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir).
-- [ ] Réordonner les tâches au clavier (Alt+↑ / Alt+↓).
+- [x] Calendrier : prendre une tâche, un encaissement, un projet (début ou deadline) ou un événement et le déposer sur un autre jour pour changer sa date ; dans la grille horaire, un rendez-vous prend aussi l'heure du créneau. « Annuler » dans le toast.
+- [x] Fiche projet : glisser une tâche dans les idées, et une idée dans les tâches.
+- [x] Fiche projet : déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir).
+- [x] Réordonner les tâches au clavier (Alt+↑ / Alt+↓), et Alt+→ / Alt+← pour en faire une sous-tâche ou l'en sortir.
 
 ### Étapes suivantes
 

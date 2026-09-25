@@ -4,6 +4,7 @@ import { db } from '@/core/db';
 import { nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
+import type { TaskItem, TreePlacement } from '@/domains/tasks/model';
 import { toast } from '@/ui/overlays/toast';
 import type { Idea } from './model';
 import {
@@ -13,7 +14,7 @@ import {
   renameIdeaStatement,
   restoreIdeaStatement,
 } from './repository';
-import { buildIdeaToTaskBatch, buildUndoIdeaToTaskBatch } from './service';
+import { buildIdeaToTaskBatch, buildTaskToIdeaBatch, buildUndoIdeaToTaskBatch, buildUndoTaskToIdeaBatch } from './service';
 
 export function useProjectIdeas(projectId: string) {
   return useQuery({ queryKey: queryKeys.ideas.project(projectId), queryFn: () => listProjectIdeas(db, projectId) });
@@ -60,22 +61,28 @@ export function useDeleteIdea() {
   });
 }
 
-/** L'idée devient une tâche du projet ; « Annuler » la remet dans les idées. */
+/** Idées et tâches ont bougé : les deux listes du projet, sa progression, le calendrier. */
+function invalidateIdeasAndTasks(queryClient: QueryClient) {
+  invalidateIdeas(queryClient);
+  void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
+}
+
+/**
+ * L'idée devient une tâche du projet (en fin de liste, ou à la place où on l'a déposée) ;
+ * « Annuler » la remet dans les idées.
+ */
 export function useIdeaToTask() {
   const queryClient = useQueryClient();
-  const invalidate = () => {
-    invalidateIdeas(queryClient);
-    // Une tâche de plus : la liste du projet et sa progression bougent.
-    void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
-  };
+  const invalidate = () => invalidateIdeasAndTasks(queryClient);
   return useMutation({
-    mutationFn: async (idea: Idea) => {
-      const { taskId, statements } = buildIdeaToTaskBatch(idea, batchContext());
+    mutationFn: async ({ idea, placement }: { idea: Idea; placement?: TreePlacement }) => {
+      const { taskId, statements } = buildIdeaToTaskBatch(idea, batchContext(), placement);
       await db.batch(statements);
       return taskId;
     },
-    onSuccess: (taskId, idea) => {
+    onSuccess: (taskId, { idea }) => {
       invalidate();
       toast('Idée transformée en tâche.', {
         action: {
@@ -83,6 +90,34 @@ export function useIdeaToTask() {
           undo: true,
           onClick: () => {
             void db.batch(buildUndoIdeaToTaskBatch(idea, taskId, nowTimestamp())).then(invalidate);
+          },
+        },
+      });
+    },
+  });
+}
+
+/**
+ * La tâche glissée dans les idées redevient une idée (seul son titre reste) ; « Annuler » remet la
+ * tâche à l'identique. Une tâche qui a des sous-tâches ne peut pas : elles seraient perdues.
+ */
+export function useTaskToIdea() {
+  const queryClient = useQueryClient();
+  const invalidate = () => invalidateIdeasAndTasks(queryClient);
+  return useMutation({
+    mutationFn: async (task: TaskItem) => {
+      const { ideaId, statements } = buildTaskToIdeaBatch(task, batchContext());
+      await db.batch(statements);
+      return ideaId;
+    },
+    onSuccess: (ideaId, task) => {
+      invalidate();
+      toast('Tâche transformée en idée.', {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () => {
+            void db.batch(buildUndoTaskToIdeaBatch(task, ideaId, nowTimestamp())).then(invalidate);
           },
         },
       });

@@ -5,6 +5,7 @@ import { formatMoney } from '@/core/money';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { agendaTooltip, deadlineDay, isAgendaItemLate, isDeadlineItem, itemTime, type AgendaItem, type AgendaKind } from '../model';
+import { useAgendaDrag } from './drag';
 
 /** Les dates dérivées et les échéances portent une icône ; les autres événements, la pastille de leur projet. */
 const ICONS: Partial<Record<AgendaKind, LucideIcon>> = {
@@ -53,6 +54,8 @@ type AgendaChipProps = {
   item: AgendaItem;
   today: string;
   onOpen: (item: AgendaItem) => void;
+  /** Identifiant de glisser-déposer, unique à l'écran (l'élément et sa case). */
+  dragId: string;
 };
 
 /**
@@ -60,13 +63,16 @@ type AgendaChipProps = {
  * Les deadlines sont en gras, avec un drapeau de la couleur de leur urgence ; celles qui pressent
  * (en retard, aujourd'hui, à 3 jours) ont un fond teinté.
  */
-export const AgendaChip = memo(function AgendaChip({ item, today, onOpen }: AgendaChipProps) {
+export const AgendaChip = memo(function AgendaChip({ item, today, onOpen, dragId }: AgendaChipProps) {
+  const drag = useAgendaDrag(item, dragId);
   const late = isAgendaItemLate(item, today);
   const tone = agendaDeadlineTone(item, today);
   const time = itemTime(item);
   const tint = tone ? URGENT_TINT[tone] : undefined;
   return (
     <button
+      ref={drag.setNodeRef}
+      {...drag.listeners}
       type="button"
       title={agendaTooltip(item)}
       onClick={(event) => {
@@ -75,7 +81,8 @@ export const AgendaChip = memo(function AgendaChip({ item, today, onOpen }: Agen
       }}
       className={
         'flex h-[22px] w-full min-w-0 shrink-0 items-center gap-1.5 rounded-sm px-1.5 text-left text-meta transition-colors duration-[120ms] ease-soft ' +
-        (tint ?? 'hover:bg-active')
+        (tint ?? 'hover:bg-active') +
+        (drag.isDragging ? ' opacity-40' : '')
       }
     >
       <AgendaMarker item={item} today={today} />
@@ -90,7 +97,9 @@ export const AgendaChip = memo(function AgendaChip({ item, today, onOpen }: Agen
   );
 });
 
-type DayItemsProps = Omit<AgendaChipProps, 'item'> & {
+type DayItemsProps = Omit<AgendaChipProps, 'item' | 'dragId'> & {
+  /** La case : chaque élément y a son identifiant de glisser-déposer. */
+  day: string;
   items: AgendaItem[];
   /** Au-delà, « +N » ouvre la vue du jour. */
   limit: number;
@@ -98,13 +107,13 @@ type DayItemsProps = Omit<AgendaChipProps, 'item'> & {
 };
 
 /** Les éléments d'une case (mois, ou ligne « journée ») : `limit` au plus, puis « +N ». */
-export function DayItems({ items, limit, today, onOpen, onShowDay }: DayItemsProps) {
+export function DayItems({ day, items, limit, today, onOpen, onShowDay }: DayItemsProps) {
   const visible = items.length > limit ? items.slice(0, limit) : items;
   const hidden = items.length - visible.length;
   return (
     <>
       {visible.map((item) => (
-        <AgendaChip key={item.key} item={item} today={today} onOpen={onOpen} />
+        <AgendaChip key={item.key} item={item} today={today} onOpen={onOpen} dragId={`${item.key}@${day}`} />
       ))}
       {hidden > 0 && (
         <button

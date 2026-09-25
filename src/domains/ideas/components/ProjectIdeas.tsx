@@ -1,5 +1,7 @@
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Lightbulb, ListPlus, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { IDEAS_ZONE, ideaDragId, usePlanDrag } from '@/domains/tasks/tree-dnd';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { useCreateIdea, useDeleteIdea, useIdeaToTask, useProjectIdeas, useRenameIdea } from '../hooks';
 import { cleanIdeaTitle, type Idea } from '../model';
@@ -63,13 +65,14 @@ function IdeaInput(props: {
 
 /**
  * Une idée : un clic (ou Entrée) pour la reformuler. Au survol : « En faire une tâche » et supprimer.
- * Suppr supprime aussi, avec « Annuler » dans le toast.
+ * Suppr supprime aussi, avec « Annuler » dans le toast. On peut aussi la glisser dans les tâches.
  */
 function IdeaRow({ idea }: { idea: Idea }) {
   const [editing, setEditing] = useState(false);
   const rename = useRenameIdea();
   const remove = useDeleteIdea();
   const toTask = useIdeaToTask();
+  const drag = useDraggable({ id: ideaDragId(idea.id), data: { type: 'idea', idea }, disabled: editing });
 
   if (editing) {
     return (
@@ -88,6 +91,9 @@ function IdeaRow({ idea }: { idea: Idea }) {
 
   return (
     <div
+      ref={drag.setNodeRef}
+      {...drag.listeners}
+      style={drag.isDragging ? { opacity: 0.35 } : undefined}
       role="button"
       tabIndex={0}
       data-row
@@ -102,7 +108,7 @@ function IdeaRow({ idea }: { idea: Idea }) {
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            toTask.mutate(idea);
+            toTask.mutate({ idea });
           }}
           className={actionClass}
         >
@@ -160,15 +166,28 @@ function InlineAddIdea({ projectId }: { projectId: string }) {
 
 /**
  * Idées d'un projet : ce qu'on fera peut-être, plus tard. Elles ne comptent ni dans la progression
- * ni dans les vues de tâches ; « En faire une tâche » les fait passer dans la liste des tâches.
+ * ni dans les vues de tâches ; « En faire une tâche » (ou les glisser dans les tâches) les fait passer
+ * dans la liste des tâches. Une tâche glissée ici redevient une idée.
  */
 export function ProjectIdeas({ projectId }: { projectId: string }) {
   const { data: ideas = [] } = useProjectIdeas(projectId);
+  const { setNodeRef } = useDroppable({ id: IDEAS_ZONE });
+  const { dragging, target } = usePlanDrag();
+  const over = target?.kind === 'ideas';
   return (
-    <section>
-      <div className="mb-2 flex items-center gap-2.5">
+    <section
+      ref={setNodeRef}
+      className={
+        '-mx-3 rounded-lg px-3 pb-1 outline-offset-0 transition-colors duration-[120ms] ease-soft ' +
+        (over ? 'bg-accent-soft outline-2 outline-accent' : dragging?.type === 'task' ? 'outline-1 outline-dashed outline-line-strong' : '')
+      }
+    >
+      <div className="mb-2 flex items-center gap-2.5 pt-1">
         <h2 className="font-semibold">Idées</h2>
         {ideas.length > 0 && <span className="tnum text-meta text-ink-3">{ideas.length}</span>}
+        {dragging?.type === 'task' && (
+          <span className={`ml-auto text-meta ${over ? 'text-accent' : 'text-ink-3'}`}>Déposer ici pour en faire une idée</span>
+        )}
       </div>
       {ideas.map((idea) => (
         <IdeaRow key={idea.id} idea={idea} />

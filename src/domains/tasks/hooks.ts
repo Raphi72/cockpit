@@ -4,7 +4,7 @@ import { addDaysISO, nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import { toast } from '@/ui/overlays/toast';
-import { startOfDayTimestamp, type NewTaskInput, type TaskItem, type TaskPatch } from './model';
+import { startOfDayTimestamp, type NewTaskInput, type TaskItem, type TaskPatch, type TreePlacement } from './model';
 import {
   deleteTaskStatement,
   getTask,
@@ -15,9 +15,9 @@ import {
   listParentCandidates,
   listSubtasks,
   listTasksAround,
+  placeTaskStatements,
   restoreTaskFieldsStatement,
   restoreTaskStatement,
-  sortOrderStatements,
   updateTaskStatements,
 } from './repository';
 
@@ -115,17 +115,26 @@ export function useUpdateTask() {
   });
 }
 
-/** Réordonne une liste : l'ordre est appliqué tout de suite dans le cache de cette liste. */
-export function useReorderTasks(listKey: readonly unknown[]) {
+/**
+ * Nouvelle place dans l'arbre d'un projet (glisser-déposer, Alt + flèches). La liste du projet est
+ * mise à jour tout de suite (parente et ordres), puis relue : compteurs et progression suivent.
+ */
+export function useMoveTask(projectId: string) {
   const queryClient = useQueryClient();
+  const listKey = queryKeys.tasks.project(projectId);
   return useMutation({
-    mutationFn: (updates: { id: string; sortOrder: number }[]) => db.batch(sortOrderStatements(updates, nowTimestamp())),
-    onMutate: async (updates) => {
+    mutationFn: ({ task, placement }: { task: TaskItem; placement: TreePlacement }) =>
+      db.batch(placeTaskStatements(task.id, placement, task.parentId, nowTimestamp())),
+    onMutate: async ({ task, placement }) => {
       await queryClient.cancelQueries({ queryKey: listKey });
-      const orders = new Map(updates.map((u) => [u.id, u.sortOrder]));
+      const orders = new Map(placement.orders.map((o) => [o.id, o.sortOrder]));
       queryClient.setQueryData<TaskItem[]>(listKey, (tasks) =>
         tasks
-          ?.map((t) => (orders.has(t.id) ? { ...t, sortOrder: orders.get(t.id)! } : t))
+          ?.map((t) => ({
+            ...t,
+            parentId: t.id === task.id ? placement.parentId : t.parentId,
+            sortOrder: orders.get(t.id) ?? t.sortOrder,
+          }))
           .sort((a, b) => a.sortOrder - b.sortOrder),
       );
     },

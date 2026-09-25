@@ -1,13 +1,12 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { ArrowLeft, Ellipsis, Trash2 } from 'lucide-react';
-import { ProjectIdeas } from '@/domains/ideas/components/ProjectIdeas';
-import { ProjectTasks } from '@/domains/tasks/components/ProjectTasks';
 import { useToday } from '@/core/use-today';
 import { PageContainer } from '@/ui/layout/Page';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
 import { ProjectFinance } from '../components/ProjectFinance';
+import { ProjectPlan } from '../components/ProjectPlan';
 import { ProjectProperties } from '../components/ProjectProperties';
 import { useDeleteProject, useProject, useUpdateProject } from '../hooks';
 
@@ -83,11 +82,7 @@ export function ProjectDetailPage() {
           />
 
           <div className="mt-14">
-            <ProjectTasks projectId={project.id} today={today} />
-          </div>
-
-          <div className="mt-14">
-            <ProjectIdeas projectId={project.id} />
+            <ProjectPlan projectId={project.id} today={today} />
           </div>
 
           <section className="mt-14">

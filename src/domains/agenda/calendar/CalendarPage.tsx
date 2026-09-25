@@ -26,6 +26,7 @@ import {
   type AgendaSource,
 } from '../model';
 import { useOpenAgendaItem } from '../open-item';
+import { CalendarDnd } from './CalendarDnd';
 import { MonthView } from './MonthView';
 import { TimeGridView } from './TimeGridView';
 
@@ -146,26 +147,29 @@ export function CalendarPage() {
         </>
       }
     >
-      {view === 'month' ? (
-        <MonthView
-          anchor={anchor}
-          days={days}
-          items={visible}
-          today={today}
-          onOpen={openItem}
-          onCreate={(day) => openCreate('event', { eventStart: day })}
-          onShowDay={showDay}
-        />
-      ) : (
-        <TimeGridView
-          days={days}
-          items={visible}
-          today={today}
-          onOpen={openItem}
-          onCreate={(start, allDay) => openCreate('event', { eventStart: start, eventAllDay: allDay })}
-          onShowDay={showDay}
-        />
-      )}
+      {/* On peut prendre un élément et le déposer sur un autre jour (ou créneau) pour changer sa date. */}
+      <CalendarDnd today={today}>
+        {view === 'month' ? (
+          <MonthView
+            anchor={anchor}
+            days={days}
+            items={visible}
+            today={today}
+            onOpen={openItem}
+            onCreate={(day) => openCreate('event', { eventStart: day })}
+            onShowDay={showDay}
+          />
+        ) : (
+          <TimeGridView
+            days={days}
+            items={visible}
+            today={today}
+            onOpen={openItem}
+            onCreate={(start, allDay) => openCreate('event', { eventStart: start, eventAllDay: allDay })}
+            onShowDay={showDay}
+          />
+        )}
+      </CalendarDnd>
 
       {empty && (
         <p className="mt-6 text-meta text-ink-3">

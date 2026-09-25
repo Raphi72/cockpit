@@ -1,5 +1,6 @@
+import { sqlDaysModifier } from '@/core/dates';
 import type { Db, SqlValue, Statement } from '@/core/db';
-import type { NewTaskInput, TaskItem, TaskPatch } from './model';
+import type { NewTaskInput, TaskItem, TaskPatch, TreePlacement } from './model';
 
 const COLUMNS = `
   t.id, t.project_id, p.name AS project_name, pt.color AS project_color,
@@ -244,6 +245,18 @@ export function updateTaskStatements(id: string, patch: TaskPatch, now: string):
   return statements;
 }
 
+/**
+ * Glisser dans le calendrier : le début et la deadline se décalent d'autant (une tâche du début à la
+ * deadline garde sa durée) ; une date absente le reste.
+ */
+export function shiftTaskDatesStatement(id: string, days: number, now: string): Statement {
+  const modifier = sqlDaysModifier(days);
+  return {
+    sql: `UPDATE tasks SET scheduled_date = date(scheduled_date, ?), due_date = date(due_date, ?), updated_at = ? WHERE id = ?`,
+    params: [modifier, modifier, now, id],
+  };
+}
+
 /** Remet les champs qu'une action groupée peut changer, sans cascade : annulation. */
 export function restoreTaskFieldsStatement(task: TaskItem, now: string): Statement {
   return {
@@ -251,6 +264,20 @@ export function restoreTaskFieldsStatement(task: TaskItem, now: string): Stateme
           WHERE id = ?`,
     params: [task.status, task.completedAt, task.priority, task.scheduledDate, task.dueDate, now, task.id],
   };
+}
+
+/**
+ * Nouvelle place dans l'arbre d'un projet (glisser-déposer, Alt + flèches) : la parente si elle change
+ * (avec ce que cela entraîne, voir updateTaskStatements), puis les ordres, dans le même lot.
+ */
+export function placeTaskStatements(
+  id: string,
+  placement: TreePlacement,
+  currentParentId: string | null,
+  now: string,
+): Statement[] {
+  const parent = placement.parentId === currentParentId ? [] : updateTaskStatements(id, { parentId: placement.parentId }, now);
+  return [...parent, ...sortOrderStatements(placement.orders, now)];
 }
 
 export function sortOrderStatements(updates: { id: string; sortOrder: number }[], now: string): Statement[] {
