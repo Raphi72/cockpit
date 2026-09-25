@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.0 (MVP)** : les jalons 0 à 6 de la [conception](docs/CONCEPTION.md) sont faits. La V1.1 est en cours.
+Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 et 2 de la V1.1 sont faits. La suite de la V1.1 est en cours.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -42,8 +42,13 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 - [ ] Vue mois : un mois chargé dépasse de quelques pixels en 1080p à 125 %.
 - [ ] `Ctrl+N` à vérifier dans la vraie fenêtre (la touche `N` seule fonctionne).
 
-## Plus tard, seulement si l'usage le demande (V1.2 et après)
+## V2 : plus tard, seulement si l'usage le demande
 
+- [ ] **Google Agenda dans le calendrier** : voir aussi ce qu'on a dans son agenda Google (cours, rendez-vous perso…), dans le calendrier et dans Prochains jours du dashboard. En lecture seule, en option, sans rien changer côté Google.
+  - Piste la plus simple : l'« adresse secrète au format iCal » de l'agenda Google (Paramètres de l'agenda › Intégrer l'agenda). Pas de compte ni de connexion à gérer dans Cockpit.
+  - L'adresse est un secret : gardée dans la base locale (table `settings`), jamais dans le dépôt ni dans les exports.
+  - Téléchargée par Rust (l'interface ne fait aucun appel réseau, CSP stricte), au lancement puis toutes les 15 minutes environ ; sans connexion, la dernière copie reste affichée.
+  - Ces événements restent à part : une couleur ou un filtre dédié, et ils ne se modifient pas dans Cockpit.
 - [ ] Cockpit dans la zone de notification et lancé au démarrage de Windows.
 - [ ] Raccourci global, même app fermée.
 - [ ] Événements récurrents.

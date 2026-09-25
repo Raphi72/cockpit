@@ -44,7 +44,7 @@ Tout le reste (saisie, détail, historique) est secondaire et doit rester à une
 | Tâches | Tâches de projet **et** tâches libres, liste + kanban, réorganisation, vues Aujourd'hui / Semaine / Retard / Prioritaires / Terminées | Saisie rapide sur plusieurs lignes | Sous-tâches, tâches récurrentes |
 | Clients | Fiche simple (nom, contact, notes) et projets liés | Historique du CA par client | — |
 | Finances | Comptes perso/pro, encaissements (échéancier), transactions, virements, ajustement de solde | Export CSV, catégories éditables | CA encaissé par mois/trimestre, estimation des cotisations |
-| Calendrier | Mois / semaine / jour, événements, agrégation des dates des projets, tâches et paiements | Glisser pour replanifier | Événements récurrents |
+| Calendrier | Mois / semaine / jour, événements, agrégation des dates des projets, tâches et paiements | Glisser pour replanifier | Événements récurrents, Google Agenda en lecture seule (V2) |
 | Planning | — | Timeline type Gantt avec bande de densité | — |
 | Dashboard | Cockpit complet (§5.2) | Tâches de jour en jour (flèches), tâches dans Prochains jours, sections réglables | — |
 | Recherche | Ctrl+K : recherche globale (FTS5) + commandes | — | — |
@@ -215,7 +215,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
   - événement, 15 minutes avant ;
   - résumé du matin (optionnel).
 - **Planification** : les règles sont évaluées au lancement, puis toutes les 5 minutes tant que l'app tourne. La table `notification_log` garantit qu'une même notification n'est jamais envoyée deux fois.
-- **Limite** : quand l'app est fermée, aucune notification n'arrive. La V1.2 propose deux options pour y remédier : « rester dans la zone de notification » et « lancer au démarrage de Windows ».
+- **Limite** : quand l'app est fermée, aucune notification n'arrive. La V2 propose deux options pour y remédier : « rester dans la zone de notification » et « lancer au démarrage de Windows ».
 
 ### 2.9 Bibliothèques retenues
 
@@ -833,7 +833,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | En cours | Retours d'usage, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
-| **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
+| **V2** | Si besoin | Google Agenda dans le calendrier (lecture seule, adresse iCal secrète), zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
 
