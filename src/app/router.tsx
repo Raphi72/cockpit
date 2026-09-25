@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router';
 import { validateCalendarSearch } from '@/domains/agenda/search';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
+import { validateDashboardSearch } from '@/domains/dashboard/search';
 import { validateFinancesSearch } from '@/domains/finance/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateTasksSearch } from '@/domains/tasks/search';
@@ -17,7 +18,7 @@ const rootRoute = createRootRoute({ component: AppShell });
 
 // Le dashboard est chargé immédiatement ; les autres pages à la demande.
 const routes = [
-  createRoute({ getParentRoute: () => rootRoute, path: '/', component: DashboardPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/', validateSearch: validateDashboardSearch, component: DashboardPage }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/projects',

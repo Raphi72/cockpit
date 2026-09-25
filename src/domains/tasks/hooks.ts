@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { db } from '@/core/db';
-import { nowTimestamp } from '@/core/dates';
+import { addDaysISO, nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import { toast } from '@/ui/overlays/toast';
@@ -27,6 +27,17 @@ export function useOpenTasks() {
 export function useDoneToday(today: string) {
   const since = startOfDayTimestamp(today);
   return useQuery({ queryKey: queryKeys.tasks.done({ since }), queryFn: () => listDoneTasks(db, { since }) });
+}
+
+/** Terminées un jour passé : le bilan de ce jour-là, sur le dashboard. */
+export function useDoneOn(day: string, enabled = true) {
+  const since = startOfDayTimestamp(day);
+  const until = startOfDayTimestamp(addDaysISO(day, 1));
+  return useQuery({
+    queryKey: queryKeys.tasks.done({ since, until }),
+    queryFn: () => listDoneTasks(db, { since, until }),
+    enabled,
+  });
 }
 
 export function useDoneTasks() {

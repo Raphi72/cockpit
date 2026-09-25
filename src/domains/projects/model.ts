@@ -31,6 +31,11 @@ export const STATUS_LABELS: Record<ProjectStatus, string> = {
 };
 
 export const OPEN_STATUSES: ProjectStatus[] = ['active', 'planned', 'proposal', 'on_hold'];
+/**
+ * Projets ouverts et validés : une Proposition (devis pas encore signé) n'a sa place
+ * ni sur le dashboard ni dans le calendrier. Elle reste dans la page Projets.
+ */
+export const CONFIRMED_STATUSES: ProjectStatus[] = ['active', 'planned', 'on_hold'];
 export const CLOSED_STATUSES: ProjectStatus[] = ['done', 'cancelled'];
 
 export type Priority = 0 | 1 | 2 | 3;

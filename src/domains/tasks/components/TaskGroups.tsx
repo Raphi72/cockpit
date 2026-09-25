@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-import { selectToday, totalEstimate, formatDuration, type TaskItem } from '../model';
+import { useDoneOn } from '../hooks';
+import { selectPlannedOn, selectToday, totalEstimate, formatDuration, type TaskItem } from '../model';
 import { InlineAddTask } from './InlineAddTask';
 import { TaskList } from './TaskList';
 
@@ -63,6 +64,45 @@ export function TodayTasks({ open, doneToday, today }: { open: TaskItem[]; doneT
       )}
       <InlineAddTask scheduledDate={today} label="Ajouter une tâche pour aujourd’hui" />
       <DoneFold tasks={doneToday} today={today} />
+    </div>
+  );
+}
+
+/** Un jour à venir : les tâches prévues ce jour-là, et l'ajout express pour ce jour. */
+export function FutureDayTasks({ open, day, today, addLabel }: { open: TaskItem[]; day: string; today: string; addLabel: string }) {
+  const tasks = selectPlannedOn(open, day, today);
+  return (
+    <div>
+      {tasks.length > 0 ? (
+        <TaskList tasks={tasks} today={today} shownDay={day} />
+      ) : (
+        <p className="py-2 text-ink-3">Rien de prévu ce jour-là.</p>
+      )}
+      <InlineAddTask scheduledDate={day} label={addLabel} />
+    </div>
+  );
+}
+
+/**
+ * Un jour passé : ce qui a été terminé ce jour-là, puis ce qui y était prévu et n'est pas fait
+ * (reporté dans Aujourd'hui, et toujours à cocher ici).
+ */
+export function PastDayTasks({ open, day, today }: { open: TaskItem[]; day: string; today: string }) {
+  const { data: done = [] } = useDoneOn(day);
+  const notDone = selectPlannedOn(open, day, today);
+  return (
+    <div>
+      {done.length > 0 ? (
+        <TaskList tasks={done} today={today} />
+      ) : (
+        <p className="py-2 text-ink-3">Aucune tâche terminée ce jour-là.</p>
+      )}
+      {notDone.length > 0 && (
+        <>
+          <GroupHeading>Pas faites, reportées à aujourd’hui</GroupHeading>
+          <TaskList tasks={notDone} today={today} />
+        </>
+      )}
     </div>
   );
 }

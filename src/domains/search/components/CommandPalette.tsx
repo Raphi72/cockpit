@@ -8,6 +8,7 @@ import {
   CircleCheck,
   FolderClosed,
   HandCoins,
+  Lightbulb,
   Search,
   User,
   type LucideIcon,
@@ -45,6 +46,7 @@ const groupClass =
 const ENTITY_ICONS: Record<SearchEntity, LucideIcon> = {
   project: FolderClosed,
   task: Circle,
+  idea: Lightbulb,
   client: User,
   event: CalendarDays,
   payment: HandCoins,
@@ -148,6 +150,9 @@ function usePaletteActions(close: () => void) {
         break;
       case 'task':
         openTask(result.id);
+        break;
+      case 'idea':
+        if (result.projectId) void navigate({ to: '/projects/$projectId', params: { projectId: result.projectId } });
         break;
       case 'event':
         openEvent(result.id);

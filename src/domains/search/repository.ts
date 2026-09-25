@@ -39,7 +39,7 @@ type SearchRow = Omit<SearchResult, 'closed' | 'direct'> & { closed: number; dir
 
 /**
  * Recherche globale en une requête. Quand un projet ou un client correspond, ses éléments liés
- * (projets du client, tâches, événements, encaissements) remontent aussi, après les correspondances directes.
+ * (projets du client, tâches, idées, événements, encaissements) remontent aussi, après les correspondances directes.
  * Au plus SEARCH_LIMIT_PER_GROUP résultats par type : les directs, puis ceux encore ouverts.
  */
 export async function searchEverything(db: Db, text: string, today: string): Promise<SearchResult[]> {
@@ -56,7 +56,8 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        SELECT id FROM projects WHERE client_id IN (SELECT id FROM matched_clients)
      ),
      results AS (
-       SELECT 'project' AS entity, p.id, p.name AS title, c.name AS context, pt.color, p.deadline AS date,
+       SELECT 'project' AS entity, p.id, p.name AS title, p.id AS project_id, c.name AS context, pt.color,
+              p.deadline AS date,
               NULL AS amount_cents,
               (p.status IN ('done', 'cancelled') OR p.archived_at IS NOT NULL) AS closed,
               (h.id IS NOT NULL) AS direct, h.score
@@ -67,7 +68,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE p.id IN (SELECT id FROM scope)
 
        UNION ALL
-       SELECT 'task', t.id, t.title, p.name, pt.color, COALESCE(t.due_date, t.scheduled_date),
+       SELECT 'task', t.id, t.title, t.project_id, p.name, pt.color, COALESCE(t.due_date, t.scheduled_date),
               NULL, t.status = 'done', h.id IS NOT NULL, h.score
        FROM tasks t
        LEFT JOIN projects p ON p.id = t.project_id
@@ -76,13 +77,22 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.id IS NOT NULL OR t.project_id IN (SELECT id FROM scope)
 
        UNION ALL
-       SELECT 'client', c.id, c.name, c.email, NULL, NULL, NULL, c.archived_at IS NOT NULL, 1, h.score
+       SELECT 'idea', i.id, i.title, i.project_id, p.name, pt.color, NULL, NULL,
+              (p.status IN ('done', 'cancelled') OR p.archived_at IS NOT NULL), h.id IS NOT NULL, h.score
+       FROM ideas i
+       JOIN projects p ON p.id = i.project_id
+       JOIN project_types pt ON pt.id = p.type_id
+       LEFT JOIN hits h ON h.entity = 'idea' AND h.id = i.id
+       WHERE h.id IS NOT NULL OR i.project_id IN (SELECT id FROM scope)
+
+       UNION ALL
+       SELECT 'client', c.id, c.name, NULL, c.email, NULL, NULL, NULL, c.archived_at IS NOT NULL, 1, h.score
        FROM hits h
        JOIN clients c ON c.id = h.id
        WHERE h.entity = 'client'
 
        UNION ALL
-       SELECT 'event', e.id, e.title, p.name, pt.color, e.starts_at,
+       SELECT 'event', e.id, e.title, e.project_id, p.name, pt.color, e.starts_at,
               NULL, substr(COALESCE(e.ends_at, e.starts_at), 1, 10) < ?, h.id IS NOT NULL, h.score
        FROM events e
        LEFT JOIN projects p ON p.id = e.project_id
@@ -91,7 +101,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.id IS NOT NULL OR e.project_id IN (SELECT id FROM scope)
 
        UNION ALL
-       SELECT 'payment', pay.id, pay.label, COALESCE(p.name, pc.name), pt.color,
+       SELECT 'payment', pay.id, pay.label, pay.project_id, COALESCE(p.name, pc.name), pt.color,
               COALESCE(pay.received_date, pay.due_date), pay.amount_cents,
               pay.status = 'received', h.id IS NOT NULL, h.score
        FROM payments pay
@@ -104,7 +114,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
           OR pay.client_id IN (SELECT id FROM matched_clients)
 
        UNION ALL
-       SELECT 'transaction', tx.id, tx.label, a.name, NULL, tx.date, tx.amount_cents, 0, 1, h.score
+       SELECT 'transaction', tx.id, tx.label, tx.project_id, a.name, NULL, tx.date, tx.amount_cents, 0, 1, h.score
        FROM hits h
        JOIN transactions tx ON tx.id = h.id
        JOIN accounts a ON a.id = tx.account_id
@@ -120,7 +130,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        ) AS position
        FROM results
      )
-     SELECT entity, id, title, context, color, date, amount_cents, closed, direct, score
+     SELECT entity, id, title, project_id, context, color, date, amount_cents, closed, direct, score
      FROM ranked
      WHERE position <= ?
      ORDER BY entity, position`,

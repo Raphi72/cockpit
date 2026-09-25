@@ -21,6 +21,8 @@ type TaskRowProps = {
   showProject?: boolean;
   /** Pour une tâche terminée : afficher quand elle l'a été. */
   showCompletion?: boolean;
+  /** Jour que montre la liste : une date prévue ce jour-là n'est pas répétée sur la ligne. */
+  shownDay?: string;
   /** Propriétés de glisser-déposer, fournies par la liste triable. */
   dragProps?: HTMLAttributes<HTMLDivElement>;
   dragRef?: Ref<HTMLDivElement>;
@@ -34,6 +36,7 @@ export const TaskRow = memo(function TaskRow({
   today,
   showProject = true,
   showCompletion = false,
+  shownDay,
   dragProps,
   dragRef,
   style,
@@ -43,7 +46,8 @@ export const TaskRow = memo(function TaskRow({
   const deleteTask = useDeleteTask();
   const openTask = useTaskSheet((state) => state.openTask);
   const done = task.status === 'done';
-  const date = taskDateLabel(task, today);
+  const label = taskDateLabel(task, today);
+  const date = label?.kind === 'scheduled' && task.scheduledDate === shownDay ? null : label;
   const toggle = () => update.mutate({ id: task.id, patch: { status: done ? 'todo' : 'done' } });
 
   return (

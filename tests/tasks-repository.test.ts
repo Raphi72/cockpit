@@ -98,6 +98,18 @@ describe('tâches', () => {
     expect((await listOpenTasks(db)).map((t) => t.id)).toEqual(['libre']);
   });
 
+  it('retrouve les tâches terminées un jour donné', async () => {
+    const { db } = await setup();
+    await db.batch([
+      insertTaskStatement('a', newTask({ title: 'Mardi' }), NOW),
+      insertTaskStatement('b', newTask({ title: 'Mercredi' }), NOW),
+      updateTaskStatement('a', { status: 'done' }, '2026-09-22T15:00:00.000Z'),
+      updateTaskStatement('b', { status: 'done' }, '2026-09-23T09:00:00.000Z'),
+    ]);
+    const done = await listDoneTasks(db, { since: '2026-09-22T00:00:00.000Z', until: '2026-09-23T00:00:00.000Z' });
+    expect(done.map((t) => t.title)).toEqual(['Mardi']);
+  });
+
   it('réordonne et restaure une tâche supprimée à l’identique', async () => {
     const { db, projectId } = await setup();
     await db.batch([

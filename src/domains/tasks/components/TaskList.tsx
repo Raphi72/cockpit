@@ -10,6 +10,8 @@ type TaskListProps = {
   today: string;
   showProject?: boolean;
   showCompletion?: boolean;
+  /** Jour que montre la liste : une date prévue ce jour-là n'est pas répétée. */
+  shownDay?: string;
   /** Clé de cache de la liste : si fournie, les tâches se réordonnent par glisser-déposer. */
   sortableKey?: readonly unknown[];
 };
@@ -29,7 +31,12 @@ function SortableTaskRow({ task, today, showProject }: { task: TaskItem; today: 
   );
 }
 
-function SortableTaskList({ tasks, today, showProject, sortableKey }: Required<Omit<TaskListProps, 'showCompletion'>>) {
+function SortableTaskList({
+  tasks,
+  today,
+  showProject,
+  sortableKey,
+}: Required<Omit<TaskListProps, 'showCompletion' | 'shownDay'>>) {
   const reorder = useReorderTasks(sortableKey);
   // Souris uniquement, avec un petit seuil : un clic reste un clic. Au clavier,
   // Entrée ouvre la tâche et Espace la coche (pas de glisser-déposer).
@@ -54,14 +61,21 @@ function SortableTaskList({ tasks, today, showProject, sortableKey }: Required<O
   );
 }
 
-export function TaskList({ tasks, today, showProject = true, showCompletion = false, sortableKey }: TaskListProps) {
+export function TaskList({ tasks, today, showProject = true, showCompletion = false, shownDay, sortableKey }: TaskListProps) {
   if (sortableKey) {
     return <SortableTaskList tasks={tasks} today={today} showProject={showProject} sortableKey={sortableKey} />;
   }
   return (
     <>
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} today={today} showProject={showProject} showCompletion={showCompletion} />
+        <TaskRow
+          key={task.id}
+          task={task}
+          today={today}
+          showProject={showProject}
+          showCompletion={showCompletion}
+          shownDay={shownDay}
+        />
       ))}
     </>
   );

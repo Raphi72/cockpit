@@ -1,5 +1,7 @@
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import {
+  ChevronLeft,
+  ChevronRight,
   CircleDashed,
   Euro,
   FolderClosed,
@@ -12,9 +14,10 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
-import { addDaysISO, formatLongDate } from '@/core/dates';
+import { usePageShortcuts } from '@/app/shortcuts';
+import { addDaysISO, daysBetween } from '@/core/dates';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
-import { UPCOMING_AGENDA_DAYS, UpcomingAgenda, useAgenda, type AgendaItem } from '@/domains/agenda';
+import { UPCOMING_AGENDA_DAYS, useAgenda, type AgendaItem } from '@/domains/agenda';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
 import { useSetting } from '@/domains/settings/hooks';
 import { SETTINGS } from '@/domains/settings/model';
@@ -23,14 +26,25 @@ import { useOverduePayments } from '@/domains/finance/payments/hooks';
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { ProjectRow } from '@/domains/projects/components/ProjectRow';
 import { useProjects } from '@/domains/projects/hooks';
-import { OPEN_STATUSES } from '@/domains/projects/model';
-import { TodayTasks, estimateSummary } from '@/domains/tasks/components/TaskGroups';
-import { useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
-import { selectToday } from '@/domains/tasks/model';
+import { CONFIRMED_STATUSES } from '@/domains/projects/model';
+import { FutureDayTasks, PastDayTasks, TodayTasks, estimateSummary } from '@/domains/tasks/components/TaskGroups';
+import { useDoneOn, useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
+import { selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
-import { buildAlerts, dashboardSummary, nextTimedEvent, type Alert, type AlertAction } from '../model';
+import { UpcomingDays } from '../components/UpcomingDays';
+import {
+  buildAlerts,
+  dashboardSummary,
+  dashboardTitle,
+  dayTasksHeading,
+  nextTimedEvent,
+  otherDaySummary,
+  upcomingWithTasks,
+  type Alert,
+  type AlertAction,
+} from '../model';
 
 const ALERT_ICONS: Record<Alert['kind'], LucideIcon> = {
   deadline: TriangleAlert,
@@ -149,28 +163,97 @@ function DaySummary(props: { todayCount: number; overdueCount: number; agenda: A
   return dashboardSummary({ todayCount: props.todayCount, overdueCount: props.overdueCount, nextEvent });
 }
 
+/**
+ * Date en titre, entre deux flèches pour passer d'un jour à l'autre (← → au clavier).
+ * La flèche de gauche déborde dans la marge : la date reste alignée sur le contenu. La date a une
+ * largeur minimale pour que la flèche de droite ne bouge pas d'un jour à l'autre.
+ */
+function DayTitle({ day, today, onShift }: { day: string; today: string; onShift: (delta: number) => void }) {
+  const arrow =
+    'grid size-8 shrink-0 place-items-center rounded-md text-ink-3 transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink';
+  return (
+    <span className="-ml-10 flex items-center gap-2">
+      <button type="button" onClick={() => onShift(-1)} aria-label="Jour précédent" title="Jour précédent · ←" className={arrow}>
+        <ChevronLeft className="size-[18px]" strokeWidth={1.75} />
+      </button>
+      <span className="min-w-[232px]">{dashboardTitle(day, today)}</span>
+      <button type="button" onClick={() => onShift(1)} aria-label="Jour suivant" title="Jour suivant · →" className={arrow}>
+        <ChevronRight className="size-[18px]" strokeWidth={1.75} />
+      </button>
+    </span>
+  );
+}
+
+/** Le bloc de tâches suit le jour choisi : aujourd'hui, un jour à venir ou un jour passé. */
+function DayTasksSection(props: { day: string; today: string; openTasks: TaskItem[]; doneToday: TaskItem[] }) {
+  const { day, today, openTasks, doneToday } = props;
+  const diff = daysBetween(today, day);
+  let estimate: string | null = null;
+  if (diff === 0) {
+    const groups = selectToday(openTasks, today);
+    estimate = estimateSummary([...groups.overdue, ...groups.today]);
+  } else if (diff > 0) {
+    estimate = estimateSummary(selectPlannedOn(openTasks, day, today));
+  }
+
+  return (
+    <section>
+      <div className="mb-1 flex items-baseline gap-2.5">
+        <h2 className="font-semibold">{dayTasksHeading(day, today)}</h2>
+        {estimate && <span className="text-meta text-ink-3">{estimate}</span>}
+        <Link to="/tasks" className="ml-auto text-meta text-ink-3 hover:text-ink">
+          Toutes les tâches →
+        </Link>
+      </div>
+      {diff === 0 && <TodayTasks open={openTasks} doneToday={doneToday} today={today} />}
+      {diff > 0 && (
+        <FutureDayTasks
+          open={openTasks}
+          day={day}
+          today={today}
+          addLabel={diff === 1 ? 'Ajouter une tâche pour demain' : 'Ajouter une tâche pour ce jour'}
+        />
+      )}
+      {diff < 0 && <PastDayTasks open={openTasks} day={day} today={today} />}
+    </section>
+  );
+}
+
 export function DashboardPage() {
   const today = useToday();
+  const search = useSearch({ from: '/' });
+  const navigate = useNavigate({ from: '/' });
+  const day = search.day ?? today;
   const openCreate = useCreateStore((state) => state.openCreate);
   const agendaRange = useMemo(() => ({ from: today, to: addDaysISO(today, UPCOMING_AGENDA_DAYS) }), [today]);
-  const { data: projects } = useProjects({ statuses: OPEN_STATUSES });
+  const { data: projects } = useProjects({ statuses: CONFIRMED_STATUSES });
   const { data: overduePayments = [] } = useOverduePayments(today);
   const { data: openTasks } = useOpenTasks();
   const { data: doneToday = [] } = useDoneToday(today);
+  const { data: doneThatDay = [] } = useDoneOn(day, day < today);
   const { data: finance } = useFinanceSummary(today);
   const { data: agenda } = useAgenda(agendaRange);
   const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
 
+  const goTo = (next: string) => void navigate({ search: next === today ? {} : { day: next } });
+  usePageShortcuts({
+    arrowleft: () => goTo(addDaysISO(day, -1)),
+    arrowright: () => goTo(addDaysISO(day, 1)),
+    t: () => goTo(today),
+  });
+
   if (!projects || !openTasks || !finance || !agenda || showAmounts === undefined) return null;
 
+  // Les Propositions (devis pas encore signé) n'y sont pas : elles restent dans la page Projets.
   const alerts = buildAlerts({ projects, overduePayments, today, showAmounts });
   const active = projects.filter((p) => p.status === 'active');
-  const upcoming = projects.filter((p) => p.status === 'planned' || p.status === 'proposal');
+  const upcoming = projects.filter((p) => p.status === 'planned');
   const todayGroups = selectToday(openTasks, today);
   const todayTasks = [...todayGroups.overdue, ...todayGroups.today];
-  const title = formatLongDate(new Date(`${today}T12:00:00`));
+  const title = <DayTitle day={day} today={today} onShift={(delta) => goTo(addDaysISO(day, delta))} />;
 
   const nothingYet =
+    day === today &&
     projects.length === 0 &&
     openTasks.length === 0 &&
     doneToday.length === 0 &&
@@ -194,18 +277,23 @@ export function DashboardPage() {
     );
   }
 
-  const estimate = estimateSummary(todayTasks);
+  const subtitle =
+    day === today ? (
+      <DaySummary todayCount={todayTasks.length} overdueCount={todayGroups.overdue.length} agenda={agenda} today={today} />
+    ) : (
+      otherDaySummary({ day, today, planned: selectPlannedOn(openTasks, day, today).length, done: doneThatDay.length })
+    );
 
   return (
     <Page
       title={title}
-      subtitle={
-        <DaySummary
-          todayCount={todayTasks.length}
-          overdueCount={todayGroups.overdue.length}
-          agenda={agenda}
-          today={today}
-        />
+      subtitle={subtitle}
+      actions={
+        day !== today && (
+          <Button variant="secondary" shortcut="T" onClick={() => goTo(today)}>
+            Aujourd’hui
+          </Button>
+        )
       }
     >
       {/* Montants masquables (réglage) : le dashboard peut rester à l'écran sans dévoiler l'argent. */}
@@ -217,16 +305,7 @@ export function DashboardPage() {
       */}
       <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
         <div className="min-w-0">
-          <section>
-            <div className="mb-1 flex items-baseline gap-2.5">
-              <h2 className="font-semibold">Aujourd’hui</h2>
-              {estimate && <span className="text-meta text-ink-3">{estimate}</span>}
-              <Link to="/tasks" className="ml-auto text-meta text-ink-3 hover:text-ink">
-                Toutes les tâches →
-              </Link>
-            </div>
-            <TodayTasks open={openTasks} doneToday={doneToday} today={today} />
-          </section>
+          <DayTasksSection day={day} today={today} openTasks={openTasks} doneToday={doneToday} />
 
           <section className="mt-14">
             <div className="mb-3.5 flex items-baseline gap-2.5">
@@ -255,7 +334,12 @@ export function DashboardPage() {
           <Attention alerts={alerts} />
 
           <div className="mt-14">
-            <UpcomingAgenda items={agenda} today={today} showAmounts={showAmounts} />
+            <UpcomingDays
+              days={upcomingWithTasks(agenda, openTasks, today, day)}
+              today={today}
+              showAmounts={showAmounts}
+              onShowDay={goTo}
+            />
           </div>
         </div>
       </div>

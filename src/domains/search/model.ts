@@ -1,14 +1,15 @@
 import { normalizeText } from '@/core/text';
 
 /** Ce que la recherche globale sait retrouver (une ligne de l'index `search_index` par élément). */
-export type SearchEntity = 'project' | 'task' | 'client' | 'event' | 'payment' | 'transaction';
+export type SearchEntity = 'project' | 'task' | 'idea' | 'client' | 'event' | 'payment' | 'transaction';
 
 /** Ordre des groupes à pertinence égale. */
-export const SEARCH_ENTITIES: SearchEntity[] = ['project', 'task', 'client', 'event', 'payment', 'transaction'];
+export const SEARCH_ENTITIES: SearchEntity[] = ['project', 'task', 'idea', 'client', 'event', 'payment', 'transaction'];
 
 export const SEARCH_GROUP_LABELS: Record<SearchEntity, string> = {
   project: 'Projets',
   task: 'Tâches',
+  idea: 'Idées',
   client: 'Clients',
   event: 'Événements',
   payment: 'Encaissements',
@@ -22,6 +23,8 @@ export type SearchResult = {
   entity: SearchEntity;
   id: string;
   title: string;
+  /** Projet de rattachement : c'est lui qu'ouvre une idée. */
+  projectId: string | null;
   /** Rattachement affiché en gris : projet, client, compte ou e-mail. */
   context: string | null;
   /** Couleur du type de projet, pour la pastille. */

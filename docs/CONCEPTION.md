@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. Prochaine étape : V1.1.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -40,13 +40,13 @@ Tout le reste (saisie, détail, historique) est secondaire et doit rester à une
 
 | Domaine | MVP | V1.1 | Plus tard, si l'usage le demande |
 |---|---|---|---|
-| Projets | CRUD, types personnalisables, statuts, filtres, page détail, progression automatique | Archivage, duplication | Modèles de projet |
+| Projets | CRUD, types personnalisables, statuts, filtres, page détail, progression automatique | Idées (notées pour plus tard, transformables en tâche), archivage, duplication | Modèles de projet |
 | Tâches | Tâches de projet **et** tâches libres, liste + kanban, réorganisation, vues Aujourd'hui / Semaine / Retard / Prioritaires / Terminées | Saisie rapide sur plusieurs lignes | Sous-tâches, tâches récurrentes |
 | Clients | Fiche simple (nom, contact, notes) et projets liés | Historique du CA par client | — |
 | Finances | Comptes perso/pro, encaissements (échéancier), transactions, virements, ajustement de solde | Export CSV, catégories éditables | CA encaissé par mois/trimestre, estimation des cotisations |
 | Calendrier | Mois / semaine / jour, événements, agrégation des dates des projets, tâches et paiements | Glisser pour replanifier | Événements récurrents |
 | Planning | — | Timeline type Gantt avec bande de densité | — |
-| Dashboard | Cockpit complet (§5.2) | Sections réglables | — |
+| Dashboard | Cockpit complet (§5.2) | Tâches de jour en jour (flèches), tâches dans Prochains jours, sections réglables | — |
 | Recherche | Ctrl+K : recherche globale (FTS5) + commandes | — | — |
 | Création rapide | Bouton « + Nouveau » et raccourcis | — | Raccourci Windows global (app en arrière-plan) |
 | Notifications | — | Notifications Windows natives, désactivables | Zone de notification + lancement au démarrage |
@@ -257,6 +257,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 clients ──1:N── projects ──N:1── project_types
    │               │
    │               ├─1:N─ tasks          (project_id NULL = tâche libre)
+   │               ├─1:N─ ideas          (V1.1 : idées pour plus tard)
    │               ├─1:N─ payments ─1:0..1─ transactions  (via payment_id)
    │               ├─1:N─ events         (lien facultatif)
    │               └─1:N─ transactions   (facultatif : dépenses liées au projet)
@@ -452,6 +453,20 @@ CREATE VIEW account_balances AS
   GROUP BY a.id;
 ```
 
+**Ajouts après le MVP** (une migration par ajout, jamais de modification d'une migration publiée) :
+
+```sql
+-- 0003_ideas.sql (V1.1) : une idée n'est pas une tâche ; elle en devient une le moment venu.
+CREATE TABLE ideas (
+  id          TEXT PRIMARY KEY,
+  project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+-- + index (project_id, created_at) et triggers de recherche (entité 'idea').
+```
+
 **Données initiales** :
 
 - Types de projet : Freelance, Mission, Personnel, Scolaire, Associatif, Autre.
@@ -640,6 +655,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | `Ctrl B` | Réduire / déplier la sidebar |
 | `↑ ↓` · `Entrée` · `Espace` | Parcourir une liste · ouvrir · cocher la tâche |
 | `← →` · `T` · `M` `S` `J` | Calendrier : période précédente ou suivante, aujourd'hui, vue mois, semaine ou jour |
+| `← →` · `T` | Dashboard : tâches du jour précédent ou suivant, retour à aujourd'hui |
 | `Suppr` | Supprimer, avec « Annuler » dans le toast (`Ctrl Z`) |
 | `?` | Afficher tous les raccourcis |
 
@@ -647,7 +663,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 **Dashboard « Aujourd'hui »** (voir la maquette, version aérée) :
 
-- **En-tête** : la date et une phrase de synthèse courte (« 5 tâches aujourd'hui, dont 1 en retard · rendez-vous à 14:00 »).
+- **En-tête** : la date, entre deux flèches pour voir les tâches d'un autre jour (V1.1), et une phrase de synthèse courte (« 5 tâches aujourd'hui, dont 1 en retard · rendez-vous à 14:00 »).
 - **4 chiffres clés**, sans cartes ; les chiffres secondaires sont en sous-titre :
   - compte pro (avec les dépenses pro du mois) ;
   - compte perso (avec la variation du mois) ;
@@ -656,8 +672,8 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 - **4 blocs**, lus dans l'ordre des questions du §1.1 :
   1. **Aujourd'hui** : les tâches à cocher sur place, celles en retard en tête. Chaque ligne affiche seulement le titre, le projet et une date quand elle compte (retard, deadline proche). Les tâches terminées sont repliées.
   2. **À surveiller** : 3 points au maximum, les plus graves d'abord (règles de P11), puis un lien « N autres points ». L'action directe apparaît au survol.
-  3. **Prochains jours** : l'agenda des 7 prochains jours (rendez-vous, deadlines, encaissements attendus, débuts de projet), groupé par jour.
-  4. **Projets en cours** : nom, barre de progression, deadline.
+  3. **Prochains jours** : l'agenda des 7 prochains jours (rendez-vous, deadlines, encaissements attendus, débuts de projet) et, à partir de demain, les tâches prévues (V1.1), groupé par jour.
+  4. **Projets en cours** : nom, barre de progression, deadline ; puis les projets à venir. Les Propositions n'apparaissent nulle part sur le dashboard (V1.1).
 - Il n'y a pas de liste « À recevoir » séparée : le total est dans les chiffres clés, les prochains paiements sont dans l'agenda, et le détail est sur la page Finances.
 
 **Projets** :
@@ -668,7 +684,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 **Projet (détail)**, en deux colonnes comme une fiche :
 
-- **Colonne principale** : titre et description éditables, tâches (bascule Liste / Kanban, ajout sur place, glisser-déposer), notes.
+- **Colonne principale** : titre et description éditables, tâches (bascule Liste / Kanban, ajout sur place, glisser-déposer), idées (V1.1), notes.
 - **Panneau de propriétés**, toutes éditables sur place :
   - statut, type, client, priorité, dates, progression ;
   - **Finances** : budget, reçu, restant, % payé, non planifié, liste des encaissements (« Marquer reçu » en un clic), dépenses liées ;
@@ -808,12 +824,27 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **4. Calendrier** | ✓ Fait | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
-| **V1.1** | Plus tard | Planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets | |
-| **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF), sous-tâches | Selon l'usage réel |
+| **V1.1** | En cours | Retours d'usage, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
+| **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
 
 #### V1.1
+
+Découpée en étapes, validées une à une (branches `v1.1-…`) :
+
+1. **Retours d'usage** (✓ fait, branche `v1.1-retours`) :
+   - les Propositions sortent du dashboard (« À venir », À surveiller) et du calendrier (dates et encaissements ; leurs tâches restent) ;
+   - **idées** dans la fiche projet, transformables en tâche ;
+   - **flèches autour de la date** du dashboard pour voir les tâches d'hier, de demain ou de n'importe quel jour ;
+   - **tâches des prochains jours** dans le bloc Prochains jours.
+2. **Retours d'usage, suite** : corbeille et croix du panneau de tâche plus grandes, sélection de plusieurs tâches (date, deadline, priorité en une fois), catégories et sous-tâches, échéances (texte calculé « Dans 3 jours », deadlines proches sur le dashboard, barre début → deadline dans le calendrier).
+3. **Planning**.
+4. **Notifications Windows**.
+5. **Exports et paramètres complets**.
+6. **Petits défauts** du §7.3.
+
+Détail des étapes 3 à 5 :
 
 - **Planning** : une ligne par projet en cours ou à venir, une barre du début à la deadline, une ligne « aujourd'hui », des losanges pour les encaissements, une bande de densité (projets simultanés par semaine) et un zoom mois / trimestre.
 - **Notifications Windows** : plugin `notification`, règles du §2.8, dédoublonnage par `notification_log`, chacune désactivable.
@@ -841,8 +872,14 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 
+**Choix faits en V1.1, étape 1 (retours d'usage)**, à confirmer à l'usage :
+- **Propositions hors du dashboard et du calendrier** : un devis non signé n'a pas lieu d'y être. Le dashboard ne lit que les projets En cours, À venir et En pause (`CONFIRMED_STATUSES`) : ni « À venir », ni À surveiller. Le calendrier (et donc Prochains jours) ne montre ni leur début, ni leur deadline, ni leurs encaissements (règle `EXPECTED_PAYMENT`). Leurs tâches et les événements qui leur sont liés restent : ce sont de vraies choses à faire. Tout réapparaît dès que le projet passe en Prévu ou En cours.
+- **Idées** : table `ideas` (migration 0003), une ligne par idée, sans date ni statut. Section « Idées » sous les tâches de la fiche projet : « Noter une idée » (Entrée pour enchaîner), un clic pour la reformuler, au survol « En faire une tâche » (tâche sans date, en fin de liste ; l'idée disparaît) et la corbeille ; Suppr supprime. Les deux actions ont « Annuler ». Les idées ne comptent pas dans la progression et partent avec le projet (et reviennent avec « Annuler »). Elles sont dans la recherche Ctrl+K (groupe Idées) : le résultat ouvre le projet.
+- **Tâches de jour en jour** : flèches autour de la date du dashboard (← → au clavier, `T` ou le bouton « Aujourd'hui » pour revenir). Le jour est dans l'URL interne (`?day=`). Seul le bloc de tâches suit le jour choisi ; les chiffres, À surveiller et Prochains jours restent ceux d'aujourd'hui. Un jour à venir montre les tâches situées ce jour-là (« prévue le », sinon la deadline) et l'ajout express pour ce jour. Un jour passé montre ce qui a été terminé ce jour-là, puis ce qui y était prévu et n'est pas fait (« reportées à aujourd'hui »).
+- **Tâches dans Prochains jours** : à partir de demain, les tâches prévues chaque jour (un rond, le projet en gris, un drapeau si c'est la deadline), 3 au plus par jour, puis « +N tâches » qui ouvre ce jour dans le bloc de tâches. Celles du jour affiché dans le bloc de tâches n'y sont pas répétées. Ce bloc vit désormais dans `domains/dashboard/components/UpcomingDays.tsx`.
+
 **Choix faits après le MVP**, à confirmer à l'usage :
-- **Propositions** : leurs encaissements ne comptent ni dans « À recevoir » (chiffre, retards, prévu sur 30 jours), ni dans les listes À recevoir / En retard, ni dans À surveiller, ni dans le « à recevoir » des clients. Ils restent visibles dans la fiche du projet et dans le calendrier, et comptent dès que le projet passe en Prévu ou En cours. La règle SQL est unique : `EXPECTED_PAYMENT` (`finance/payments/repository.ts`).
+- **Propositions** : leurs encaissements ne comptent ni dans « À recevoir » (chiffre, retards, prévu sur 30 jours), ni dans les listes À recevoir / En retard, ni dans À surveiller, ni dans le « à recevoir » des clients. Ils restent visibles dans la fiche du projet, et comptent dès que le projet passe en Prévu ou En cours. (Revu en V1.1 : ils ne sont plus dans le calendrier, voir plus haut.) La règle SQL est unique : `EXPECTED_PAYMENT` (`finance/payments/repository.ts`).
 - **Paramètres › Tableau de bord** : « Afficher les montants » (réglage `dashboard.showAmounts`, activé par défaut). Désactivé, le dashboard ne montre plus aucun montant, pour pouvoir rester à l'écran sans dévoiler l'argent : ni les chiffres clés, ni les montants dans À surveiller (« Paiement en retard de 5 j », « Une partie du budget sans échéance ») et Prochains jours, info-bulles comprises. Les éléments eux-mêmes restent.
 - **Page Finances** : les chiffres clés sont toujours affichés. Tant que les soldes de départ n'ont pas été saisis, la question « Quel est le solde actuel de tes comptes ? » s'ajoute en dessous au lieu de les remplacer.
 
@@ -868,7 +905,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 **Choix faits au jalon 5**, à confirmer à l'usage :
 - **Disposition** : deux colonnes indépendantes. À gauche, Aujourd'hui puis Projets en cours ; à droite, À surveiller puis Prochains jours. C'est un écart avec la maquette, où Prochains jours est sous Aujourd'hui : À surveiller est limité à 3 points, donc Prochains jours reste visible sans défilement quel que soit le nombre de tâches du jour. Les projets en cours sont aussi dans la sidebar.
 - **Vérification 1080p à 125 %** (fenêtre par défaut 1280 × 780 et plein écran 1536 × 785), sur une journée chargée (5 tâches et 1 terminée, 3 points à surveiller) : les chiffres, les tâches du jour, les points à surveiller et le début de Prochains jours (aujourd'hui, demain en plein écran) sont visibles sans défiler ; la suite de la semaine et la liste des projets demandent un court défilement. Sur une journée plus légère, tout tient.
-- **Prochains jours** : 7 jours, aujourd'hui compris ; seuls les jours qui ont quelque chose sont montrés. Les tâches n'y figurent pas (celles du jour sont dans Aujourd'hui, les autres dans la page Tâches), ni les retards (ils sont dans À surveiller). Un événement sur plusieurs jours n'apparaît qu'une fois, avec « jusqu'à … ». Un clic ouvre la source, comme dans le calendrier.
+- **Prochains jours** : 7 jours, aujourd'hui compris ; seuls les jours qui ont quelque chose sont montrés. Les tâches n'y figurent pas (revu en V1.1 : elles y sont à partir de demain, voir plus haut), ni les retards (ils sont dans À surveiller). Un événement sur plusieurs jours n'apparaît qu'une fois, avec « jusqu'à … ». Un clic ouvre la source, comme dans le calendrier.
 - **Synthèse sous la date** : les tâches du jour (dont en retard) et le prochain rendez-vous à heure fixe pas encore commencé ; elle suit l'heure. Le nombre de projets en cours et de paiements en retard n'y figure plus : ils sont déjà dans les blocs et les chiffres clés.
 - **Chiffres clés** : le même composant que l'en-tête de la page Finances ; les soldes s'y corrigent aussi sur place.
 - **À surveiller** : l'action directe apparaît au survol (ou au clavier) à droite de la ligne, sans décaler le texte : « Marquer reçu… » pour un encaissement en retard, « Ajouter une tâche » pour un projet sans aucune tâche (qui démarre bientôt ou déjà en cours). « Toutes les tâches sont faites : terminer le projet ? » ouvre simplement la fiche.

@@ -103,15 +103,16 @@ export function useSetProjectClient(id: string) {
 }
 
 /**
- * Suppression avec « Annuler » : le projet revient avec ses tâches, ses échéances non reçues,
+ * Suppression avec « Annuler » : le projet revient avec ses tâches, ses idées, ses échéances non reçues,
  * ses événements et ses dépenses. Un projet qui a déjà reçu de l'argent ne se supprime pas.
  */
 export function useDeleteProject() {
   const queryClient = useQueryClient();
   const invalidate = () => {
-    // Ses tâches (cascade), ses échéances, ses événements et dépenses détachés, le compteur de son type.
+    // Ses tâches et idées (cascade), ses échéances, ses événements et dépenses détachés, le compteur de son type.
     invalidateMoney(queryClient);
     void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.ideas.all });
     void queryClient.invalidateQueries({ queryKey: queryKeys.projectTypes });
   };
   return useMutation({

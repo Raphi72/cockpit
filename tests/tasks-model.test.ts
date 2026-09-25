@@ -5,6 +5,7 @@ import {
   formatDuration,
   groupByProject,
   selectOverdue,
+  selectPlannedOn,
   selectPriority,
   selectToday,
   selectUpcoming,
@@ -73,6 +74,20 @@ describe('autres vues', () => {
       ['2026-09-26', 2],
       ['2026-10-01', 1],
     ]);
+  });
+
+  it('un jour donné : ce qui y est prévu, sans reprendre ce qui est déjà dans Aujourd’hui', () => {
+    const tasks = [
+      task({ title: 'prévue samedi', scheduledDate: '2026-09-26' }),
+      task({ title: 'deadline samedi', dueDate: '2026-09-26', priority: 3 }),
+      task({ title: 'prévue samedi, deadline passée', scheduledDate: '2026-09-26', dueDate: '2026-09-20' }),
+      task({ title: 'faite', scheduledDate: '2026-09-26', status: 'done' }),
+      task({ title: 'pas faite hier', scheduledDate: '2026-09-23' }),
+    ];
+    // La plus prioritaire en tête ; la deadline dépassée est déjà dans Aujourd'hui (en retard).
+    expect(selectPlannedOn(tasks, '2026-09-26', TODAY).map((t) => t.title)).toEqual(['deadline samedi', 'prévue samedi']);
+    // Un jour passé : ce qui y était prévu et reste à faire.
+    expect(selectPlannedOn(tasks, '2026-09-23', TODAY).map((t) => t.title)).toEqual(['pas faite hier']);
   });
 
   it('en retard, prioritaires, et regroupement par projet (tâches libres en dernier)', () => {

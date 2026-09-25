@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 type PageProps = {
-  title: string;
+  title: ReactNode;
   subtitle?: ReactNode;
   /** Actions alignées à droite du titre. */
   actions?: ReactNode;

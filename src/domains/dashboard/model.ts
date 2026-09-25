@@ -1,8 +1,11 @@
-import { daysBetween, relativeDateLabel, timeToMinutes } from '@/core/dates';
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { addDaysISO, daysBetween, formatLongDate, relativeDateLabel, timeToMinutes } from '@/core/dates';
 import { formatMoney } from '@/core/money';
-import type { AgendaItem, AgendaKind } from '@/domains/agenda';
+import { UPCOMING_AGENDA_DAYS, upcomingDays, type AgendaItem, type AgendaKind } from '@/domains/agenda';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
 import { deadlineTone, projectMoney, type ProjectListItem } from '@/domains/projects/model';
+import { selectPlannedOn, type TaskItem } from '@/domains/tasks/model';
 
 export type AlertTone = 'danger' | 'warning' | 'muted';
 
@@ -154,4 +157,70 @@ export function dashboardSummary(input: { todayCount: number; overdueCount: numb
   }
   if (nextEvent) parts.push(`${EVENT_WORDS[nextEvent.kind] ?? 'événement'} à ${nextEvent.start.slice(11, 16)}`);
   return parts.length > 0 ? parts.join(' · ') : 'Rien de prévu aujourd’hui.';
+}
+
+// ─── Navigation de jour en jour ─────────────────────────────────────────────
+
+/** Titre de la page : « Samedi 26 septembre », avec l'année si elle diffère. */
+export function dashboardTitle(day: string, today: string): string {
+  const title = formatLongDate(parseISO(day));
+  return day.slice(0, 4) === today.slice(0, 4) ? title : `${title} ${day.slice(0, 4)}`;
+}
+
+/** Intitulé du bloc de tâches : « Aujourd'hui », « Demain », « Hier », sinon « Lundi 28 sept. ». */
+export function dayTasksHeading(day: string, today: string): string {
+  const diff = daysBetween(today, day);
+  if (diff === 0) return 'Aujourd’hui';
+  if (diff === 1) return 'Demain';
+  if (diff === -1) return 'Hier';
+  const text = format(parseISO(day), day.slice(0, 4) === today.slice(0, 4) ? 'EEEE d MMM' : 'EEEE d MMM yyyy', {
+    locale: fr,
+  });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
+
+/**
+ * Synthèse sous la date quand on regarde un autre jour qu'aujourd'hui :
+ * « Demain · 3 tâches prévues », « Hier · 2 tâches terminées, 1 pas faite ».
+ */
+export function otherDaySummary(input: { day: string; today: string; planned: number; done: number }): string {
+  const { day, today, planned, done } = input;
+  const diff = daysBetween(today, day);
+  const when = diff === 1 ? 'Demain' : diff === -1 ? 'Hier' : diff > 0 ? `Dans ${diff} jours` : `Il y a ${-diff} jours`;
+  if (diff > 0) return `${when} · ${planned > 0 ? `${plural(planned, 'tâche')} prévue${planned > 1 ? 's' : ''}` : 'rien de prévu'}`;
+  const parts: string[] = [];
+  if (done > 0) parts.push(`${plural(done, 'tâche')} terminée${done > 1 ? 's' : ''}`);
+  if (planned > 0) parts.push(`${planned} pas faite${planned > 1 ? 's' : ''}`);
+  return `${when} · ${parts.length > 0 ? parts.join(', ') : 'aucune tâche'}`;
+}
+
+// ─── Prochains jours ────────────────────────────────────────────────────────
+
+/** Tâches montrées par jour dans « Prochains jours » : au-delà, « +N » ouvre ce jour dans le bloc de tâches. */
+export const UPCOMING_TASKS_PER_DAY = 3;
+
+export type UpcomingDay = { day: string; items: AgendaItem[]; tasks: TaskItem[] };
+
+/**
+ * « Prochains jours » : l'agenda des 7 jours (aujourd'hui compris) et, à partir de demain, les tâches
+ * prévues chaque jour. Celles du jour affiché dans le bloc de tâches (`shownDay`, aujourd'hui par défaut)
+ * n'y sont pas répétées. Seuls les jours qui ont quelque chose sont gardés.
+ */
+export function upcomingWithTasks(
+  items: AgendaItem[],
+  open: TaskItem[],
+  today: string,
+  shownDay = today,
+  count = UPCOMING_AGENDA_DAYS,
+): UpcomingDay[] {
+  const agenda = new Map(upcomingDays(items, today, count).map((group) => [group.day, group.items]));
+  return Array.from({ length: count }, (_, index) => addDaysISO(today, index))
+    .map((day) => ({
+      day,
+      items: agenda.get(day) ?? [],
+      tasks: day === today || day === shownDay ? [] : selectPlannedOn(open, day, today),
+    }))
+    .filter((group) => group.items.length > 0 || group.tasks.length > 0);
 }

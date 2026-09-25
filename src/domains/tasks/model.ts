@@ -94,6 +94,17 @@ export function selectUpcoming(open: TaskItem[], today: string): { date: string;
   return [...byDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, tasks]) => ({ date, tasks }));
 }
 
+/**
+ * Tâches à faire situées un jour donné (« prévue le », sinon la deadline), pour naviguer de jour en jour.
+ * Un jour à venir ne reprend pas ce qui est déjà dans Aujourd'hui (une deadline dépassée, par exemple).
+ * Un jour passé montre ce qui y était prévu et n'est pas fait : c'est reporté dans Aujourd'hui.
+ */
+export function selectPlannedOn(open: TaskItem[], day: string, today: string): TaskItem[] {
+  return open
+    .filter((t) => isOpen(t) && effectiveDate(t) === day && (day <= today || !isTaskForToday(t, today)))
+    .sort(byPriorityThenOrder);
+}
+
 export function selectOverdue(open: TaskItem[], today: string): TaskItem[] {
   return open.filter((t) => isTaskLate(t, today)).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
 }

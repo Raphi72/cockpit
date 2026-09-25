@@ -1,7 +1,7 @@
 /**
  * Aide des raccourcis (touche ?). Chaque entrée décrit un raccourci réellement branché :
  * ceux de partout dans shortcuts.ts, ceux des listes dans ui/data/row-keys.ts,
- * ceux du calendrier dans CalendarPage (usePageShortcuts).
+ * ceux du dashboard et du calendrier dans DashboardPage et CalendarPage (usePageShortcuts).
  */
 export type ShortcutEntry = {
   /** Une touche ou une combinaison par pastille ; plusieurs pastilles = plusieurs touches possibles. */
@@ -10,6 +10,9 @@ export type ShortcutEntry = {
 };
 
 export type ShortcutSection = { title: string; entries: ShortcutEntry[] };
+
+/** Nombre de sections de la colonne de gauche (Partout, Fenêtres) ; les autres vont à droite. */
+export const LEFT_COLUMN_SECTIONS = 2;
 
 export const SHORTCUT_SECTIONS: ShortcutSection[] = [
   {
@@ -25,6 +28,13 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     ],
   },
   {
+    title: 'Fenêtres',
+    entries: [
+      { keys: ['Ctrl Entrée'], label: 'Enregistrer' },
+      { keys: ['Échap'], label: 'Fermer' },
+    ],
+  },
+  {
     title: 'Listes',
     entries: [
       { keys: ['↑', '↓'], label: 'Passer d’une ligne à l’autre' },
@@ -34,18 +44,18 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     ],
   },
   {
+    title: 'Tableau de bord',
+    entries: [
+      { keys: ['←', '→'], label: 'Tâches du jour précédent ou suivant' },
+      { keys: ['T'], label: 'Revenir à aujourd’hui' },
+    ],
+  },
+  {
     title: 'Calendrier',
     entries: [
       { keys: ['←', '→'], label: 'Période précédente ou suivante' },
       { keys: ['T'], label: 'Revenir à aujourd’hui' },
       { keys: ['M', 'S', 'J'], label: 'Vue mois, semaine ou jour' },
-    ],
-  },
-  {
-    title: 'Fenêtres',
-    entries: [
-      { keys: ['Ctrl Entrée'], label: 'Enregistrer' },
-      { keys: ['Échap'], label: 'Fermer' },
     ],
   },
 ];

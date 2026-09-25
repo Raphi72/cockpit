@@ -1,6 +1,6 @@
 import { Dialog } from '@/ui/overlays/Dialog';
 import { Kbd } from '@/ui/primitives/Kbd';
-import { SHORTCUT_SECTIONS, type ShortcutSection } from '../shortcut-list';
+import { LEFT_COLUMN_SECTIONS, SHORTCUT_SECTIONS, type ShortcutSection } from '../shortcut-list';
 import { useUiStore } from '../ui-store';
 
 function Section({ section }: { section: ShortcutSection }) {
@@ -27,17 +27,18 @@ function Section({ section }: { section: ShortcutSection }) {
 export function ShortcutsDialog() {
   const open = useUiStore((state) => state.shortcutsOpen);
   const setOpen = useUiStore((state) => state.setShortcutsOpen);
-  const [general, ...others] = SHORTCUT_SECTIONS;
+  const columns = [SHORTCUT_SECTIONS.slice(0, LEFT_COLUMN_SECTIONS), SHORTCUT_SECTIONS.slice(LEFT_COLUMN_SECTIONS)];
 
   return (
     <Dialog open={open} onOpenChange={setOpen} title="Raccourcis clavier" width={760}>
       <div className="mt-6 grid grid-cols-2 gap-x-12">
-        {general && <Section section={general} />}
-        <div className="flex flex-col gap-6">
-          {others.map((section) => (
-            <Section key={section.title} section={section} />
-          ))}
-        </div>
+        {columns.map((sections, index) => (
+          <div key={index} className="flex flex-col gap-6">
+            {sections.map((section) => (
+              <Section key={section.title} section={section} />
+            ))}
+          </div>
+        ))}
       </div>
     </Dialog>
   );

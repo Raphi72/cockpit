@@ -23,13 +23,20 @@ export function listOpenTasks(db: Db): Promise<TaskItem[]> {
   );
 }
 
-/** Tâches terminées, les plus récentes d'abord (depuis `since` si fourni). */
-export function listDoneTasks(db: Db, options: { since?: string; limit?: number } = {}): Promise<TaskItem[]> {
+/** Tâches terminées, les plus récentes d'abord (depuis `since` et avant `until` si fournis). */
+export function listDoneTasks(
+  db: Db,
+  options: { since?: string; until?: string; limit?: number } = {},
+): Promise<TaskItem[]> {
   const params: SqlValue[] = [];
   let where = `t.status = 'done'`;
   if (options.since) {
     where += ' AND t.completed_at >= ?';
     params.push(options.since);
+  }
+  if (options.until) {
+    where += ' AND t.completed_at < ?';
+    params.push(options.until);
   }
   params.push(options.limit ?? 200);
   return db.query<TaskItem>(

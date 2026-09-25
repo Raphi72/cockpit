@@ -24,6 +24,10 @@ export const queryKeys = {
     project: (projectId: string) => ['tasks', 'project', projectId] as const,
     detail: (id: string) => ['tasks', 'detail', id] as const,
   },
+  ideas: {
+    all: ['ideas'] as const,
+    project: (projectId: string) => ['ideas', 'project', projectId] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

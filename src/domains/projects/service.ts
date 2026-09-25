@@ -2,6 +2,8 @@ import type { BatchContext } from '@/core/batch';
 import type { Db, Statement } from '@/core/db';
 import { resolveClientChoice } from '@/domains/clients/service';
 import type { PaymentRow } from '@/domains/finance/payments/model';
+import type { Idea } from '@/domains/ideas/model';
+import { listProjectIdeas, restoreIdeaStatement } from '@/domains/ideas/repository';
 import {
   insertPaymentStatement,
   listOpenProjectPaymentRows,
@@ -77,6 +79,7 @@ export function buildSetClientBatch(projectId: string, choice: ClientChoice, ctx
 export type ProjectSnapshot = {
   project: ProjectRow;
   tasks: TaskItem[];
+  ideas: Idea[];
   payments: PaymentRow[];
   eventIds: string[];
   transactionIds: string[];
@@ -89,7 +92,7 @@ export type DeleteProjectResult =
 
 /**
  * Un projet qui a déjà reçu de l'argent ne se supprime pas : on le passe en Terminé ou Annulé.
- * Sinon il part avec ses tâches et ses échéances non reçues ; l'état d'avant est renvoyé pour « Annuler ».
+ * Sinon il part avec ses tâches, ses idées et ses échéances non reçues ; l'état d'avant est renvoyé pour « Annuler ».
  */
 export async function deleteProject(db: Db, projectId: string): Promise<DeleteProjectResult> {
   if ((await countReceivedPayments(db, projectId)) > 0) return { status: 'has-received-payments' };
@@ -98,6 +101,7 @@ export async function deleteProject(db: Db, projectId: string): Promise<DeletePr
   const snapshot: ProjectSnapshot = {
     project,
     tasks: await listProjectTasks(db, projectId),
+    ideas: await listProjectIdeas(db, projectId),
     payments: await listOpenProjectPaymentRows(db, projectId),
     ...(await listProjectLinks(db, projectId)),
   };
@@ -105,12 +109,13 @@ export async function deleteProject(db: Db, projectId: string): Promise<DeletePr
   return { status: 'deleted', snapshot };
 }
 
-/** Annulation d'une suppression : le projet, ses tâches, ses échéances et ses rattachements reviennent. */
+/** Annulation d'une suppression : le projet, ses tâches, ses idées, ses échéances et ses rattachements reviennent. */
 export function buildRestoreProjectBatch(snapshot: ProjectSnapshot, now: string): Statement[] {
   const projectId = snapshot.project.id;
   return [
     restoreProjectStatement(snapshot.project, now),
     ...snapshot.tasks.map((task) => restoreTaskStatement(task, now)),
+    ...snapshot.ideas.map((idea) => restoreIdeaStatement(idea, now)),
     ...snapshot.payments.map((payment) => restorePaymentStatement(payment, now)),
     relinkToProjectStatement('events', snapshot.eventIds, projectId),
     relinkToProjectStatement('transactions', snapshot.transactionIds, projectId),

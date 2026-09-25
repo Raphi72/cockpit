@@ -1,4 +1,5 @@
 import type { Db, SqlValue, Statement } from '@/core/db';
+import { EXPECTED_PAYMENT } from '@/domains/finance/payments/repository';
 import {
   compareAgendaByDay,
   timingColumns,
@@ -10,8 +11,11 @@ import {
 
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
 
-/** Projet visible dans l'agenda : ni terminé, ni annulé, ni archivé. */
+/** Projet dont les tâches restent visibles : ni terminé, ni annulé, ni archivé. */
 const OPEN_PROJECT = `p.status NOT IN ('done', 'cancelled') AND p.archived_at IS NULL`;
+
+/** Projet dont le début et la deadline sont dans l'agenda : ouvert et validé (pas une Proposition). */
+const CONFIRMED_PROJECT = `${OPEN_PROJECT} AND p.status <> 'proposal'`;
 
 type AgendaRow = Omit<AgendaItem, 'key' | 'allDay'> & { allDay: number };
 
@@ -20,7 +24,8 @@ type AgendaRow = Omit<AgendaItem, 'key' | 'allDay'> & { allDay: number };
  * les dates qui vivent déjà dans leurs tables (débuts et deadlines de projets, tâches, échéances
  * d'encaissement). Rien n'est recopié : décaler une deadline la déplace partout.
  *
- * Les tâches terminées, les encaissements reçus et les projets clos n'y figurent pas.
+ * Les tâches terminées, les encaissements reçus et les projets clos n'y figurent pas, ni les
+ * Propositions (devis pas encore signé) : ni leurs dates, ni leurs encaissements. Leurs tâches restent.
  * Une tâche n'apparaît qu'une fois : à sa deadline, sinon (si elle est prioritaire) à sa date prévue.
  */
 export async function listAgenda(db: Db, from: string, to: string): Promise<AgendaItem[]> {
@@ -37,13 +42,13 @@ export async function listAgenda(db: Db, from: string, to: string): Promise<Agen
      SELECT 'project', p.id, 'project_start', p.name, NULL, p.start_date, NULL, 1, p.id, pt.color, NULL
      FROM projects p
      JOIN project_types pt ON pt.id = p.type_id
-     WHERE p.start_date >= ? AND p.start_date < ? AND ${OPEN_PROJECT}
+     WHERE p.start_date >= ? AND p.start_date < ? AND ${CONFIRMED_PROJECT}
 
      UNION ALL
      SELECT 'project', p.id, 'project_deadline', p.name, NULL, p.deadline, NULL, 1, p.id, pt.color, NULL
      FROM projects p
      JOIN project_types pt ON pt.id = p.type_id
-     WHERE p.deadline >= ? AND p.deadline < ? AND ${OPEN_PROJECT}
+     WHERE p.deadline >= ? AND p.deadline < ? AND ${CONFIRMED_PROJECT}
 
      UNION ALL
      SELECT 'task', t.id, CASE WHEN t.due_date IS NULL THEN 'task_scheduled' ELSE 'task_due' END,
@@ -63,7 +68,7 @@ export async function listAgenda(db: Db, from: string, to: string): Promise<Agen
      LEFT JOIN projects p ON p.id = pay.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
      LEFT JOIN clients c ON c.id = pay.client_id
-     WHERE pay.status <> 'received' AND pay.due_date >= ? AND pay.due_date < ?`,
+     WHERE ${EXPECTED_PAYMENT} AND pay.due_date >= ? AND pay.due_date < ?`,
     [to, from, from, to, from, to, from, to, from, to],
   );
   return rows

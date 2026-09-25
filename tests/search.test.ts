@@ -52,6 +52,7 @@ describe('règles de recherche', () => {
       entity,
       id: `${entity}-${score}`,
       title: '',
+      projectId: null,
       context: null,
       color: null,
       date: null,
@@ -132,6 +133,34 @@ describe('recherche globale (FTS5)', () => {
     expect(results.find((r) => r.id === 'k2')).toMatchObject({ closed: true });
   });
 
+  it('trouve les idées et les rattache à leur projet', async () => {
+    const { db } = createTestDb();
+    await seed(db);
+    await db.batch([
+      sql`INSERT INTO ideas (id, project_id, title, created_at, updated_at)
+          VALUES ('i1', 'p1', 'Version anglaise du site', ${NOW}, ${NOW})`,
+    ]);
+
+    // Par son texte, avec le projet à ouvrir.
+    expect((await searchEverything(db, 'anglaise', TODAY))[0]).toMatchObject({
+      entity: 'idea',
+      id: 'i1',
+      projectId: 'p1',
+      context: 'Site vitrine',
+      direct: true,
+    });
+    // Par son projet (élément lié).
+    expect(ids(await searchEverything(db, 'vitrine', TODAY), 'idea')).toEqual(['i1']);
+
+    // Renommée, puis partie avec son projet (cascade).
+    await db.batch([sql`UPDATE ideas SET title = 'Version espagnole' WHERE id = 'i1'`]);
+    expect(ids(await searchEverything(db, 'anglaise', TODAY))).toEqual([]);
+    await db.batch([sql`DELETE FROM payments WHERE project_id = 'p1'`, sql`DELETE FROM projects WHERE id = 'p1'`]);
+    expect(ids(await searchEverything(db, 'espagnole', TODAY))).toEqual([]);
+    const count = await db.queryOne<{ n: number }>("SELECT COUNT(*) AS n FROM search_index WHERE entity = 'idea'");
+    expect(count?.n).toBe(0);
+  });
+
   it('montre un virement une seule fois', async () => {
     const { db } = createTestDb();
     await seed(db);
@@ -166,8 +195,9 @@ describe('recherche globale (FTS5)', () => {
   it('indexe les données saisies avant la migration', async () => {
     const { db, raw } = createTestDb({ migrations: 1 });
     await seed(db);
-    const [, search] = readMigrations();
+    const [, search, ...later] = readMigrations();
     raw.exec(search!);
+    for (const migration of later) raw.exec(migration);
 
     expect(ids(await searchEverything(db, 'marchal', TODAY), 'client')).toEqual(['c1']);
     expect(ids(await searchEverything(db, 'salaire', TODAY))).toEqual(['t1']);

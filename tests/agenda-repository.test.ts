@@ -179,6 +179,20 @@ describe('agenda (P8)', () => {
     ]);
   });
 
+  it('laisse de côté les Propositions : ni leurs dates, ni leurs encaissements, mais leurs tâches', async () => {
+    const { db, projectId } = await setup();
+    await db.batch([
+      updateProjectStatement(projectId, { status: 'proposal' }, NOW),
+      insertTaskStatement('t1', newTask({ title: 'Préparer le devis', projectId, dueDate: '2026-09-10' }), NOW),
+    ]);
+    expect(await keysOf(db)).toEqual(['task_due:Préparer le devis:2026-09-10']);
+
+    // Signée : tout revient.
+    await db.batch([updateProjectStatement(projectId, { status: 'planned' }, NOW)]);
+    expect(await keysOf(db)).toContain('project_deadline:Site vitrine:2026-09-30');
+    expect(await keysOf(db)).toContain('payment_due:Site vitrine:2026-09-01');
+  });
+
   it('suit une deadline décalée, partout', async () => {
     const { db, projectId } = await setup();
     await db.batch([updateProjectStatement(projectId, { deadline: '2026-10-05' }, NOW)]);

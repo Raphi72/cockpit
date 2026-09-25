@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { ArrowLeft, Ellipsis, Trash2 } from 'lucide-react';
+import { ProjectIdeas } from '@/domains/ideas/components/ProjectIdeas';
 import { ProjectTasks } from '@/domains/tasks/components/ProjectTasks';
 import { useToday } from '@/core/use-today';
 import { PageContainer } from '@/ui/layout/Page';
@@ -85,12 +86,16 @@ export function ProjectDetailPage() {
             <ProjectTasks projectId={project.id} today={today} />
           </div>
 
+          <div className="mt-14">
+            <ProjectIdeas projectId={project.id} />
+          </div>
+
           <section className="mt-14">
             <h2 className="mb-2 font-semibold">Notes</h2>
             <InlineTextarea
               value={project.notes}
               onSave={(notes) => update.mutate({ notes })}
-              placeholder="Idées, contacts, liens, décisions…"
+              placeholder="Contacts, liens, décisions…"
               className="min-h-24"
               aria-label="Notes"
             />
