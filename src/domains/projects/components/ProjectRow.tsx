@@ -1,26 +1,23 @@
 import { Link } from '@tanstack/react-router';
 import { memo } from 'react';
-import { daysBetween, formatShortDate, relativeDateLabel } from '@/core/dates';
+import { formatShortDate } from '@/core/dates';
+import { deadlineStatus } from '@/core/deadline';
 import { ColorDot } from '@/ui/data/ColorDot';
+import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { ProgressBar } from '@/ui/data/ProgressBar';
-import { deadlineTone, projectProgress, type DeadlineTone, type ProjectListItem } from '../model';
+import { CLOSED_STATUSES, projectProgress, type ProjectListItem } from '../model';
 
-const TONE_CLASS: Record<DeadlineTone, string> = {
-  late: 'text-danger',
-  soon: 'text-warning',
-  normal: 'text-ink-3',
-};
-
+/** Deadline d'un projet : même texte et mêmes couleurs que pour les tâches, en version courte. */
 export function DeadlineLabel({ project, today }: { project: ProjectListItem; today: string }) {
-  const tone = deadlineTone(project, today);
-  if (!project.deadline || !tone) return <span className="text-meta text-ink-3">—</span>;
-  const label =
-    tone === 'late'
-      ? `${daysBetween(project.deadline, today)} j de retard`
-      : relativeDateLabel(project.deadline, today);
+  if (!project.deadline) return <span className="text-meta text-ink-3">—</span>;
+  // Un projet clos garde sa date, sans urgence.
+  const closed = CLOSED_STATUSES.includes(project.status);
+  const { text, tone } = closed
+    ? { text: formatShortDate(project.deadline, today), tone: 'later' as const }
+    : deadlineStatus(project.deadline, today, { short: true });
   return (
-    <span className={`tnum text-meta ${TONE_CLASS[tone]}`} title={`Deadline : ${formatShortDate(project.deadline, today)}`}>
-      {label}
+    <span className={`tnum text-meta ${DEADLINE_TONE_CLASS[tone]}`} title={`Deadline : ${formatShortDate(project.deadline, today)}`}>
+      {text}
     </span>
   );
 }

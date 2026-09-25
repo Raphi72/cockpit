@@ -1,6 +1,7 @@
 import { addDays, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { daysBetween, isISODate, relativeDateLabel, toISODate } from '@/core/dates';
+import { daysBetween, isISODate, toISODate } from '@/core/dates';
+import { deadlineStatus, relativeDayText, type DeadlineTone } from '@/core/deadline';
 import type { Priority } from '@/domains/projects/model';
 import type { PaletteKey } from '@/ui/data/ColorDot';
 
@@ -23,7 +24,10 @@ export type TaskItem = {
   notes: string | null;
   status: TaskStatus;
   priority: Priority;
-  /** « Prévue le » : quand je compte la faire. Alimente la vue Aujourd'hui. */
+  /**
+   * Début (« prévue le » dans le schéma) : quand je compte m'y mettre. À partir de ce jour, elle est
+   * dans Aujourd'hui jusqu'à ce qu'elle soit faite ; avec une deadline, elle occupe la période entre les deux.
+   */
   scheduledDate: string | null;
   /** Deadline : quand elle doit être finie. */
   dueDate: string | null;
@@ -62,7 +66,7 @@ export function isTaskForToday(task: Pick<TaskItem, 'status' | 'scheduledDate' |
   return (task.scheduledDate !== null && task.scheduledDate <= today) || (task.dueDate !== null && task.dueDate <= today);
 }
 
-/** Date qui situe la tâche dans le temps : « prévue le », sinon la deadline. */
+/** Date qui situe la tâche dans le temps : son début, sinon la deadline. */
 export function effectiveDate(task: Pick<TaskItem, 'scheduledDate' | 'dueDate'>): string | null {
   return task.scheduledDate ?? task.dueDate;
 }
@@ -95,7 +99,7 @@ export function selectUpcoming(open: TaskItem[], today: string): { date: string;
 }
 
 /**
- * Tâches à faire situées un jour donné (« prévue le », sinon la deadline), pour naviguer de jour en jour.
+ * Tâches à faire situées un jour donné (début, sinon la deadline), pour naviguer de jour en jour.
  * Un jour à venir ne reprend pas ce qui est déjà dans Aujourd'hui (une deadline dépassée, par exemple).
  * Un jour passé montre ce qui y était prévu et n'est pas fait : c'est reporté dans Aujourd'hui.
  */
@@ -136,11 +140,12 @@ function byPriorityThenOrder(a: TaskItem, b: TaskItem): number {
 
 // ─── Affichage ──────────────────────────────────────────────────────────────
 
-export type TaskDateLabel = { kind: 'due' | 'scheduled'; label: string; tone: 'late' | 'soon' | 'normal' };
+export type TaskDateLabel = { kind: 'due' | 'scheduled'; label: string; tone: DeadlineTone };
 
 /**
- * L'unique date affichée sur une ligne de tâche : la deadline si elle existe (en rouge si
- * dépassée, en ambre si proche), sinon la date prévue quand elle est dans le futur.
+ * L'unique date affichée sur une ligne de tâche : la deadline si elle existe, avec son texte
+ * calculé (« En retard de 2 jours », « Aujourd'hui », « Dans 3 jours »…, voir core/deadline.ts),
+ * sinon le début quand il est à venir (« Demain », « Dans 4 jours »), sans couleur.
  */
 export function taskDateLabel(
   task: Pick<TaskItem, 'status' | 'scheduledDate' | 'dueDate'>,
@@ -148,12 +153,11 @@ export function taskDateLabel(
 ): TaskDateLabel | null {
   if (!isOpen(task)) return null;
   if (task.dueDate && isISODate(task.dueDate)) {
-    const diff = daysBetween(today, task.dueDate);
-    const tone = diff < 0 ? 'late' : diff <= 2 ? 'soon' : 'normal';
-    return { kind: 'due', label: relativeDateLabel(task.dueDate, today), tone };
+    const { text, tone } = deadlineStatus(task.dueDate, today);
+    return { kind: 'due', label: text, tone };
   }
   if (task.scheduledDate && task.scheduledDate > today) {
-    return { kind: 'scheduled', label: relativeDateLabel(task.scheduledDate, today), tone: 'normal' };
+    return { kind: 'scheduled', label: relativeDayText(task.scheduledDate, today), tone: 'later' };
   }
   return null;
 }

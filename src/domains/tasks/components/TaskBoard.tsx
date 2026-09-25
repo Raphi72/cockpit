@@ -10,13 +10,12 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useState } from 'react';
+import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { useDeleteTask, useUpdateTask } from '../hooks';
 import { TASK_STATUSES, TASK_STATUS_LABELS, taskDateLabel, type TaskItem, type TaskStatus } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
-
-const TONE = { late: 'text-danger', soon: 'text-warning', normal: 'text-ink-3' } as const;
 
 function Card({ task, today, overlay = false }: { task: TaskItem; today: string; overlay?: boolean }) {
   const update = useUpdateTask();
@@ -41,7 +40,7 @@ function Card({ task, today, overlay = false }: { task: TaskItem; today: string;
       {(date || task.priority >= 2) && !done && (
         <div className="mt-1.5 flex items-center gap-3 pl-7 text-meta">
           {task.priority >= 2 && <span className={task.priority === 3 ? 'text-danger' : 'text-warning'}>{task.priority === 3 ? 'Urgente' : 'Haute'}</span>}
-          {date && <span className={`tnum ${TONE[date.tone]}`}>{date.label}</span>}
+          {date && <span className={`tnum ${DEADLINE_TONE_CLASS[date.tone]}`}>{date.label}</span>}
         </div>
       )}
     </div>

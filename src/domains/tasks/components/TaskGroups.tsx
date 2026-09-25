@@ -53,7 +53,7 @@ export function TodayTasks({ open, doneToday, today }: { open: TaskItem[]; doneT
       )}
       {groups.today.length > 0 && (
         <>
-          {groups.overdue.length > 0 && <GroupHeading>Prévues aujourd’hui</GroupHeading>}
+          {groups.overdue.length > 0 && <GroupHeading>À faire aujourd’hui</GroupHeading>}
           <TaskList tasks={groups.today} today={today} />
         </>
       )}

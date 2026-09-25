@@ -105,9 +105,18 @@ describe('autres vues', () => {
 
 describe('affichage', () => {
   it('la date affichée : deadline d’abord, colorée selon l’urgence', () => {
-    expect(taskDateLabel(task({ dueDate: '2026-09-23' }), TODAY)).toMatchObject({ kind: 'due', tone: 'late', label: 'hier' });
-    expect(taskDateLabel(task({ dueDate: '2026-09-25' }), TODAY)).toMatchObject({ tone: 'soon', label: 'demain' });
-    expect(taskDateLabel(task({ scheduledDate: '2026-09-28' }), TODAY)).toMatchObject({ kind: 'scheduled', label: 'lundi' });
+    expect(taskDateLabel(task({ dueDate: '2026-09-23' }), TODAY)).toMatchObject({
+      kind: 'due',
+      tone: 'late',
+      label: 'En retard de 1 jour',
+    });
+    expect(taskDateLabel(task({ dueDate: '2026-09-25' }), TODAY)).toMatchObject({ tone: 'soon', label: 'Demain' });
+    // Le début à venir, sans couleur.
+    expect(taskDateLabel(task({ scheduledDate: '2026-09-28' }), TODAY)).toMatchObject({
+      kind: 'scheduled',
+      label: 'Dans 4 jours',
+      tone: 'later',
+    });
     expect(taskDateLabel(task({ scheduledDate: TODAY }), TODAY)).toBeNull();
     expect(taskDateLabel(task({ dueDate: '2026-09-20', status: 'done' }), TODAY)).toBeNull();
   });

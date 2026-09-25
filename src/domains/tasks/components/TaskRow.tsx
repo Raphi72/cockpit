@@ -2,17 +2,12 @@ import { CalendarClock, Flag } from 'lucide-react';
 import { memo, type CSSProperties, type HTMLAttributes, type Ref } from 'react';
 import { relativeDateLabel, toISODate } from '@/core/dates';
 import { ColorDot } from '@/ui/data/ColorDot';
+import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { useDeleteTask, useUpdateTask } from '../hooks';
 import { taskDateLabel, type TaskItem } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
-
-const TONE: Record<'late' | 'soon' | 'normal', string> = {
-  late: 'text-danger',
-  soon: 'text-warning',
-  normal: 'text-ink-3',
-};
 
 type TaskRowProps = {
   task: TaskItem;
@@ -86,7 +81,7 @@ export const TaskRow = memo(function TaskRow({
           </span>
         )}
         {date && (
-          <span className={`tnum flex items-center gap-1.5 ${TONE[date.tone]}`} title={date.kind === 'due' ? 'Deadline' : 'Prévue le'}>
+          <span className={`tnum flex items-center gap-1.5 ${DEADLINE_TONE_CLASS[date.tone]}`} title={date.kind === 'due' ? 'Deadline' : 'Début'}>
             {date.kind === 'due' ? (
               <Flag className="size-3.5" strokeWidth={1.75} />
             ) : (

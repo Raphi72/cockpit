@@ -177,9 +177,9 @@ describe('bloc « À surveiller »', () => {
 
     expect(alerts.find((a) => a.kind === 'payment')?.action).toMatchObject({ kind: 'receive', payment: { id: 'pay' } });
     expect(alerts.map((a) => [a.tone, a.reason])).toEqual([
-      ['danger', 'Deadline dépassée de 2 j'],
-      ['danger', 'En retard de 11 j'],
-      ['warning', 'Deadline dimanche'],
+      ['danger', 'Deadline dépassée de 2 jours'],
+      ['danger', 'En retard de 11 jours'],
+      ['warning', 'Deadline dans 3 jours'],
       ['muted', 'Commence 1 oct. · aucune tâche créée'],
       ['muted', expect.stringMatching(/^500\s€ du budget sans échéance$/)],
       ['muted', 'Toutes les tâches sont faites : terminer le projet ?'],
@@ -212,7 +212,7 @@ describe('bloc « À surveiller »', () => {
       ],
     });
     expect(alerts.map((a) => [a.title, a.reason])).toEqual([
-      ['Agence Nordik', 'Paiement en retard de 11 j'],
+      ['Agence Nordik', 'Paiement en retard de 11 jours'],
       ['Site', 'Une partie du budget sans échéance'],
     ]);
     expect(alerts.some((a) => /€/.test(a.title + a.reason))).toBe(false);

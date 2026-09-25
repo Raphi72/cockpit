@@ -1,6 +1,7 @@
-import { daysBetween, relativeDateLabel } from '@/core/dates';
+import { deadlineStatus } from '@/core/deadline';
 import { ClientPicker } from '@/domains/clients/components/ClientPicker';
 import { ColorDot } from '@/ui/data/ColorDot';
+import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { ProgressBar } from '@/ui/data/ProgressBar';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '@/ui/overlays/Menu';
@@ -9,9 +10,9 @@ import { PropertyButton } from '@/ui/primitives/PropertyButton';
 import { useProjectTypes, useSetProjectClient, useUpdateProject } from '../hooks';
 import {
   PRIORITY_LABELS,
+  CLOSED_STATUSES,
   PROJECT_STATUSES,
   STATUS_LABELS,
-  deadlineTone,
   projectProgress,
   type Priority,
   type ProjectDetail,
@@ -19,13 +20,11 @@ import {
 } from '../model';
 import { StatusIcon } from './StatusIcon';
 
+/** Sous la deadline : « Dans 6 jours », « En retard de 2 jours »… (rien pour un projet clos). */
 function DeadlineHint({ project, today }: { project: ProjectDetail; today: string }) {
-  const tone = deadlineTone(project, today);
-  if (!project.deadline || !tone || tone === 'normal') return null;
-  if (tone === 'late') {
-    return <span className="text-danger">En retard de {daysBetween(project.deadline, today)} j</span>;
-  }
-  return <span className="text-warning">C'est {relativeDateLabel(project.deadline, today)}</span>;
+  if (!project.deadline || CLOSED_STATUSES.includes(project.status)) return null;
+  const { text, tone } = deadlineStatus(project.deadline, today);
+  return <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
 }
 
 /** Panneau des propriétés : tout se modifie sur place, sans formulaire. */

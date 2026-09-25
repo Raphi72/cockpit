@@ -2,8 +2,10 @@ import { Link } from '@tanstack/react-router';
 import { ArrowUpRight, Trash2, X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
 import { formatShortDate, toISODate } from '@/core/dates';
+import { deadlineStatus } from '@/core/deadline';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
+import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { Button } from '@/ui/primitives/Button';
 import { InlineDate, InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
@@ -12,6 +14,13 @@ import type { TaskItem, TaskPatch } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
 import { TaskEstimateMenu, TaskPriorityMenu, TaskStatusMenu } from './TaskFields';
+
+/** Sous la deadline : « Dans 6 jours », « En retard de 2 jours », « Terminée »… */
+function DeadlineHint({ task, today }: { task: TaskItem; today: string }) {
+  if (!task.dueDate) return null;
+  const { text, tone } = deadlineStatus(task.dueDate, today, { done: task.status === 'done' });
+  return <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
+}
 
 function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => void }) {
   const update = useUpdateTask();
@@ -39,6 +48,7 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
+            size="lg"
             icon={Trash2}
             aria-label="Supprimer la tâche"
             title="Supprimer"
@@ -48,7 +58,7 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
             }}
           />
           <RadixDialog.Close asChild>
-            <Button variant="ghost" icon={X} aria-label="Fermer" title="Fermer · Échap" />
+            <Button variant="ghost" size="lg" icon={X} aria-label="Fermer" title="Fermer · Échap" />
           </RadixDialog.Close>
         </div>
       </div>
@@ -81,10 +91,10 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
         <PropertyRow label="Priorité">
           <TaskPriorityMenu value={task.priority} onChange={(priority) => save({ priority })} />
         </PropertyRow>
-        <PropertyRow label="Prévue le">
-          <InlineDate value={task.scheduledDate} onSave={(scheduledDate) => save({ scheduledDate })} aria-label="Prévue le" />
+        <PropertyRow label="Début">
+          <InlineDate value={task.scheduledDate} onSave={(scheduledDate) => save({ scheduledDate })} aria-label="Début" />
         </PropertyRow>
-        <PropertyRow label="Deadline">
+        <PropertyRow label="Deadline" hint={<DeadlineHint task={task} today={today} />}>
           <InlineDate value={task.dueDate} onSave={(dueDate) => save({ dueDate })} aria-label="Deadline" />
         </PropertyRow>
         <PropertyRow label="Estimation">

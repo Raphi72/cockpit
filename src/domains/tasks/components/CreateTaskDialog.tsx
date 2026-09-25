@@ -90,10 +90,10 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
           <ProjectMenu variant="field" value={projectId} onChange={setProjectId} />
         </Row>
 
-        <Row label="Prévue le">
+        <Row label="Début">
           <div className="flex flex-wrap items-center gap-1.5">
             <ChoiceChips
-              label="Prévue le"
+              label="Début"
               options={[
                 { value: 'today', label: 'Aujourd’hui' },
                 { value: 'tomorrow', label: 'Demain' },
@@ -107,7 +107,7 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
               {...DATE_INPUT_BOUNDS}
               value={when === 'custom' && scheduledDate ? scheduledDate : ''}
               onChange={(e) => setScheduledDate(e.target.value || null)}
-              aria-label="Autre date prévue"
+              aria-label="Autre date de début"
               className={`tnum h-8 w-[150px] ${fieldClass} ${when === 'custom' ? '' : 'text-ink-3'}`}
             />
           </div>

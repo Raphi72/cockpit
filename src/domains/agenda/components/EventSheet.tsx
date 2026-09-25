@@ -85,6 +85,7 @@ function EventSheetContent({ event, onClose }: { event: AgendaEvent; onClose: ()
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
+            size="lg"
             icon={Trash2}
             aria-label="Supprimer l’événement"
             title="Supprimer"
@@ -94,7 +95,7 @@ function EventSheetContent({ event, onClose }: { event: AgendaEvent; onClose: ()
             }}
           />
           <RadixDialog.Close asChild>
-            <Button variant="ghost" icon={X} aria-label="Fermer" title="Fermer · Échap" />
+            <Button variant="ghost" size="lg" icon={X} aria-label="Fermer" title="Fermer · Échap" />
           </RadixDialog.Close>
         </div>
       </div>

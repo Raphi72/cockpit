@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { addDaysISO, daysBetween, formatLongDate, relativeDateLabel, timeToMinutes } from '@/core/dates';
+import { relativeDayText } from '@/core/deadline';
 import { formatMoney } from '@/core/money';
 import { UPCOMING_AGENDA_DAYS, upcomingDays, type AgendaItem, type AgendaKind } from '@/domains/agenda';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
@@ -26,6 +27,8 @@ export type Alert = {
 
 const TONE_RANK: Record<AlertTone, number> = { danger: 0, warning: 1, muted: 2 };
 
+const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
+
 /**
  * Règles du bloc « À surveiller » (P11), des plus graves aux plus légères :
  * deadline dépassée, encaissement en retard, deadline à 3 jours ou moins,
@@ -50,7 +53,7 @@ export function buildAlerts(input: {
         tone: 'danger',
         kind: 'deadline',
         title: project.name,
-        reason: `Deadline dépassée de ${daysBetween(project.deadline, today)} j`,
+        reason: `Deadline dépassée de ${plural(daysBetween(project.deadline, today), 'jour')}`,
         projectId: project.id,
         action: null,
       });
@@ -60,7 +63,7 @@ export function buildAlerts(input: {
         tone: 'warning',
         kind: 'deadline',
         title: project.name,
-        reason: `Deadline ${relativeDateLabel(project.deadline, today)}`,
+        reason: `Deadline ${relativeDayText(project.deadline, today).toLowerCase()}`,
         projectId: project.id,
         action: null,
       });
@@ -116,7 +119,7 @@ export function buildAlerts(input: {
       title: showAmounts
         ? `${payment.clientName ?? payment.projectName ?? payment.label} · ${formatMoney(payment.amountCents)}`
         : (payment.clientName ?? payment.projectName ?? payment.label),
-      reason: `${showAmounts ? 'En retard' : 'Paiement en retard'} de ${daysBetween(payment.dueDate, today)} j`,
+      reason: `${showAmounts ? 'En retard' : 'Paiement en retard'} de ${plural(daysBetween(payment.dueDate, today), 'jour')}`,
       projectId: payment.projectId,
       action: { kind: 'receive', payment },
     });
@@ -178,8 +181,6 @@ export function dayTasksHeading(day: string, today: string): string {
   });
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
-
-const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
 
 /**
  * Synthèse sous la date quand on regarde un autre jour qu'aujourd'hui :
