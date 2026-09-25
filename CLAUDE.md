@@ -6,7 +6,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 ## Par où commencer
 
 - **Référence complète** : [docs/CONCEPTION.md](docs/CONCEPTION.md). Le besoin, les décisions (§8), l'architecture, le schéma SQL et le design system y sont décrits.
-- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 5 sont faits ; le suivant est le **jalon 6 (Vitesse & données → MVP)**, détaillé au §7.2. Les points à reprendre sont au §7.3.
+- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 6 sont faits : c'est le **MVP**. La suite est la **V1.1**, détaillée au §7.2. Les points à reprendre sont au §7.3.
 - **Maquette de référence du dashboard** : [docs/maquette-dashboard.html](docs/maquette-dashboard.html). La disposition finale en diffère (Prochains jours sous À surveiller) : voir « Choix faits au jalon 5 » au §7.3.
 
 ## L'utilisateur
@@ -46,6 +46,9 @@ Rust et cargo sont dans `%USERPROFILE%\.cargo\bin` : dans PowerShell, ajouter `$
 - IDs UUID générés côté app ; montants en **centimes** ; dates `YYYY-MM-DD` ; horodatages en UTC ISO.
 - « Aujourd'hui » est passé en paramètre (`useToday()`), jamais `date('now')` en SQL.
 - Écritures multi-tables via `db.batch([...])` (atomique). Mutations : invalider les clés concernées (`src/core/query-keys.ts`).
+- **Recherche** : l'index FTS5 `search_index` est tenu à jour par des triggers (migration 0002). Une nouvelle table cherchable doit y ajouter ses triggers, dans une nouvelle migration. En mode navigateur (sql.js, sans FTS5), la recherche passe par `LIKE`.
+- **Suppressions** : toujours avec « Annuler » dans le toast (`undo: true` sur l'action, déclenchée aussi par Ctrl+Z), jamais de confirmation définitive.
+- **Commandes natives** (`src-tauri/src/data.rs`) : les fenêtres de fichier s'ouvrent côté Rust, l'interface ne transmet jamais de chemin.
 - **Migrations** : fichiers `src-tauri/migrations/NNNN_*.sql`, à déclarer dans `src-tauri/src/db/migrations.rs`. Ne jamais modifier une migration publiée : en ajouter une nouvelle. Une sauvegarde est faite automatiquement avant chaque migration.
 
 ## Vérifier son travail
@@ -55,6 +58,7 @@ Rust et cargo sont dans `%USERPROFILE%\.cargo\bin` : dans PowerShell, ajouter `$
 - **Ne pas saisir de texte dans la vraie fenêtre Cockpit via l'automatisation Windows** : la fenêtre de Claude peut reprendre le focus et la saisie part ailleurs (c'est déjà arrivé). Des raccourcis seuls ou des captures d'écran suffisent.
 - Dans le navigateur de test, `Ctrl+N` et `Ctrl+1…6` sont réservés par le navigateur ; dans l'app, `N` et `Ctrl+1…6` fonctionnent.
 - Si l'interface affiche « Invalid hook call » après l'ajout d'une dépendance, recharger complètement la page (réoptimisation Vite).
+- Pendant un `npm run tauri dev`, modifier un fichier Rust recompile et relance l'app. `cargo test --lib` (dans `src-tauri`) teste les sauvegardes et la restauration.
 
 ## Git
 

@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 5 terminés le 24/09/2026 ; prochaine étape : jalon 6 (vitesse & données).
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. Prochaine étape : V1.1.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -200,7 +200,8 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 - **Sauvegardes** :
   - automatique, une fois par jour, avec conservation des 14 dernières ;
   - manuelle, via Paramètres › Données › « Sauvegarder mes données… », qui produit un fichier `.db` complet ;
-  - restauration, avec vérification d'intégrité et sauvegarde de sécurité de la base actuelle avant remplacement.
+  - restauration, avec vérification d'intégrité et sauvegarde de sécurité de la base actuelle avant remplacement ;
+  - le dossier des sauvegardes peut être choisi (OneDrive…) ; s'il devient injoignable, les sauvegardes retombent dans le dossier par défaut et Paramètres le signale.
 - **Exports** : JSON (toutes les données, lisible) et CSV pour les finances (séparateur `;` et BOM UTF-8, pour une ouverture directe dans Excel en français).
 - **Sécurité** : aucun contenu distant, une politique CSP stricte et des permissions Tauri minimales.
 
@@ -523,6 +524,9 @@ END;
 - La recherche par préfixe fonctionne (« marc » trouve « Marchal ») et ignore les accents (« echeance » trouve « échéance »).
 - Les résultats sont groupés par type. Quand un client ou un projet correspond, ses éléments liés (tâches, encaissements, événements) remontent aussi grâce à une seconde requête par jointure.
 - La palette Ctrl+K combine cette recherche et des commandes (« Nouvelle tâche », « Aller au calendrier », « Marquer reçu… »).
+- L'index est rempli par la migration `0002_search.sql` et tenu à jour par des triggers : l'app n'y écrit jamais. Une nouvelle table cherchable doit y ajouter ses triggers (dans une nouvelle migration).
+- Un virement n'est indexé qu'une fois (sa ligne de sortie).
+- En mode navigateur de développement, sql.js n'a pas FTS5 : l'index y est une table ordinaire et la recherche passe par `LIKE` (sans ignorer les accents). Voir `core/db/fts-fallback.ts`.
 
 ---
 
@@ -538,9 +542,11 @@ gestion_projets/
 │  │  │  ├─ mod.rs                    # connexion unique, PRAGMAs, commandes query/execute/batch
 │  │  │  ├─ migrations.rs             # application des migrations (PRAGMA user_version)
 │  │  │  └─ convert.rs                # conversion valeurs SQLite <-> JSON
-│  │  └─ backup.rs                    # VACUUM INTO, rotation, restauration
+│  │  ├─ backup.rs                    # VACUUM INTO, rotation, vérification et restauration
+│  │  └─ data.rs                      # commandes de Paramètres › Données (fenêtres de fichier natives)
 │  ├─ migrations/
-│  │  └─ 0001_init.sql
+│  │  ├─ 0001_init.sql
+│  │  └─ 0002_search.sql              # index FTS5 et ses triggers
 │  ├─ capabilities/default.json       # permissions Tauri minimales
 │  ├─ icons/
 │  ├─ Cargo.toml
@@ -800,25 +806,11 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **3. Finances** | ✓ Fait | Comptes et soldes, encaissements complets, transactions, virements, lien « reçu → transaction », page Finances | Soldes, à recevoir et retards justes sans aucune double saisie |
 | **4. Calendrier** | ✓ Fait | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
-| **6. Vitesse & données** | À faire | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
+| **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | Plus tard | Planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets | |
 | **V1.2 et après** | Si besoin | Zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF), sous-tâches | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
-
-#### Jalon 6 — Vitesse & données (→ MVP)
-
-- **Palette Ctrl+K** (cmdk, déjà installé) :
-  - recherche globale via FTS5, avec une **migration 0002** qui crée `search_index` et ses triggers (§3.6) ;
-  - commandes : aller à une page, créer, marquer reçu…
-  - Attention : en mode navigateur, sql.js n'inclut peut-être pas FTS5. Il faudra le vérifier et prévoir un repli `LIKE` dans ce mode.
-- **Paramètres › Données** :
-  - « Sauvegarder maintenant » : nouvelle commande Rust `backup_create` vers un fichier choisi (plugin `dialog`) ;
-  - « Restaurer » : vérification `PRAGMA integrity_check` et `user_version`, sauvegarde de sécurité de la base actuelle, remplacement puis redémarrage ;
-  - choix du dossier des sauvegardes (un dossier OneDrive est possible, P12) ;
-  - « Ouvrir le dossier des données » (plugin `opener`).
-- **Raccourcis** : `?` affiche l'aide des raccourcis. « Annuler » est généralisé aux suppressions.
-- **Livraison du MVP** : installeur à jour, publié en Release GitHub si souhaité.
 
 #### V1.1
 
@@ -843,6 +835,21 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 - **Calendrier** : un événement sur plusieurs jours est répété dans chaque case (pas de barre continue). Glisser pour replanifier reste prévu en V1.1.
 - **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
 - **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
+- **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main.
+- **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
+- **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
+- **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
+
+**Choix faits au jalon 6**, à confirmer à l'usage :
+- **Palette Ctrl+K** : sans saisie, trois créations, « Marquer un encaissement reçu… » et les pages. En tapant : jusqu'à 5 commandes, puis les résultats groupés par type (5 au plus par type), le groupe de la meilleure correspondance en tête. Un projet ou un client trouvé fait remonter ses éléments liés, après les correspondances directes et ce qui est encore ouvert d'abord.
+- **« Marquer reçu… »** dans la palette liste les encaissements non reçus, filtrables ; Retour arrière dans le champ vide revient aux commandes.
+- **Résultats** : chacun s'ouvre comme ailleurs dans l'app (fiche projet, panneau de tâche ou d'événement, fenêtre d'encaissement). Clients et transactions ont désormais une fenêtre ouvrable par identifiant.
+- **« Annuler » généralisé** : supprimer un projet, un client, un type ou une catégorie ne demande plus de confirmation ; le toast propose « Annuler » pendant 6 s. Ctrl+Z déclenche l'annulation encore affichée (suppression, réception, ajustement de solde), sauf pendant la saisie de texte. Un projet qui a déjà reçu de l'argent reste non supprimable.
+- **Listes** : ↑ ↓ passent d'une ligne à l'autre dans l'ordre de la page (tâches, cartes kanban, encaissements, transactions) ; Suppr supprime et le focus passe à la ligne suivante.
+- **Sauvegarder maintenant** : fenêtre « Enregistrer sous » ouverte sur le dossier des sauvegardes, avec un nom daté (`cockpit_…_manuelle.db`) : Entrée suffit. Ces copies ne sont jamais effacées automatiquement et comptent pour « Dernière sauvegarde ».
+- **Restaurer** : en deux temps. Le fichier choisi est copié à côté de la base et vérifié (intégrité, base Cockpit, schéma pas plus récent) ; la confirmation annonce son contenu. Les données actuelles sont alors copiées (`…_restauration.db`, 5 conservées) puis remplacées sans redémarrer l'app ; l'interface se recharge. Une sauvegarde plus ancienne est mise au schéma actuel.
+- **Dossier des sauvegardes** : réglage `data.backupDir` (table `settings`), lu au démarrage ; une première sauvegarde y est faite dès qu'on le choisit. Restaurer une vieille sauvegarde remet aussi le réglage qu'elle contient.
+- **Sécurité** : les fenêtres de fichier sont ouvertes par Rust ; l'interface ne passe jamais de chemin aux commandes natives.
 
 **Choix faits au jalon 3**, à confirmer à l'usage :
 - La question « Quel est le solde actuel de tes comptes ? » est posée en haut de la page Finances (pas au démarrage), tant qu'aucun ajustement n'existe ; « Plus tard » la masque jusqu'à la prochaine visite. Le réglage `finance.initialBalancesAsked` retient qu'on y a répondu.
