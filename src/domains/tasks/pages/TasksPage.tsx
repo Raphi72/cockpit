@@ -44,7 +44,7 @@ function AllView({ open, today }: { open: TaskItem[]; today: string }) {
             {group.name}
             <span className="tnum">{group.tasks.length}</span>
           </GroupHeading>
-          <TaskList tasks={group.tasks} today={today} showProject={false} />
+          <TaskList tasks={group.tasks} today={today} showProject={false} nested />
         </section>
       ))}
       <InlineAddTask label="Ajouter une tâche sans date" />

@@ -1,8 +1,17 @@
 import { Circle, CircleCheck, CircleDot, type LucideIcon } from 'lucide-react';
+import { useParentCandidates } from '../hooks';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { PropertyButton } from '@/ui/primitives/PropertyButton';
-import { ESTIMATE_PRESETS, TASK_STATUSES, TASK_STATUS_LABELS, formatDuration, type TaskStatus } from '../model';
+import {
+  ESTIMATE_PRESETS,
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+  canBeParentOf,
+  formatDuration,
+  type TaskItem,
+  type TaskStatus,
+} from '../model';
 
 /** Sélecteurs partagés par la fenêtre de création et le panneau d'édition d'une tâche. */
 
@@ -33,6 +42,32 @@ export function TaskStatusMenu({ value, onChange, variant }: { value: TaskStatus
           {TASK_STATUSES.map((status) => (
             <MenuRadioItem key={status} value={status} leading={<TaskStatusIcon status={status} />}>
               {TASK_STATUS_LABELS[status]}
+            </MenuRadioItem>
+          ))}
+        </MenuRadioGroup>
+      </MenuContent>
+    </Menu>
+  );
+}
+
+/** « Sous-tâche de » : ranger la tâche sous une autre du même projet, ou la sortir. */
+export function TaskParentMenu({ task, onChange }: { task: TaskItem; onChange: (parentId: string | null) => void }) {
+  const { data: candidates = [] } = useParentCandidates(task);
+  const choices = candidates.filter((candidate) => canBeParentOf(candidate, task));
+  return (
+    <Menu>
+      <MenuTrigger asChild>
+        <PropertyButton aria-label="Sous-tâche de" className={task.parentId ? '' : 'text-ink-3'}>
+          <span className="truncate">{task.parentTitle ?? 'Aucune'}</span>
+        </PropertyButton>
+      </MenuTrigger>
+      <MenuContent className="max-h-80 overflow-y-auto">
+        <MenuRadioGroup value={task.parentId ?? ''} onValueChange={(v) => onChange(v === '' ? null : v)}>
+          <MenuRadioItem value="">Aucune (tâche principale)</MenuRadioItem>
+          {choices.length > 0 && <MenuSeparator />}
+          {choices.map((candidate) => (
+            <MenuRadioItem key={candidate.id} value={candidate.id}>
+              <span className="truncate">{candidate.title}</span>
             </MenuRadioItem>
           ))}
         </MenuRadioGroup>

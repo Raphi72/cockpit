@@ -35,7 +35,10 @@ function Card({ task, today, overlay = false }: { task: TaskItem; today: string;
             onToggle={() => update.mutate({ id: task.id, patch: { status: done ? 'todo' : 'done' } })}
           />
         </span>
-        <span className={`min-w-0 flex-1 ${done ? 'text-ink-3 line-through decoration-line-strong' : ''}`}>{task.title}</span>
+        <span className={`min-w-0 flex-1 ${done ? 'text-ink-3 line-through decoration-line-strong' : ''}`}>
+          {task.parentTitle && <span className="text-ink-3">{task.parentTitle} › </span>}
+          {task.title}
+        </span>
       </div>
       {(date || task.priority >= 2) && !done && (
         <div className="mt-1.5 flex items-center gap-3 pl-7 text-meta">

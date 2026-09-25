@@ -12,9 +12,11 @@ import {
   listDoneTasks,
   listOpenTasks,
   listProjectTasks,
+  listParentCandidates,
+  listSubtasks,
   restoreTaskStatement,
   sortOrderStatements,
-  updateTaskStatement,
+  updateTaskStatements,
 } from './repository';
 
 // ─── Lectures ───────────────────────────────────────────────────────────────
@@ -46,6 +48,17 @@ export function useDoneTasks() {
 
 export function useProjectTasks(projectId: string) {
   return useQuery({ queryKey: queryKeys.tasks.project(projectId), queryFn: () => listProjectTasks(db, projectId) });
+}
+
+export function useSubtasks(parentId: string) {
+  return useQuery({ queryKey: queryKeys.tasks.subtasks(parentId), queryFn: () => listSubtasks(db, parentId) });
+}
+
+export function useParentCandidates(task: Pick<TaskItem, 'id' | 'projectId'>) {
+  return useQuery({
+    queryKey: queryKeys.tasks.parentCandidates(task.id, task.projectId),
+    queryFn: () => listParentCandidates(db, task),
+  });
 }
 
 export function useTask(id: string | null) {
@@ -89,8 +102,8 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: TaskPatch }) =>
-      db.batch([updateTaskStatement(id, patch, nowTimestamp())]),
+    // La parente et les sous-tâches suivent (voir updateTaskStatements) : rechargées après coup.
+    mutationFn: ({ id, patch }: { id: string; patch: TaskPatch }) => db.batch(updateTaskStatements(id, patch, nowTimestamp())),
     onMutate: async ({ id, patch }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
       const completedAt = patch.status === undefined ? {} : { completedAt: patch.status === 'done' ? nowTimestamp() : null };
@@ -118,20 +131,29 @@ export function useReorderTasks(listKey: readonly unknown[]) {
   });
 }
 
-/** Suppression avec « Annuler » : la tâche est réinsérée à l'identique. */
+/**
+ * Suppression avec « Annuler » : la tâche part avec ses sous-tâches, et « Annuler » les réinsère
+ * toutes à l'identique (la parente d'abord).
+ */
 export function useDeleteTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (task: TaskItem) => db.batch([deleteTaskStatement(task.id)]),
-    onSuccess: (_result, task) => {
+    mutationFn: async (task: TaskItem) => {
+      const subtasks = await listSubtasks(db, task.id);
+      await db.batch([deleteTaskStatement(task.id)]);
+      return subtasks;
+    },
+    onSuccess: (subtasks, task) => {
       invalidateAfterTaskChange(queryClient);
-      toast('Tâche supprimée.', {
+      const count = subtasks.length;
+      toast(count > 0 ? `Tâche supprimée, avec ${count} sous-tâche${count > 1 ? 's' : ''}.` : 'Tâche supprimée.', {
         action: {
           label: 'Annuler',
           undo: true,
           onClick: () => {
+            const now = nowTimestamp();
             void db
-              .batch([restoreTaskStatement(task, nowTimestamp())])
+              .batch([task, ...subtasks].map((t) => restoreTaskStatement(t, now)))
               .then(() => invalidateAfterTaskChange(queryClient));
           },
         },

@@ -2,10 +2,11 @@ import { Columns3, List } from 'lucide-react';
 import { useUiStore } from '@/app/ui-store';
 import { queryKeys } from '@/core/query-keys';
 import { useProjectTasks } from '../hooks';
+import { leafProgress, projectTaskTree } from '../model';
 import { DoneFold } from './TaskGroups';
 import { InlineAddTask } from './InlineAddTask';
 import { TaskBoard } from './TaskBoard';
-import { TaskList } from './TaskList';
+import { SortableTaskTree } from './TaskList';
 
 function ModeToggle() {
   const mode = useUiStore((state) => state.projectTasksMode);
@@ -29,20 +30,23 @@ function ModeToggle() {
   );
 }
 
-/** Tâches d'un projet : liste réordonnable (par défaut) ou kanban. */
+/**
+ * Tâches d'un projet : liste réordonnable (par défaut), chaque tâche suivie de ses sous-tâches,
+ * ou kanban. Le compteur suit la progression du projet (les sous-tâches, pas leur catégorie).
+ */
 export function ProjectTasks({ projectId, today }: { projectId: string; today: string }) {
   const { data: tasks = [] } = useProjectTasks(projectId);
   const mode = useUiStore((state) => state.projectTasksMode);
-  const open = tasks.filter((t) => t.status !== 'done');
-  const done = tasks.filter((t) => t.status === 'done');
+  const tree = projectTaskTree(tasks);
+  const progress = leafProgress(tasks);
 
   return (
     <section>
       <div className="mb-2 flex items-center gap-2.5">
         <h2 className="font-semibold">Tâches</h2>
-        {tasks.length > 0 && (
+        {progress.total > 0 && (
           <span className="tnum text-meta text-ink-3">
-            {done.length} / {tasks.length}
+            {progress.done} / {progress.total}
           </span>
         )}
         <span className="ml-auto">
@@ -59,9 +63,9 @@ export function ProjectTasks({ projectId, today }: { projectId: string; today: s
         </div>
       ) : (
         <>
-          <TaskList tasks={open} today={today} showProject={false} sortableKey={queryKeys.tasks.project(projectId)} />
+          <SortableTaskTree nodes={tree.open} today={today} listKey={queryKeys.tasks.project(projectId)} />
           <InlineAddTask projectId={projectId} />
-          <DoneFold tasks={done} today={today} showProject={false} />
+          <DoneFold tasks={tree.done} today={today} showProject={false} />
         </>
       )}
     </section>

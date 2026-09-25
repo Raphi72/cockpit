@@ -27,7 +27,7 @@ export function DoneFold({ tasks, today, showProject = true }: { tasks: TaskItem
         <ChevronRight className={`size-3.5 transition-transform duration-[120ms] ${open ? 'rotate-90' : ''}`} strokeWidth={2} />
         {tasks.length} terminée{tasks.length > 1 ? 's' : ''}
       </button>
-      {open && <TaskList tasks={tasks} today={today} showProject={showProject} />}
+      {open && <TaskList tasks={tasks} today={today} showProject={showProject} nested />}
     </div>
   );
 }

@@ -22,6 +22,8 @@ export const queryKeys = {
     open: ['tasks', 'open'] as const,
     done: (options: object) => ['tasks', 'done', options] as const,
     project: (projectId: string) => ['tasks', 'project', projectId] as const,
+    subtasks: (parentId: string) => ['tasks', 'subtasks', parentId] as const,
+    parentCandidates: (id: string, projectId: string | null) => ['tasks', 'parent-candidates', id, projectId] as const,
     detail: (id: string) => ['tasks', 'detail', id] as const,
   },
   ideas: {

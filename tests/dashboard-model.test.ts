@@ -95,6 +95,10 @@ describe('prochains jours', () => {
     sortOrder: 1,
     completedAt: null,
     createdAt: '2026-09-20T08:00:00.000Z',
+    parentId: null,
+    parentTitle: null,
+    subtasksTotal: 0,
+    subtasksDone: 0,
     ...overrides,
   });
 

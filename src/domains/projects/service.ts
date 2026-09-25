@@ -109,12 +109,15 @@ export async function deleteProject(db: Db, projectId: string): Promise<DeletePr
   return { status: 'deleted', snapshot };
 }
 
+const parentsFirst = (tasks: TaskItem[]) => [...tasks].sort((a, b) => Number(a.parentId !== null) - Number(b.parentId !== null));
+
 /** Annulation d'une suppression : le projet, ses tâches, ses idées, ses échéances et ses rattachements reviennent. */
 export function buildRestoreProjectBatch(snapshot: ProjectSnapshot, now: string): Statement[] {
   const projectId = snapshot.project.id;
   return [
     restoreProjectStatement(snapshot.project, now),
-    ...snapshot.tasks.map((task) => restoreTaskStatement(task, now)),
+    // Les parentes avant leurs sous-tâches (la clé étrangère est vérifiée à chaque ligne).
+    ...parentsFirst(snapshot.tasks).map((task) => restoreTaskStatement(task, now)),
     ...snapshot.ideas.map((idea) => restoreIdeaStatement(idea, now)),
     ...snapshot.payments.map((payment) => restorePaymentStatement(payment, now)),
     relinkToProjectStatement('events', snapshot.eventIds, projectId),

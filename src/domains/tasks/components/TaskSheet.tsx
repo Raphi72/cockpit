@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowUpRight, Trash2, X } from 'lucide-react';
+import { ArrowUpRight, ChevronRight, Trash2, X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
 import { formatShortDate, toISODate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
@@ -9,20 +9,47 @@ import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { Button } from '@/ui/primitives/Button';
 import { InlineDate, InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
-import { useDeleteTask, useTask, useUpdateTask } from '../hooks';
+import { useDeleteTask, useSubtasks, useTask, useUpdateTask } from '../hooks';
 import type { TaskItem, TaskPatch } from '../model';
 import { useTaskSheet } from '../sheet-store';
+import { InlineAddTask } from './InlineAddTask';
 import { TaskCheckbox } from './TaskCheckbox';
-import { TaskEstimateMenu, TaskPriorityMenu, TaskStatusMenu } from './TaskFields';
+import { TaskEstimateMenu, TaskParentMenu, TaskPriorityMenu, TaskStatusMenu } from './TaskFields';
+import { TaskRow } from './TaskRow';
 
-/** Sous la deadline : « Dans 6 jours », « En retard de 2 jours », « Terminée »… */
+/**
+ * Sous la deadline : « Dans 6 jours », « En retard de 2 jours », « Terminée »…
+ * Rien au-delà d'une semaine : ce serait la date, déjà affichée au-dessus.
+ */
 function DeadlineHint({ task, today }: { task: TaskItem; today: string }) {
   if (!task.dueDate) return null;
   const { text, tone } = deadlineStatus(task.dueDate, today, { done: task.status === 'done' });
-  return <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
+  return tone === 'later' ? null : <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
+}
+
+/** Sous-tâches d'une tâche principale : un clic ouvre la sous-tâche dans ce panneau. */
+function Subtasks({ task, today }: { task: TaskItem; today: string }) {
+  const { data: subtasks = [] } = useSubtasks(task.id);
+  return (
+    <section className="mt-8">
+      <h3 className="mb-1 flex items-baseline gap-2 text-meta font-medium text-ink-2">
+        Sous-tâches
+        {task.subtasksTotal > 0 && (
+          <span className="tnum font-normal text-ink-3">
+            {task.subtasksDone}/{task.subtasksTotal}
+          </span>
+        )}
+      </h3>
+      {subtasks.map((subtask) => (
+        <TaskRow key={subtask.id} task={subtask} today={today} showProject={false} showParent={false} />
+      ))}
+      <InlineAddTask parentId={task.id} projectId={task.projectId} label="Ajouter une sous-tâche" />
+    </section>
+  );
 }
 
 function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => void }) {
+  const openTask = useTaskSheet((state) => state.openTask);
   const update = useUpdateTask();
   const remove = useDeleteTask();
   const today = useToday();
@@ -32,19 +59,34 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        {task.projectId && task.projectName ? (
-          <Link
-            to="/projects/$projectId"
-            params={{ projectId: task.projectId }}
-            onClick={onClose}
-            className="-ml-2 flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-meta text-ink-2 hover:bg-hover hover:text-ink"
-          >
-            <span className="truncate">{task.projectName}</span>
-            <ArrowUpRight className="size-3.5 shrink-0" strokeWidth={1.75} />
-          </Link>
-        ) : (
-          <span className="text-meta text-ink-3">Tâche libre</span>
-        )}
+        <div className="flex min-w-0 items-center">
+          {task.projectId && task.projectName ? (
+            <Link
+              to="/projects/$projectId"
+              params={{ projectId: task.projectId }}
+              onClick={onClose}
+              className="-ml-2 flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-meta text-ink-2 hover:bg-hover hover:text-ink"
+            >
+              <span className="truncate">{task.projectName}</span>
+              <ArrowUpRight className="size-3.5 shrink-0" strokeWidth={1.75} />
+            </Link>
+          ) : (
+            <span className="text-meta text-ink-3">Tâche libre</span>
+          )}
+          {task.parentId && task.parentTitle && (
+            <>
+              <ChevronRight className="mx-0.5 size-3.5 shrink-0 text-ink-3" strokeWidth={1.75} />
+              <button
+                type="button"
+                onClick={() => openTask(task.parentId!)}
+                title="Ouvrir la tâche parente"
+                className="flex h-8 min-w-0 items-center rounded-md px-2 text-meta text-ink-2 hover:bg-hover hover:text-ink"
+              >
+                <span className="truncate">{task.parentTitle}</span>
+              </button>
+            </>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -88,6 +130,12 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
         <PropertyRow label="Projet">
           <ProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />
         </PropertyRow>
+        {/* Une tâche qui a des sous-tâches reste au premier niveau (un seul niveau de sous-tâches). */}
+        {task.subtasksTotal === 0 && (
+          <PropertyRow label="Sous-tâche de">
+            <TaskParentMenu task={task} onChange={(parentId) => save({ parentId })} />
+          </PropertyRow>
+        )}
         <PropertyRow label="Priorité">
           <TaskPriorityMenu value={task.priority} onChange={(priority) => save({ priority })} />
         </PropertyRow>
@@ -101,6 +149,8 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
           <TaskEstimateMenu value={task.estimateMin} onChange={(estimateMin) => save({ estimateMin })} />
         </PropertyRow>
       </div>
+
+      {task.parentId === null && <Subtasks task={task} today={today} />}
 
       <h3 className="mt-8 mb-1.5 text-meta font-medium text-ink-2">Notes</h3>
       <InlineTextarea

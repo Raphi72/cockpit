@@ -35,12 +35,19 @@ export type TaskItem = {
   sortOrder: number;
   completedAt: string | null;
   createdAt: string;
+  /** Tâche parente (sous-tâche), sur un seul niveau : la parente sert aussi de catégorie. */
+  parentId: string | null;
+  parentTitle: string | null;
+  /** Sous-tâches de cette tâche (calculé). */
+  subtasksTotal: number;
+  subtasksDone: number;
 };
 
 export type TaskPatch = Partial<{
   title: string;
   notes: string | null;
   projectId: string | null;
+  parentId: string | null;
   status: TaskStatus;
   priority: Priority;
   scheduledDate: string | null;
@@ -203,6 +210,65 @@ export function totalEstimate(tasks: Pick<TaskItem, 'estimateMin'>[]): number {
   return tasks.reduce((sum, t) => sum + (t.estimateMin ?? 0), 0);
 }
 
+// ─── Sous-tâches ────────────────────────────────────────────────────────────
+
+/**
+ * Une tâche peut devenir sous-tâche de `candidate` : un seul niveau (la candidate n'est pas
+ * elle-même une sous-tâche, et la tâche n'a pas de sous-tâches), dans le même projet (ou toutes
+ * deux libres), et jamais d'elle-même.
+ */
+export function canBeParentOf(
+  candidate: Pick<TaskItem, 'id' | 'parentId' | 'projectId'>,
+  task: Pick<TaskItem, 'id' | 'projectId' | 'subtasksTotal'>,
+): boolean {
+  return (
+    candidate.id !== task.id &&
+    candidate.parentId === null &&
+    task.subtasksTotal === 0 &&
+    candidate.projectId === task.projectId
+  );
+}
+
+export type TaskNode = { task: TaskItem; children: TaskItem[] };
+
+/**
+ * Liste des tâches d'un projet en arbre : les tâches ouvertes du premier niveau, chacune suivie de
+ * toutes ses sous-tâches (les faites restent sous leur parente, barrées) ; puis, à part, les tâches
+ * terminées du premier niveau et leurs sous-tâches. L'ordre manuel est respecté à chaque niveau.
+ */
+export function projectTaskTree(tasks: TaskItem[]): { open: TaskNode[]; done: TaskItem[] } {
+  const sorted = [...tasks].sort((a, b) => a.sortOrder - b.sortOrder);
+  const ids = new Set(sorted.map((t) => t.id));
+  const isTop = (t: TaskItem) => t.parentId === null || !ids.has(t.parentId);
+  const childrenOf = (id: string) => sorted.filter((t) => t.parentId === id);
+  const top = sorted.filter(isTop);
+  return {
+    open: top.filter(isOpen).map((task) => ({ task, children: childrenOf(task.id) })),
+    done: top.filter((t) => !isOpen(t)).flatMap((task) => [task, ...childrenOf(task.id)]),
+  };
+}
+
+/**
+ * Pour une liste à plat (vues globales) : chaque sous-tâche dont la parente est dans la liste
+ * passe juste sous elle, en retrait. Les autres restent à leur place.
+ */
+export function nestTasks(tasks: TaskItem[]): { task: TaskItem; depth: 0 | 1 }[] {
+  const ids = new Set(tasks.map((t) => t.id));
+  const nested = (t: TaskItem) => t.parentId !== null && ids.has(t.parentId);
+  return tasks
+    .filter((t) => !nested(t))
+    .flatMap((task) => [
+      { task, depth: 0 as const },
+      ...tasks.filter((t) => t.parentId === task.id).map((child) => ({ task: child, depth: 1 as const })),
+    ]);
+}
+
+/** Avancement d'une liste : une tâche qui a des sous-tâches ne compte pas, ses sous-tâches si. */
+export function leafProgress(tasks: TaskItem[]): { done: number; total: number } {
+  const leaves = tasks.filter((t) => t.subtasksTotal === 0);
+  return { done: leaves.filter((t) => !isOpen(t)).length, total: leaves.length };
+}
+
 // ─── Ordre manuel ───────────────────────────────────────────────────────────
 
 /** Valeur d'ordre entre deux voisins ; `undefined` si la précision est épuisée. */
@@ -238,6 +304,8 @@ export function computeReorder(
 export type NewTaskInput = {
   title: string;
   projectId: string | null;
+  /** Sous-tâche : elle rejoint le projet de sa parente. */
+  parentId?: string | null;
   scheduledDate: string | null;
   dueDate: string | null;
   priority: Priority;

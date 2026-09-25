@@ -20,11 +20,14 @@ import {
 } from '../model';
 import { StatusIcon } from './StatusIcon';
 
-/** Sous la deadline : « Dans 6 jours », « En retard de 2 jours »… (rien pour un projet clos). */
+/**
+ * Sous la deadline : « Dans 6 jours », « En retard de 2 jours »… Rien pour un projet clos, ni
+ * au-delà d'une semaine (ce serait la date, déjà affichée au-dessus).
+ */
 function DeadlineHint({ project, today }: { project: ProjectDetail; today: string }) {
   if (!project.deadline || CLOSED_STATUSES.includes(project.status)) return null;
   const { text, tone } = deadlineStatus(project.deadline, today);
-  return <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
+  return tone === 'later' ? null : <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
 }
 
 /** Panneau des propriétés : tout se modifie sur place, sans formulaire. */
