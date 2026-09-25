@@ -19,6 +19,9 @@ const CONFIRMED_PROJECT = `${OPEN_PROJECT} AND p.status <> 'proposal'`;
 
 type AgendaRow = Omit<AgendaItem, 'key' | 'allDay'> & { allDay: number };
 
+/** Premier jour d'une tâche dans l'agenda : son début s'il précède la deadline, sinon la deadline (ou le début seul). */
+const TASK_FIRST_DAY = `CASE WHEN t.scheduled_date < t.due_date THEN t.scheduled_date ELSE COALESCE(t.due_date, t.scheduled_date) END`;
+
 /**
  * Toutes les dates de la plage [from, to[ en un seul aller-retour : les événements saisis, et
  * les dates qui vivent déjà dans leurs tables (débuts et deadlines de projets, tâches, échéances
@@ -26,7 +29,8 @@ type AgendaRow = Omit<AgendaItem, 'key' | 'allDay'> & { allDay: number };
  *
  * Les tâches terminées, les encaissements reçus et les projets clos n'y figurent pas, ni les
  * Propositions (devis pas encore signé) : ni leurs dates, ni leurs encaissements. Leurs tâches restent.
- * Une tâche n'apparaît qu'une fois : à sa deadline, sinon (si elle est prioritaire) à sa date prévue.
+ * Une tâche n'apparaît qu'une fois : du début à la deadline si elle a les deux (une barre dans le
+ * calendrier), sinon à sa deadline, sinon (si elle est prioritaire) à son début.
  */
 export async function listAgenda(db: Db, from: string, to: string): Promise<AgendaItem[]> {
   const rows = await db.query<AgendaRow>(
@@ -52,13 +56,14 @@ export async function listAgenda(db: Db, from: string, to: string): Promise<Agen
 
      UNION ALL
      SELECT 'task', t.id, CASE WHEN t.due_date IS NULL THEN 'task_scheduled' ELSE 'task_due' END,
-            t.title, p.name, COALESCE(t.due_date, t.scheduled_date), NULL, 1, t.project_id, pt.color, NULL
+            t.title, p.name, ${TASK_FIRST_DAY}, CASE WHEN t.scheduled_date < t.due_date THEN t.due_date END,
+            1, t.project_id, pt.color, NULL
      FROM tasks t
      LEFT JOIN projects p ON p.id = t.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
      WHERE t.status <> 'done' AND (p.id IS NULL OR (${OPEN_PROJECT}))
        AND (t.due_date IS NOT NULL OR t.priority >= 2)
-       AND COALESCE(t.due_date, t.scheduled_date) >= ? AND COALESCE(t.due_date, t.scheduled_date) < ?
+       AND ${TASK_FIRST_DAY} < ? AND COALESCE(t.due_date, t.scheduled_date) >= ?
 
      UNION ALL
      SELECT 'payment', pay.id, 'payment_due', COALESCE(p.name, c.name, pay.label),
@@ -69,7 +74,7 @@ export async function listAgenda(db: Db, from: string, to: string): Promise<Agen
      LEFT JOIN project_types pt ON pt.id = p.type_id
      LEFT JOIN clients c ON c.id = pay.client_id
      WHERE ${EXPECTED_PAYMENT} AND pay.due_date >= ? AND pay.due_date < ?`,
-    [to, from, from, to, from, to, from, to, from, to],
+    [to, from, from, to, from, to, to, from, from, to],
   );
   return rows
     .map(({ allDay, ...row }) => ({ ...row, key: `${row.source}:${row.id}:${row.kind}`, allDay: allDay === 1 }))

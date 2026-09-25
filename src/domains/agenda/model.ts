@@ -256,10 +256,14 @@ export function itemDays(item: Pick<AgendaItem, 'start' | 'end' | 'allDay'>): { 
   return { first, last: end > first ? end : first };
 }
 
-/** En retard : deadline passée ou encaissement attendu non reçu. Jamais pour un événement ou un début. */
-export function isAgendaItemLate(item: Pick<AgendaItem, 'kind' | 'start'>, today: string): boolean {
+/**
+ * En retard : deadline passée ou encaissement attendu non reçu. Jamais pour un événement ou un début.
+ * Une tâche dessinée du début à la deadline est en retard quand sa fin (la deadline) est passée.
+ */
+export function isAgendaItemLate(item: Pick<AgendaItem, 'kind' | 'start' | 'end'>, today: string): boolean {
   const dated = item.kind === 'project_deadline' || item.kind === 'task_due' || item.kind === 'payment_due';
-  return dated && item.start.slice(0, 10) < today;
+  const deadline = item.kind === 'task_due' && item.end ? item.end : item.start;
+  return dated && deadline.slice(0, 10) < today;
 }
 
 /** Heure de début 'HH:MM' d'un événement à heure fixe, sinon `null`. */
@@ -275,9 +279,18 @@ export function itemTimeRange(item: Pick<AgendaItem, 'start' | 'end' | 'allDay'>
   return end ? `${start} – ${end}` : start;
 }
 
+/** « du 25 sept. au 1 oct. » pour un élément sur plusieurs jours, sinon `null`. */
+function periodLabel(item: Pick<AgendaItem, 'start' | 'end' | 'allDay'>): string | null {
+  const { first, last } = itemDays(item);
+  if (last === first) return null;
+  const short = (day: string) => format(parseISO(day), 'd MMM', { locale: fr });
+  return `du ${short(first)} au ${short(last)}`;
+}
+
 /** Texte complet, montré au survol : « Deadline du projet · Site vitrine ». */
 export function agendaTooltip(item: AgendaItem, withAmount = true): string {
-  const parts = [agendaKindLabel(item.kind), itemTimeRange(item), item.title, item.detail];
+  const kind = item.kind === 'task_due' && item.end ? 'Tâche, du début à la deadline' : agendaKindLabel(item.kind);
+  const parts = [kind, periodLabel(item) ?? itemTimeRange(item), item.title, item.detail];
   if (withAmount && item.amountCents !== null) parts.push(formatMoney(item.amountCents));
   return parts.filter(Boolean).join(' · ');
 }
@@ -324,6 +337,76 @@ export function groupByDay(items: AgendaItem[], days: string[]): Map<string, Age
   }
   for (const list of groups.values()) list.sort(compareAgendaItems);
   return groups;
+}
+
+// ─── Barres continues (plusieurs jours) ─────────────────────────────────────
+
+/** Dessiné en barre continue : un élément « journée » sur plusieurs jours (événement, tâche du début à la deadline). */
+export function isSpanning(item: Pick<AgendaItem, 'start' | 'end' | 'allDay'>): boolean {
+  const { first, last } = itemDays(item);
+  return item.allDay && last > first;
+}
+
+export type SpanSegment = {
+  item: AgendaItem;
+  /** Colonnes occupées dans la rangée (0 = premier jour affiché), bornes comprises. */
+  startCol: number;
+  endCol: number;
+  /** Couloir : les barres qui se chevauchent sont empilées. */
+  lane: number;
+  /** La barre commence avant la rangée, ou continue après. */
+  continuesBefore: boolean;
+  continuesAfter: boolean;
+};
+
+export type RowLayout = {
+  spans: SpanSegment[];
+  /** Nombre de couloirs occupés : la hauteur réservée en haut de chaque case. */
+  lanes: number;
+  /** Les autres éléments, jour par jour. */
+  singles: Map<string, AgendaItem[]>;
+};
+
+/**
+ * Une rangée de jours consécutifs (une semaine du mois, ou la ligne « journée » d'une semaine) :
+ * les éléments sur plusieurs jours deviennent des barres continues, rangées en couloirs (la plus
+ * ancienne, puis la plus longue, en haut) ; les autres restent dans leur case.
+ */
+export function layoutRow(items: AgendaItem[], days: string[]): RowLayout {
+  const firstDay = days[0]!;
+  const lastDay = days[days.length - 1]!;
+  const spans: SpanSegment[] = [];
+  for (const item of items) {
+    if (!isSpanning(item)) continue;
+    const { first, last } = itemDays(item);
+    if (last < firstDay || first > lastDay) continue;
+    spans.push({
+      item,
+      startCol: first < firstDay ? 0 : days.indexOf(first),
+      endCol: last > lastDay ? days.length - 1 : days.indexOf(last),
+      lane: 0,
+      continuesBefore: first < firstDay,
+      continuesAfter: last > lastDay,
+    });
+  }
+  spans.sort(
+    (a, b) =>
+      a.startCol - b.startCol || b.endCol - b.startCol - (a.endCol - a.startCol) || compareAgendaItems(a.item, b.item),
+  );
+  const laneEnds: number[] = [];
+  for (const span of spans) {
+    const free = laneEnds.findIndex((end) => end < span.startCol);
+    span.lane = free === -1 ? laneEnds.length : free;
+    laneEnds[span.lane] = span.endCol;
+  }
+  return {
+    spans,
+    lanes: laneEnds.length,
+    singles: groupByDay(
+      items.filter((item) => !isSpanning(item)),
+      days,
+    ),
+  };
 }
 
 // ─── Prochains jours (dashboard) ────────────────────────────────────────────

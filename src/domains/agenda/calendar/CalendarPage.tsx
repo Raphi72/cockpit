@@ -17,7 +17,6 @@ import {
   CALENDAR_VIEWS,
   CALENDAR_VIEW_KEYS,
   CALENDAR_VIEW_LABELS,
-  groupByDay,
   shiftAnchor,
   viewDays,
   viewRange,
@@ -72,11 +71,8 @@ export function CalendarPage() {
   const anchor = search.date ?? today;
   const days = useMemo(() => viewDays(view, anchor), [view, anchor]);
   const { data: items } = useAgenda(viewRange(days));
-  const groups = useMemo(
-    () => groupByDay((items ?? []).filter((item) => !hidden.includes(item.source)), days),
-    [items, hidden, days],
-  );
-  const empty = items !== undefined && [...groups.values()].every((list) => list.length === 0);
+  const visible = useMemo(() => (items ?? []).filter((item) => !hidden.includes(item.source)), [items, hidden]);
+  const empty = items !== undefined && visible.length === 0;
 
   const goTo = (date: string) => void navigate({ search: date === today ? {} : { date } });
   const showDay = (day: string) => {
@@ -136,7 +132,7 @@ export function CalendarPage() {
         <MonthView
           anchor={anchor}
           days={days}
-          groups={groups}
+          items={visible}
           today={today}
           onOpen={openItem}
           onCreate={(day) => openCreate('event', { eventStart: day })}
@@ -145,7 +141,7 @@ export function CalendarPage() {
       ) : (
         <TimeGridView
           days={days}
-          groups={groups}
+          items={visible}
           today={today}
           onOpen={openItem}
           onCreate={(start, allDay) => openCreate('event', { eventStart: start, eventAllDay: allDay })}

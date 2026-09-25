@@ -4,7 +4,9 @@ import { formatLongDate } from '@/core/dates';
 import { useMinutesOfDay } from '@/core/use-today';
 import {
   agendaTooltip,
+  groupByDay,
   itemTimeRange,
+  layoutRow,
   layoutTimedItems,
   slotStart,
   visibleHours,
@@ -13,6 +15,7 @@ import {
   type TimedBlock,
 } from '../model';
 import { DayItems } from './AgendaChip';
+import { SpanBars, lanesSpacer } from './SpanBars';
 
 /** Une heure a la hauteur d'une ligne de liste. */
 const HOUR_HEIGHT = 44;
@@ -22,7 +25,7 @@ const MAX_ALL_DAY = 3;
 
 type TimeGridViewProps = {
   days: string[];
-  groups: Map<string, AgendaItem[]>;
+  items: AgendaItem[];
   today: string;
   onOpen: (item: AgendaItem) => void;
   /** Clic sur un créneau ('YYYY-MM-DDTHH:MM') ou dans la ligne « journée » d'un jour. */
@@ -87,9 +90,18 @@ function TimedBlockButton({
  * Semaine ou jour : les éléments « journée » en haut, puis les heures (8 h – 20 h, élargies
  * si besoin) où chaque événement occupe la hauteur de sa durée.
  */
-export function TimeGridView({ days, groups, today, onOpen, onCreate, onShowDay }: TimeGridViewProps) {
+export function TimeGridView({ days, items, today, onOpen, onCreate, onShowDay }: TimeGridViewProps) {
   const now = useMinutesOfDay();
-  const blocksByDay = days.map((day) => layoutTimedItems(groups.get(day) ?? []));
+  // Ligne « journée » : ce qui dure plusieurs jours en barres continues, le reste dans sa case.
+  const allDay = layoutRow(
+    items.filter((item) => item.allDay),
+    days,
+  );
+  const timed = groupByDay(
+    items.filter((item) => !item.allDay),
+    days,
+  );
+  const blocksByDay = days.map((day) => layoutTimedItems(timed.get(day) ?? []));
   const hours = visibleHours(blocksByDay.flat());
   const hourCount = hours.last - hours.first;
   const columns = { gridTemplateColumns: `52px repeat(${days.length}, minmax(0, 1fr))` };
@@ -126,8 +138,8 @@ export function TimeGridView({ days, groups, today, onOpen, onCreate, onShowDay 
         </div>
       )}
 
-      {/* Ligne « journée » : deadlines, encaissements, événements sans heure. */}
-      <div className="grid border-y border-line" style={columns}>
+      {/* Ligne « journée » : deadlines, encaissements, événements sans heure, tâches du début à la deadline. */}
+      <div className="relative grid border-y border-line" style={columns}>
         <div className="pt-1.5 pr-2 text-right text-meta text-ink-3">Journée</div>
         {days.map((day) => (
           <div
@@ -136,15 +148,18 @@ export function TimeGridView({ days, groups, today, onOpen, onCreate, onShowDay 
             title="Clic : nouvel événement sur la journée"
             className="flex min-h-9 min-w-0 cursor-default flex-col gap-px border-l border-line p-1 transition-colors duration-[120ms] ease-soft hover:bg-hover/50"
           >
+            {allDay.lanes > 0 && <div className="shrink-0" style={{ height: lanesSpacer(allDay.lanes) }} />}
             <DayItems
-              items={(groups.get(day) ?? []).filter((item) => item.allDay)}
-              limit={multiDay ? MAX_ALL_DAY : Infinity}
+              items={allDay.singles.get(day) ?? []}
+              limit={multiDay ? Math.max(MAX_ALL_DAY - allDay.lanes, 1) : Infinity}
               today={today}
               onOpen={onOpen}
               onShowDay={() => onShowDay(day)}
             />
           </div>
         ))}
+        {/* Au-dessus des colonnes des jours (après les 52 px des heures), sous la marge des cases. */}
+        <SpanBars spans={allDay.spans} columns={days.length} today={today} onOpen={onOpen} style={{ left: 52, right: 0, top: 4 }} />
       </div>
 
       {/* Heures */}

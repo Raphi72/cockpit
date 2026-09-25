@@ -5,6 +5,7 @@ import {
   groupByDay,
   initialTiming,
   isAgendaItemLate,
+  layoutRow,
   layoutTimedItems,
   moveTimingDate,
   moveTimingStart,
@@ -109,6 +110,9 @@ describe('agenda', () => {
     expect(isAgendaItemLate(item({ kind: 'payment_due', start: TODAY }), TODAY)).toBe(false);
     expect(isAgendaItemLate(item({ kind: 'appointment', start: '2026-09-01' }), TODAY)).toBe(false);
     expect(isAgendaItemLate(item({ kind: 'project_start', start: '2026-09-01' }), TODAY)).toBe(false);
+    // Une tâche du début à la deadline : en retard seulement quand la deadline est passée.
+    expect(isAgendaItemLate(item({ kind: 'task_due', start: '2026-09-20', end: '2026-09-26' }), TODAY)).toBe(false);
+    expect(isAgendaItemLate(item({ kind: 'task_due', start: '2026-09-20', end: '2026-09-23' }), TODAY)).toBe(true);
   });
 
   it('range une journée : événements, deadlines, encaissements, puis le reste', () => {
@@ -249,5 +253,45 @@ describe('prochains jours (dashboard)', () => {
     expect(upcomingDetail(item({ source: 'payment', kind: 'payment_due', detail: 'Acompte' }), TODAY)).toBe('Acompte');
     expect(upcomingDetail(item({ detail: 'Studio Lumen' }), TODAY)).toBe('Studio Lumen');
     expect(upcomingDetail(item({}), TODAY)).toBeNull();
+  });
+});
+
+describe('barres continues', () => {
+  const week = viewDays('week', TODAY); // du lundi 21 au dimanche 27 septembre
+
+  it('dessine en barre ce qui dure plusieurs jours, coupé aux bords de la semaine', () => {
+    const row = layoutRow(
+      [
+        item({ key: 'salon', start: '2026-09-18', end: '2026-09-22' }), // commence la semaine d'avant
+        item({ key: 'tâche', source: 'task', kind: 'task_due', start: '2026-09-24', end: '2026-10-01' }),
+        item({ key: 'jour', start: '2026-09-23' }),
+      ],
+      week,
+    );
+    expect(row.spans.map((s) => [s.item.key, s.startCol, s.endCol, s.lane, s.continuesBefore, s.continuesAfter])).toEqual([
+      ['salon', 0, 1, 0, true, false],
+      ['tâche', 3, 6, 0, false, true],
+    ]);
+    expect(row.lanes).toBe(1);
+    // Le reste reste dans sa case.
+    expect(row.singles.get('2026-09-23')?.map((i) => i.key)).toEqual(['jour']);
+    expect(row.singles.get('2026-09-24')).toEqual([]);
+  });
+
+  it('empile les barres qui se chevauchent : la plus ancienne, puis la plus longue, en haut', () => {
+    const row = layoutRow(
+      [
+        item({ key: 'court', start: '2026-09-22', end: '2026-09-23' }),
+        item({ key: 'long', start: '2026-09-22', end: '2026-09-26' }),
+        item({ key: 'après', start: '2026-09-24', end: '2026-09-25' }),
+      ],
+      week,
+    );
+    expect(row.spans.map((s) => [s.item.key, s.lane])).toEqual([
+      ['long', 0],
+      ['court', 1],
+      ['après', 1],
+    ]);
+    expect(row.lanes).toBe(2);
   });
 });

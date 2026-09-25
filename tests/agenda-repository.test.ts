@@ -152,16 +152,19 @@ describe('agenda (P8)', () => {
       updateTaskStatement('faite', { status: 'done' }, NOW),
       insertTaskStatement('ordinaire', newTask({ title: 'Ordinaire', scheduledDate: '2026-09-12' }), NOW),
       insertTaskStatement('prioritaire', newTask({ title: 'Prioritaire', scheduledDate: '2026-09-12', priority: 2 }), NOW),
-      // Prioritaire avec deadline : une seule fois, à sa deadline.
+      // Début et deadline : une seule fois, du début à la deadline (une barre dans le calendrier).
       insertTaskStatement('double', newTask({ title: 'Double', scheduledDate: '2026-09-11', dueDate: '2026-09-14', priority: 3 }), NOW),
       ...libre.statements,
     ]);
 
     expect(await keysOf(db, { from: '2026-09-10', to: '2026-09-20' })).toEqual([
+      'task_due:Double:2026-09-11',
       'task_scheduled:Prioritaire:2026-09-12',
-      'task_due:Double:2026-09-14',
       'payment_due:BDE:2026-09-15',
     ]);
+    const double = (await listAgenda(db, '2026-09-13', '2026-09-14')).find((i) => i.id === 'double');
+    // Visible sur toute sa période, même quand la plage n'en montre que le milieu.
+    expect(double).toMatchObject({ start: '2026-09-11', end: '2026-09-14', allDay: true });
 
     await db.batch([markReceivedStatement(libre.paymentId, '2026-09-15', NOW)]);
     expect(await keysOf(db, { from: '2026-09-15', to: '2026-09-16' })).toEqual([]);
@@ -173,8 +176,8 @@ describe('agenda (P8)', () => {
     ]);
     expect(await keysOf(db)).toEqual([
       'payment_due:Site vitrine:2026-09-01',
+      'task_due:Double:2026-09-11',
       'task_scheduled:Prioritaire:2026-09-12',
-      'task_due:Double:2026-09-14',
       'payment_due:Site vitrine:2026-09-30',
     ]);
   });
