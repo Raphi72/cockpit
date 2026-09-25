@@ -62,4 +62,12 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['M', 'S', 'J'], label: 'Vue mois, semaine ou jour' },
     ],
   },
+  {
+    title: 'Planning',
+    entries: [
+      { keys: ['←', '→'], label: 'Période précédente ou suivante' },
+      { keys: ['T'], label: 'Revenir à aujourd’hui' },
+      { keys: ['M', 'R'], label: 'Zoom mois ou trimestre' },
+    ],
+  },
 ];

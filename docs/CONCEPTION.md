@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 4 faites.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 5 faites.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -526,7 +526,7 @@ type AgendaItem = {
 };
 ```
 
-Une seule requête `UNION ALL` sur une plage de dates renvoie tous les éléments en un aller-retour. Le calendrier, les « Prochains jours » du dashboard, le planning et les notifications consomment tous ce même flux.
+Une seule requête `UNION ALL` sur une plage de dates renvoie tous les éléments en un aller-retour. Le calendrier, les « Prochains jours » du dashboard et les notifications consomment ce même flux. Le planning lit directement les projets et leurs encaissements (il lui faut la période entière de chaque projet et sa progression) : les dates restent celles des tables, rien n'est recopié.
 
 ### 3.6 Recherche globale (FTS5)
 
@@ -720,6 +720,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 - Une ligne par projet en cours ou à venir, avec une barre du début à la deadline, une ligne « aujourd'hui » et des losanges pour les encaissements.
 - En haut, une **bande de densité** montre le nombre de projets simultanés par semaine : les chevauchements se voient d'un coup d'œil.
 - Zoom par mois ou par trimestre.
+- Réalisé en V1.1, étape 5 : voir les choix au §7.3.
 
 **Finances** :
 
@@ -863,7 +864,7 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
    - calendrier : prendre une tâche, un encaissement, un début ou une deadline de projet, un événement, et le déposer sur un autre jour pour changer sa date ;
    - fiche projet : glisser une tâche dans les idées et une idée dans les tâches ; déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir) ;
    - réordonner les tâches au clavier (Alt+↑ / Alt+↓).
-5. **Planning**.
+5. **Planning** (✓ fait, branche `v1.1-planning`).
 6. **Notifications Windows**.
 7. **Exports et paramètres complets**.
 8. **Petits défauts** du §7.3.
@@ -892,6 +893,15 @@ Détail des étapes 5 à 7 :
 - **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
+
+**Choix faits en V1.1, étape 5 (planning)**, à confirmer à l'usage :
+- **Période** (`agenda/timeline/model.ts`) : elle commence le lundi de la semaine précédente, pour garder un peu de passé en vue. Zoom **mois** : 6 semaines, chaque lundi daté (« 28 sept. ») ; zoom **trimestre** : 13 semaines, le numéro du jour sous le nom du mois. Les flèches avancent de 4 ou 12 semaines (on garde du contexte), `T` revient à aujourd'hui, `M` et `R` changent de zoom. Le jour est dans l'URL interne (`?date=`), le zoom est mémorisé.
+- **Lignes** : les projets du jour « En cours » ou « À venir » (un projet à venir commencé est en cours, les Propositions et les projets en pause n'y sont pas), rangés par début, puis par deadline. À gauche, le nom (« à venir » en gris) ; un clic ouvre la fiche.
+- **Barres** : du début à la deadline, jours compris, sans aplat de couleur (la couleur du type reste une pastille) : grise pour un projet en cours, en pointillés pour un projet à venir. La part des tâches faites est plus foncée, à l'échelle de toute la barre : on la compare d'un coup d'œil à la ligne « aujourd'hui ». Sans date de début, un projet en cours part du bord gauche, estompé ; sans deadline, la barre file jusqu'au bord droit. Un projet à venir sans début n'a que son drapeau de deadline. Le drapeau suit la couleur de l'urgence (`core/deadline.ts`) et se place juste après la barre. Une deadline dépassée ajoute une queue rouge en pointillés jusqu'à aujourd'hui. Au survol : dates, part des tâches faites, retard.
+- **Encaissements** : un losange à la date prévue (contour gris, rouge en retard), plein et vert à la date de réception ; au survol, le libellé, le montant et la date ; un clic ouvre l'encaissement.
+- **Bande de densité** (« En parallèle ») : pour chaque semaine, le nombre de projets dont la barre (retard compris) touche la semaine, avec leurs noms au survol. Une seule couleur, plus soutenue à mesure qu'ils s'empilent, sans alerte : ce qui est « trop » dépend de chacun. Un projet sans deadline compte à partir de son début ; un projet en cours sans début compte jusqu'à sa deadline ; un projet à venir qui n'a qu'une deadline ne compte pas.
+- **Hors de la période et sans dates** : une phrase sous la timeline donne le nombre de projets hors de la période, et la liste des projets sans aucune date (avec un lien), pour qu'aucun ne soit oublié.
+- Le planning ne se modifie pas en glissant (le calendrier le permet déjà pour les débuts et deadlines).
 
 **Choix faits en V1.1, étape 4 (glisser-déposer)**, à confirmer à l'usage :
 - **Calendrier** (`agenda/calendar/CalendarDnd.tsx`) : tout ce qui s'y affiche se prend et se dépose sur un autre jour, en vue mois comme dans la ligne « journée » de la semaine et du jour. La date change là où elle est stockée (P8) : une tâche décale son début et sa deadline d'autant (une barre garde sa durée), un projet son début ou sa deadline, un encaissement sa date prévue, un événement ses jours (heures gardées). L'élément se décale du nombre de jours entre la case où on l'a pris et celle où on le dépose : on peut prendre une barre par le milieu. Dans la grille horaire, un événement à heure fixe prend l'heure du haut du bloc, au quart d'heure, et garde sa durée ; les autres éléments n'y changent que de jour. La case visée est surlignée et l'élément glissé montre sa destination (« lun. 28 sept. · 15:30 »). Toast « Déplacé au lundi 28 septembre. » avec « Annuler » (Ctrl+Z). Refus, avec un message, d'un début de projet après sa deadline ou l'inverse. Un encaissement reçu ne bouge jamais (il n'est pas dans le calendrier). Un clic reste un clic (seuil de 6 px) ; la page ne défile qu'à 8 % du bord.

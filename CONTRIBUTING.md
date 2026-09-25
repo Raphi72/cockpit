@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 à 4 de la V1.1 sont faits. La suite de la V1.1 est en cours.
+Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 à 5 de la V1.1 sont faits. La suite de la V1.1 est en cours.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -38,7 +38,7 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 
 ### Étapes suivantes
 
-- [ ] **Planning** : une ligne par projet en cours ou à venir, avec une barre du début à la deadline, une ligne « aujourd'hui », des losanges pour les encaissements, une bande qui montre combien de projets se chevauchent chaque semaine, et un zoom mois ou trimestre. La page existe mais elle est vide.
+- [x] **Planning** (étape 5, branche `v1.1-planning`) : une ligne par projet en cours ou à venir, avec une barre du début à la deadline, une ligne « aujourd'hui », des losanges pour les encaissements, une bande qui montre combien de projets se chevauchent chaque semaine, et un zoom mois ou trimestre.
 - [ ] **Notifications Windows** : deadline à J-3 et le jour J, tâche prioritaire due demain, encaissement prévu demain ou en retard, début de projet, rendez-vous 15 minutes avant, résumé du matin. Chacune peut être désactivée.
 - [ ] **Exports** : JSON (toutes les données) et CSV pour les finances, qui s'ouvre directement dans Excel. Les fichiers sont nommés `cockpit-export-…` (motif ignoré par Git).
 - [ ] **Paramètres complets** : thème clair ou sombre forcé, premier jour de la semaine, et l'app qui se rouvre à la même taille et au même endroit.
