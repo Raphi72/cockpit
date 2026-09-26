@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { addDaysISO, daysBetween, formatLongDate, relativeDateLabel, timeToMinutes } from '@/core/dates';
+import { DEADLINE_HORIZON } from '@/core/deadline';
 import { formatMoney } from '@/core/money';
 import { UPCOMING_AGENDA_DAYS, upcomingDays, type AgendaItem, type AgendaKind } from '@/domains/agenda';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
@@ -117,8 +118,26 @@ export function buildAlerts(input: {
 
 // ─── Deadlines ──────────────────────────────────────────────────────────────
 
-/** Une deadline entre dans le bloc « Deadlines » 7 jours avant. */
-export const DEADLINE_DAYS = 7;
+/**
+ * Une deadline entre dans le bloc « Deadlines » 7 jours avant, par défaut. Le réglage
+ * `dashboard.deadlineDays` change ce nombre (voir SETTINGS.deadlineDays).
+ */
+export const DEADLINE_DAYS = DEADLINE_HORIZON;
+
+/** Jour du mois en toutes lettres pour une période : « 1er », « 2 »… */
+const dayOfMonth = (day: string) => (day.endsWith('-01') ? '1er' : String(Number(day.slice(8))));
+
+/**
+ * Période du bloc « Deadlines », qui suit le jour affiché : « 7 prochains jours » aujourd'hui,
+ * sinon « du 2 au 9 oct. » (« du 28 sept. au 5 oct. » à cheval sur deux mois).
+ */
+export function deadlinesPeriod(day: string, today: string, days = DEADLINE_DAYS): string {
+  if (day === today) return `${days} prochains jours`;
+  const end = addDaysISO(day, days);
+  const month = (iso: string) => format(parseISO(iso), 'MMM', { locale: fr });
+  const from = day.slice(0, 7) === end.slice(0, 7) ? dayOfMonth(day) : `${dayOfMonth(day)} ${month(day)}`;
+  return `du ${from} au ${dayOfMonth(end)} ${month(end)}`;
+}
 
 export type DeadlineEntry = {
   key: string;
@@ -136,8 +155,9 @@ export type DeadlineEntry = {
 const SOURCE_RANK: Record<DeadlineEntry['source'], number> = { project: 0, event: 1, task: 2 };
 
 /**
- * Bloc « Deadlines » du dashboard : tout ce qui doit être fini d'ici 7 jours (aujourd'hui compris),
- * pour qu'aucune deadline n'arrive par surprise. Les deadlines de projets, de tâches (qu'elles aient
+ * Bloc « Deadlines » du dashboard : tout ce qui doit être fini d'ici 7 jours (ou `days`, réglable),
+ * à partir du jour affiché (`today` : aujourd'hui, ou le jour choisi avec les flèches), ce jour
+ * compris, pour qu'aucune deadline n'arrive par surprise. Les deadlines de projets, de tâches (qu'elles aient
  * un début ou non) et les échéances saisies dans le calendrier. Un projet en retard y reste en tête.
  * Les tâches en retard n'y sont pas : elles sont en tête d'« Aujourd'hui ».
  * La plus proche d'abord ; le même jour, les projets, puis les échéances, puis les tâches prioritaires.

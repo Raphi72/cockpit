@@ -19,7 +19,7 @@ import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, useAgenda, type AgendaItem } from '@/domains/agenda';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
 import { useSetting } from '@/domains/settings/hooks';
-import { SETTINGS } from '@/domains/settings/model';
+import { SETTINGS, resolveDeadlineDays } from '@/domains/settings/model';
 import { useFinanceSummary } from '@/domains/finance/hooks';
 import { useOverduePayments } from '@/domains/finance/payments/hooks';
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
@@ -36,7 +36,6 @@ import { DatePicker, type DayMark } from '@/ui/primitives/DatePicker';
 import { Deadlines } from '../components/Deadlines';
 import { UpcomingDays } from '../components/UpcomingDays';
 import {
-  DEADLINE_DAYS,
   buildAlerts,
   dashboardSummary,
   dashboardTitle,
@@ -257,11 +256,12 @@ export function DashboardPage() {
   const day = search.day ?? today;
   const openCreate = useCreateStore((state) => state.openCreate);
   const [pickerOpen, setPickerOpen] = useState(false);
-  // Prochains jours (7 jours, aujourd'hui compris) et Deadlines (jusqu'à J+7 inclus).
-  const agendaRange = useMemo(
-    () => ({ from: today, to: addDaysISO(today, Math.max(UPCOMING_AGENDA_DAYS, DEADLINE_DAYS + 1)) }),
-    [today],
-  );
+  const { data: deadlineDaysSetting } = useSetting(SETTINGS.deadlineDays);
+  const deadlineDays = resolveDeadlineDays(deadlineDaysSetting);
+  // Prochains jours : 7 jours à partir d'aujourd'hui, aujourd'hui compris.
+  const agendaRange = useMemo(() => ({ from: today, to: addDaysISO(today, UPCOMING_AGENDA_DAYS) }), [today]);
+  // Deadlines : elles suivent le jour affiché, jusqu'à J+N inclus (échéances saisies dans le calendrier).
+  const deadlineRange = useMemo(() => ({ from: day, to: addDaysISO(day, deadlineDays + 1) }), [day, deadlineDays]);
   const { data: projects } = useProjects({ statuses: CONFIRMED_STATUSES });
   const { data: overduePayments = [] } = useOverduePayments(today);
   const { data: openTasks } = useOpenTasks();
@@ -269,6 +269,7 @@ export function DashboardPage() {
   const { data: doneThatDay = [] } = useDoneOn(day, day < today);
   const { data: finance } = useFinanceSummary(today);
   const { data: agenda } = useAgenda(agendaRange);
+  const { data: deadlineAgenda } = useAgenda(deadlineRange);
   const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
 
   const goTo = (next: string) => void navigate({ search: next === today ? {} : { day: next } });
@@ -279,11 +280,13 @@ export function DashboardPage() {
     d: () => setPickerOpen(true),
   });
 
-  if (!projects || !openTasks || !finance || !agenda || showAmounts === undefined) return null;
+  if (!projects || !openTasks || !finance || !agenda || !deadlineAgenda || showAmounts === undefined || deadlineDaysSetting === undefined)
+    return null;
 
   // Les Propositions (devis pas encore signé) n'y sont pas : elles restent dans la page Projets.
   const alerts = buildAlerts({ projects, overduePayments, today, showAmounts });
-  const deadlines = selectDeadlines({ projects, tasks: openTasks, agenda, today });
+  // Le bloc Deadlines suit le jour affiché : ce qui doit être fini dans les N jours qui suivent ce jour-là.
+  const deadlines = selectDeadlines({ projects, tasks: openTasks, agenda: deadlineAgenda, today: day, days: deadlineDays });
   // Les projets suivent le jour affiché : un projet « À venir » est « En cours » à partir de sa date de début.
   const active = projects.filter((p) => statusOn(p, day) === 'active');
   const upcoming = projects.filter((p) => statusOn(p, day) === 'planned');
@@ -380,7 +383,7 @@ export function DashboardPage() {
         </div>
 
         <div className="min-w-0">
-          <Deadlines entries={deadlines} today={today} />
+          <Deadlines entries={deadlines} day={day} today={today} days={deadlineDays} />
 
           <div className="mt-12">
             <Attention alerts={alerts} />

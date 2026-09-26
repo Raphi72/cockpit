@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { deadlineStatus, relativeDayText } from '@/core/deadline';
+import { deadlineStatus, deadlineThresholds, relativeDayText } from '@/core/deadline';
+import { resolveDeadlineDays } from '@/domains/settings/model';
 
 const TODAY = '2026-09-25'; // un vendredi
 
@@ -31,5 +32,41 @@ describe('deadline : texte calculé, le même partout', () => {
     expect(relativeDayText('2026-09-24', TODAY)).toBe('Hier');
     expect(relativeDayText('2026-09-21', TODAY)).toBe('Il y a 4 jours');
     expect(relativeDayText('2026-09-10', TODAY)).toBe('10 septembre');
+  });
+});
+
+describe('deadline : couleurs recalées sur l’horizon du bloc Deadlines', () => {
+  it('garde les seuils habituels pour 7 jours', () => {
+    expect(deadlineThresholds(7)).toEqual({ red: 0, amber: 3 });
+  });
+
+  it('répartit rouge, ambre et bleu dans les mêmes proportions', () => {
+    expect(deadlineThresholds(3)).toEqual({ red: 0, amber: 1 });
+    expect(deadlineThresholds(5)).toEqual({ red: 0, amber: 2 });
+    expect(deadlineThresholds(10)).toEqual({ red: 0, amber: 4 });
+    expect(deadlineThresholds(14)).toEqual({ red: 1, amber: 6 });
+    expect(deadlineThresholds(30)).toEqual({ red: 3, amber: 13 });
+  });
+
+  it('tire vers le rouge à mesure que la deadline approche', () => {
+    const tone = (deadline: string) => deadlineStatus(deadline, TODAY, { horizon: 14 }).tone;
+    expect(tone('2026-10-09')).toBe('week'); // J+14
+    expect(tone('2026-10-02')).toBe('week'); // J+7
+    expect(tone('2026-10-01')).toBe('soon'); // J+6
+    expect(tone('2026-09-26')).toBe('today'); // demain
+    expect(tone('2026-10-10')).toBe('later');
+  });
+
+  it('compte les jours jusqu’à l’horizon', () => {
+    expect(deadlineStatus('2026-10-07', TODAY, { horizon: 14 }).text).toBe('Dans 12 jours');
+    expect(deadlineStatus('2026-10-07', TODAY).text).toBe('7 octobre');
+    expect(deadlineStatus('2026-10-07', TODAY, { horizon: 14, short: true }).text).toBe('Dans 12 j');
+  });
+
+  it('n’accepte que les durées proposées dans Paramètres', () => {
+    expect(resolveDeadlineDays(14)).toBe(14);
+    expect(resolveDeadlineDays(8)).toBe(7);
+    expect(resolveDeadlineDays('14')).toBe(7);
+    expect(resolveDeadlineDays(undefined)).toBe(7);
   });
 });

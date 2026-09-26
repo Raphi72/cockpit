@@ -5,6 +5,7 @@ import {
   dashboardTitle,
   dayMarks,
   dayTasksHeading,
+  deadlinesPeriod,
   nextTimedEvent,
   otherDaySummary,
   selectDeadlines,
@@ -189,6 +190,46 @@ describe('bloc « Deadlines »', () => {
       ['Maquette', '2026-09-26', 'Site', false],
       ['Site', '2026-10-01', 'deadline du projet', false],
     ]);
+  });
+
+  it('suit le jour affiché : le 26 septembre, une tâche due le 7 octobre apparaît quand on se met au 2 octobre', () => {
+    const input = {
+      projects: [project({ id: 'late', name: 'Audit', deadline: '2026-09-20' }), project({ id: 'p', name: 'Site', deadline: '2026-09-30' })],
+      tasks: [
+        task({ id: 'a', title: 'Textes de l’accueil', dueDate: '2026-10-07' }),
+        task({ id: 'b', title: 'Passée ce jour-là', dueDate: '2026-09-28' }),
+      ],
+      agenda: [event({ id: 'ev', title: 'Dépôt du dossier', kind: 'deadline', allDay: true, start: '2026-10-04' })],
+    };
+    // Vu du 26 septembre : jusqu'au 3 octobre.
+    expect(selectDeadlines({ ...input, today: '2026-09-26' }).map((e) => e.title)).toEqual([
+      'Audit',
+      'Passée ce jour-là',
+      'Site',
+    ]);
+    // Vu du 2 octobre : les projets en retard restent en tête, les tâches passées ce jour-là n'y sont plus.
+    expect(selectDeadlines({ ...input, today: '2026-10-02' }).map((e) => e.title)).toEqual([
+      'Audit',
+      'Site',
+      'Dépôt du dossier',
+      'Textes de l’accueil',
+    ]);
+  });
+
+  it('entre plus tôt avec un horizon plus long', () => {
+    const tasks = [task({ id: 'a', title: 'Dans 12 jours', dueDate: '2026-10-06' })];
+    expect(selectDeadlines({ projects: [], tasks, agenda: [], today: TODAY })).toEqual([]);
+    expect(selectDeadlines({ projects: [], tasks, agenda: [], today: TODAY, days: 14 }).map((e) => e.title)).toEqual([
+      'Dans 12 jours',
+    ]);
+  });
+
+  it('dit sur quelle période il porte', () => {
+    expect(deadlinesPeriod(TODAY, TODAY)).toBe('7 prochains jours');
+    expect(deadlinesPeriod(TODAY, TODAY, 14)).toBe('14 prochains jours');
+    expect(deadlinesPeriod('2026-10-02', TODAY)).toBe('du 2 au 9 oct.');
+    expect(deadlinesPeriod('2026-09-28', TODAY)).toBe('du 28 sept. au 5 oct.');
+    expect(deadlinesPeriod('2026-10-01', TODAY, 3)).toBe('du 1er au 4 oct.');
   });
 
   it('marque les jours du sélecteur : deadlines en priorité, puis tâches prévues', () => {

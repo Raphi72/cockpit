@@ -27,7 +27,15 @@ import { Button } from '@/ui/primitives/Button';
 import { Checkbox } from '@/ui/primitives/Checkbox';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { useSaveSetting, useSetting } from '../hooks';
-import { SETTINGS, THEME_CHOICES, WEEK_START_CHOICES, resolveTheme, resolveWeekStart } from '../model';
+import {
+  DEADLINE_DAYS_CHOICES,
+  SETTINGS,
+  THEME_CHOICES,
+  WEEK_START_CHOICES,
+  resolveDeadlineDays,
+  resolveTheme,
+  resolveWeekStart,
+} from '../model';
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -203,8 +211,10 @@ function ExportSection() {
 
 function DashboardSection() {
   const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
+  const { data: deadlineDays } = useSetting(SETTINGS.deadlineDays);
   const save = useSaveSetting(SETTINGS.dashboardShowAmounts);
-  if (showAmounts === undefined) return null;
+  const saveDeadlineDays = useSaveSetting(SETTINGS.deadlineDays);
+  if (showAmounts === undefined || deadlineDays === undefined) return null;
   return (
     <Section title="Tableau de bord">
       <Checkbox checked={showAmounts} onChange={(checked) => save.mutate(checked)}>
@@ -214,6 +224,20 @@ function DashboardSection() {
         Soldes, à recevoir, encaissé du mois et montants des paiements, notifications comprises. Ils restent toujours
         visibles dans Finances.
       </p>
+      <div className="mt-6">
+        <InfoRow label="Deadlines">
+          <ChoiceChips
+            label="Jours avant la deadline"
+            options={DEADLINE_DAYS_CHOICES.map((days) => ({ value: String(days), label: `${days} jours` }))}
+            value={String(resolveDeadlineDays(deadlineDays))}
+            onChange={(v) => saveDeadlineDays.mutate(resolveDeadlineDays(Number(v)))}
+          />
+          <span className="mt-1.5 block text-meta text-ink-3">
+            Une tâche, un projet ou une échéance entre dans le bloc Deadlines ce nombre de jours avant sa deadline. Les
+            couleurs suivent : bleu en entrant, puis ambre, puis rouge tout près.
+          </span>
+        </InfoRow>
+      </div>
     </Section>
   );
 }

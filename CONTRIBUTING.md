@@ -61,7 +61,7 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
 
 - [x] **Terminer une tâche en douceur** : cocher une tâche la fait disparaître trop brusquement. À la place, une petite animation plus lente (la case se remplit, le titre se barre, puis la ligne s'efface). Et un toast en bas à droite, comme pour le reste : « Tâche terminée : Faire la refonte graphique », avec « Annuler ».
 - [x] **Titre complet des tâches** : dans le panneau d'une tâche (ouvert depuis le calendrier ou ailleurs), un titre trop long est coupé. Il doit passer à la ligne pour se lire en entier. Même chose dans le panneau d'un événement.
-- [ ] **Deadlines du dashboard** :
+- [x] **Deadlines du dashboard** :
   - Défaut : le bloc Deadlines reste calé sur aujourd'hui, sur 7 jours, même quand on affiche un autre jour. Exemple : le 26 septembre, une tâche due le 7 octobre n'apparaît pas quand on se met au 2 octobre. Le bloc doit suivre le jour affiché.
   - Paramètres : choisir combien de jours avant sa deadline une tâche ou un projet apparaît dans le bloc (7 jours aujourd'hui).
   - Couleurs : toujours celles de l'urgence (rouge, ambre, bleu), mais recalées sur ce nombre de jours. Plus la deadline approche, plus la tâche ou le projet tire vers le rouge et attire l'œil.

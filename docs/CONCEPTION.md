@@ -500,9 +500,9 @@ Au premier lancement, une seule question est posée : « Quel est le solde actue
 | Dépenses pro | Σ transactions `expense` des comptes pro (hors virements et ajustements) |
 | Tâches d'aujourd'hui | Non terminées et (début ≤ aujourd'hui ou deadline ≤ aujourd'hui) |
 | Statut du jour d'un projet | « À venir » et date de début ≤ le jour regardé → « En cours » ; sinon le statut choisi (`statusOn`, et `STATUS_ON` en SQL) |
-| Deadlines du dashboard | Deadlines de projets (en retard comprises), de tâches et événements « Échéance » d'aujourd'hui à J+7 (`selectDeadlines`) |
+| Deadlines du dashboard | Deadlines de projets (en retard comprises), de tâches et événements « Échéance » du jour affiché à J+N, N réglable (7 par défaut) (`selectDeadlines`) |
 | À prévoir | Non terminées, sans début, deadline dans les 7 prochains jours (pas aujourd'hui) |
-| Texte d'une deadline | « En retard de 3 jours », « Aujourd'hui » (rouge), « Demain », « Dans 3 jours » (ambre), « Dans 6 jours » (bleu, jusqu'à 7), puis la date, « Terminée » (vert) : `core/deadline.ts` |
+| Texte d'une deadline | « En retard de 3 jours », « Aujourd'hui » (rouge), « Demain », « Dans 3 jours » (ambre), « Dans 6 jours » (bleu, jusqu'à 7), puis la date, « Terminée » (vert) : `core/deadline.ts`. Dans le bloc Deadlines, les seuils se recalent sur son horizon (`deadlineThresholds`) |
 
 ### 3.5 L'agenda : une seule source pour le calendrier, le planning et le dashboard
 
@@ -887,7 +887,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 
 1. **Terminer une tâche en douceur** (✓ fait) : la case se remplit, le titre se barre, puis la ligne s'efface ; toast « Tâche terminée : … » avec « Annuler ».
 2. **Titre complet** des tâches et des événements dans leur panneau : il passe à la ligne au lieu d'être coupé (✓ fait).
-3. **Deadlines du dashboard** : le bloc suit le jour affiché ; un réglage fixe combien de jours avant sa deadline un élément y entre (7 par défaut), et les couleurs de l'urgence se recalent sur ce nombre.
+3. **Deadlines du dashboard** (✓ fait) : le bloc suit le jour affiché ; un réglage fixe combien de jours avant sa deadline un élément y entre (7 par défaut), et les couleurs de l'urgence se recalent sur ce nombre.
 4. **« Je veux travailler… »** : l'app compose le programme du jour, pour une durée (sans jamais la dépasser) ou un nombre de tâches ; ce qui n'est pas fait revient à sa place le lendemain.
 
 ### 7.3 Points à reprendre, issus des jalons terminés
@@ -895,6 +895,12 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main. (La fenêtre « Enregistrer sous » des exports, construite de la même façon, a été vérifiée dans la vraie fenêtre.)
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 - **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1.2, étape 3 (deadlines du dashboard)**, à confirmer à l'usage :
+- **Le bloc suit le jour affiché** (flèches, `D`) : il montre ce qui doit être fini de ce jour-là à J+N, avec un compte à rebours compté depuis ce jour (« Dans 5 jours » vu du 2 octobre pour le 7). Sa période s'affiche à côté du titre : « 7 prochains jours » aujourd'hui, sinon « du 2 au 9 oct. ». Un projet en retard ce jour-là reste en tête ; une tâche dont la deadline tombe avant ce jour n'y est plus (elle est dans les jours précédents). Les échéances du calendrier sont lues sur la même période. Le reste du dashboard ne change pas : les chiffres, À surveiller et Prochains jours restent ceux d'aujourd'hui.
+- **Réglage** (Paramètres › Tableau de bord › Deadlines, `dashboard.deadlineDays`) : 3, 5, 7 (par défaut), 10, 14, 21 ou 30 jours avant la deadline.
+- **Couleurs recalées** (`deadlineThresholds`, dans les proportions de 7 jours : rouge le jour même, ambre à 3 jours) : pour 14 jours, rouge aujourd'hui et demain, ambre jusqu'à 6 jours, bleu jusqu'à 14 ; pour 30 jours, rouge jusqu'à 3 jours, ambre jusqu'à 13. Au-delà de 7 jours, le compte à rebours continue (« Dans 12 jours ») au lieu de la date. Pour attirer l'œil à mesure que la deadline approche, le drapeau se remplit en ambre et en rouge, et le compte à rebours s'appuie en rouge.
+- Ailleurs (lignes de tâches, fiches, calendrier, planning), les couleurs gardent l'échelle de 7 jours : avec un horizon long, une même deadline peut être ambre dans le bloc et bleue sur sa ligne.
 
 **Choix faits en V1.1.2, étape 2 (titres complets)** : dans le panneau d'une tâche et d'un événement, le titre passe à la ligne et le champ grandit avec lui (`InlineText` avec `wrap`). Il reste un titre d'une ligne : Entrée l'enregistre, un retour à la ligne collé devient un espace. La case d'une tâche reste alignée sur la première ligne. Les listes gardent leurs titres sur une ligne, coupés : le panneau les montre en entier.
 

@@ -1,3 +1,4 @@
+import { DEADLINE_HORIZON } from '@/core/deadline';
 import { isWeekStart, type WeekStart } from '@/core/week-start';
 
 export type SettingDef<T> = { key: string; fallback: T };
@@ -16,6 +17,9 @@ export const WEEK_START_CHOICES: { value: WeekStart; label: string }[] = [
   { value: 0, label: 'Dimanche' },
 ];
 
+/** Combien de jours avant sa deadline un élément entre dans le bloc « Deadlines » du dashboard. */
+export const DEADLINE_DAYS_CHOICES = [3, 5, 7, 10, 14, 21, 30] as const;
+
 /** Réglages de l'app, gardés dans la table `settings` (une valeur JSON par clé), avec leur valeur par défaut. */
 export const SETTINGS = {
   /**
@@ -23,6 +27,11 @@ export const SETTINGS = {
    * paiements dans « À surveiller », « Prochains jours » et les notifications. La page Finances les montre toujours.
    */
   dashboardShowAmounts: { key: 'dashboard.showAmounts', fallback: true } as SettingDef<boolean>,
+  /**
+   * Bloc « Deadlines » du dashboard : une tâche, un projet ou une échéance y entre ce nombre de jours
+   * avant sa deadline. Les couleurs de l'urgence s'y répartissent sur ce nombre (deadlineThresholds).
+   */
+  deadlineDays: { key: 'dashboard.deadlineDays', fallback: DEADLINE_HORIZON } as SettingDef<number>,
   theme: { key: 'appearance.theme', fallback: 'system' } as SettingDef<ThemeChoice>,
   /** Calendrier (mois et semaine), planning et sélecteur de date. */
   weekStartsOn: { key: 'calendar.weekStartsOn', fallback: 1 } as SettingDef<WeekStart>,
@@ -31,6 +40,10 @@ export const SETTINGS = {
 /** Une valeur inattendue en base (modifiée à la main…) retombe sur la valeur par défaut. */
 export function resolveTheme(value: unknown): ThemeChoice {
   return THEME_CHOICES.some((choice) => choice.value === value) ? (value as ThemeChoice) : SETTINGS.theme.fallback;
+}
+
+export function resolveDeadlineDays(value: unknown): number {
+  return DEADLINE_DAYS_CHOICES.some((days) => days === value) ? (value as number) : SETTINGS.deadlineDays.fallback;
 }
 
 export function resolveWeekStart(value: unknown): WeekStart {

@@ -3,13 +3,13 @@ import { parseISO } from 'date-fns';
 import { Flag } from 'lucide-react';
 import { useState } from 'react';
 import { formatLongDate } from '@/core/dates';
-import { deadlineStatus } from '@/core/deadline';
+import { deadlineStatus, type DeadlineTone } from '@/core/deadline';
 import { useEventSheet } from '@/domains/agenda/event-sheet-store';
 import { useUpdateTask } from '@/domains/tasks/hooks';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { DatePicker } from '@/ui/primitives/DatePicker';
-import { DEADLINE_DAYS, type DeadlineEntry } from '../model';
+import { DEADLINE_DAYS, deadlinesPeriod, type DeadlineEntry } from '../model';
 
 /** Nombre de deadlines montrées d'emblée : au-delà, on les déplie à la demande. */
 const VISIBLE_DEADLINES = 4;
@@ -61,12 +61,23 @@ function PlanButton({ taskId }: { taskId: string }) {
   );
 }
 
-/** Deux lignes, comme « À surveiller » : le titre en entier, puis le projet (et « à prévoir »). */
-function DeadlineRow({ entry, today }: { entry: DeadlineEntry; today: string }) {
-  const { text, tone } = deadlineStatus(entry.date, today);
+/** Plus la deadline approche, plus la ligne attire l'œil : drapeau plein en ambre et en rouge, compte à rebours appuyé en rouge. */
+const PRESSING: DeadlineTone[] = ['late', 'today', 'soon'];
+
+/**
+ * Deux lignes, comme « À surveiller » : le titre en entier, puis le projet (et « à prévoir »).
+ * Le compte à rebours part du jour affiché (`day`) et ses couleurs se répartissent sur l'horizon du bloc.
+ */
+function DeadlineRow({ entry, day, days }: { entry: DeadlineEntry; day: string; days: number }) {
+  const { text, tone } = deadlineStatus(entry.date, day, { horizon: days });
+  const pressing = PRESSING.includes(tone);
   return (
     <div className="group relative -mx-2.5 grid grid-cols-[14px_minmax(0,1fr)_auto] items-start gap-x-3 rounded-md px-2.5 py-2.5 transition-colors duration-[120ms] ease-soft hover:bg-hover">
-      <Flag aria-hidden className={`mt-[3px] size-3.5 ${DEADLINE_TONE_CLASS[tone]}`} strokeWidth={2} />
+      <Flag
+        aria-hidden
+        className={`mt-[3px] size-3.5 ${DEADLINE_TONE_CLASS[tone]} ${pressing ? 'fill-current' : ''}`}
+        strokeWidth={2}
+      />
       <span className="flex min-w-0 flex-col">
         <EntryTitle entry={entry} />
         {(entry.detail || entry.toPlan) && (
@@ -76,7 +87,10 @@ function DeadlineRow({ entry, today }: { entry: DeadlineEntry; today: string }) 
           </span>
         )}
       </span>
-      <span className={`tnum pt-px text-meta ${DEADLINE_TONE_CLASS[tone]}`} title={formatLongDate(parseISO(entry.date))}>
+      <span
+        className={`tnum pt-px text-meta ${DEADLINE_TONE_CLASS[tone]} ${tone === 'late' || tone === 'today' ? 'font-medium' : ''}`}
+        title={formatLongDate(parseISO(entry.date))}
+      >
         {text}
       </span>
       {entry.toPlan && <PlanButton taskId={entry.id} />}
@@ -85,11 +99,24 @@ function DeadlineRow({ entry, today }: { entry: DeadlineEntry; today: string }) 
 }
 
 /**
- * Bloc « Deadlines » du dashboard : ce qui doit être fini d'ici 7 jours, projets, tâches et échéances,
- * avec un compte à rebours coloré (rouge aujourd'hui ou en retard, ambre à 3 jours, bleu dans la
- * semaine). Une tâche qui n'a pas encore de début est « à prévoir ».
+ * Bloc « Deadlines » du dashboard : ce qui doit être fini dans les `days` jours (7 par défaut, réglable)
+ * qui suivent le jour affiché, projets, tâches et échéances, avec un compte à rebours coloré (pour
+ * 7 jours : rouge aujourd'hui ou en retard, ambre à 3 jours, bleu au-delà). Une tâche qui n'a pas
+ * encore de début est « à prévoir ».
  */
-export function Deadlines({ entries, today }: { entries: DeadlineEntry[]; today: string }) {
+export function Deadlines({
+  entries,
+  day,
+  today,
+  days = DEADLINE_DAYS,
+}: {
+  entries: DeadlineEntry[];
+  /** Jour affiché sur le dashboard : le bloc part de ce jour-là. */
+  day: string;
+  today: string;
+  days?: number;
+}) {
+  const period = deadlinesPeriod(day, today, days);
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? entries : entries.slice(0, VISIBLE_DEADLINES);
   const hidden = entries.length - visible.length;
@@ -98,14 +125,14 @@ export function Deadlines({ entries, today }: { entries: DeadlineEntry[]; today:
     <section>
       <div className="mb-1 flex items-baseline gap-2.5">
         <h2 className="font-semibold">Deadlines</h2>
-        <span className="text-meta text-ink-3">{DEADLINE_DAYS} prochains jours</span>
+        <span className="text-meta text-ink-3">{period}</span>
       </div>
       {entries.length === 0 ? (
-        <p className="pt-1 text-ink-3">Aucune deadline d’ici {DEADLINE_DAYS} jours.</p>
+        <p className="pt-1 text-ink-3">{day === today ? `Aucune deadline d’ici ${days} jours.` : `Aucune deadline ${period}.`}</p>
       ) : (
         <>
           {visible.map((entry) => (
-            <DeadlineRow key={entry.key} entry={entry} today={today} />
+            <DeadlineRow key={entry.key} entry={entry} day={day} days={days} />
           ))}
           {hidden > 0 && (
             <button
