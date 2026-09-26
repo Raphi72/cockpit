@@ -1,7 +1,9 @@
 import { ChevronRight } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-import { useDoneOn } from '../hooks';
-import { selectPlannedOn, selectToPlan, selectToday, totalEstimate, formatDuration, type TaskItem } from '../model';
+import { useDoneOn, useUnplanTask } from '../hooks';
+import { selectPlannedOn, selectToPlan, totalEstimate, formatDuration, type TaskItem } from '../model';
+import { selectTodayPlan } from '../work-plan';
+import { useWorkPlanDialog } from '../work-plan-store';
 import { InlineAddTask } from './InlineAddTask';
 import { TaskList } from './TaskList';
 
@@ -49,9 +51,37 @@ export function estimateSummary(tasks: TaskItem[]): string | null {
 }
 
 /**
- * Vue « Aujourd'hui » : retards, puis le jour, ajout express et terminées repliées ;
- * enfin « À prévoir », les deadlines de la semaine qui n'ont pas encore de début
- * (sauf `showToPlan={false}` : sur le dashboard, elles sont dans le bloc « Deadlines »).
+ * Programme du jour (« Je veux travailler… ») : les tâches choisies, avec leur estimation totale et
+ * « Modifier ». Chacune se retire du programme au survol. Tout fait : « Programme terminé ».
+ */
+function PlanGroup({ planned, doneCount, today }: { planned: TaskItem[]; doneCount: number; today: string }) {
+  const unplan = useUnplanTask();
+  const openPlan = useWorkPlanDialog((state) => state.openPlan);
+  const estimate = estimateSummary(planned);
+  return (
+    <>
+      <GroupHeading>
+        Au programme
+        {estimate && <span className="font-normal">{estimate}</span>}
+        <button type="button" onClick={openPlan} className="ml-auto font-normal text-ink-3 transition-colors hover:text-ink">
+          Modifier
+        </button>
+      </GroupHeading>
+      {planned.length > 0 ? (
+        <TaskList tasks={planned} today={today} onUnplan={(task) => unplan.mutate(task)} />
+      ) : (
+        <p className="py-2 text-ink-3">
+          Programme terminé : {doneCount} tâche{doneCount > 1 ? 's' : ''} faite{doneCount > 1 ? 's' : ''}.
+        </p>
+      )}
+    </>
+  );
+}
+
+/**
+ * Vue « Aujourd'hui » : le programme du jour s'il y en a un, les retards, puis le jour, ajout
+ * express et terminées repliées ; enfin « À prévoir », les deadlines de la semaine qui n'ont pas
+ * encore de début (sauf `showToPlan={false}` : sur le dashboard, elles sont dans le bloc « Deadlines »).
  */
 export function TodayTasks({
   open,
@@ -64,12 +94,15 @@ export function TodayTasks({
   today: string;
   showToPlan?: boolean;
 }) {
-  const groups = selectToday(open, today);
+  const groups = selectTodayPlan(open, today);
+  const planDone = doneToday.filter((t) => t.plannedOn === today).length;
+  const hasPlan = groups.planned.length > 0 || planDone > 0;
   const toPlan = showToPlan ? selectToPlan(open, today) : [];
   const empty = groups.overdue.length === 0 && groups.today.length === 0;
 
   return (
     <div>
+      {hasPlan && <PlanGroup planned={groups.planned} doneCount={planDone} today={today} />}
       {groups.overdue.length > 0 && (
         <>
           <GroupHeading tone="danger">En retard</GroupHeading>
@@ -78,11 +111,13 @@ export function TodayTasks({
       )}
       {groups.today.length > 0 && (
         <>
-          {groups.overdue.length > 0 && <GroupHeading>À faire aujourd’hui</GroupHeading>}
+          {(groups.overdue.length > 0 || hasPlan) && (
+            <GroupHeading>{hasPlan ? 'Aussi aujourd’hui' : 'À faire aujourd’hui'}</GroupHeading>
+          )}
           <TaskList tasks={groups.today} today={today} />
         </>
       )}
-      {empty && (
+      {empty && !hasPlan && (
         <p className="py-2 text-ink-3">
           {doneToday.length > 0 ? 'Tout est fait pour aujourd’hui.' : 'Rien de prévu aujourd’hui.'}
         </p>

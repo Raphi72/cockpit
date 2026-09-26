@@ -8,6 +8,7 @@ import {
   FolderClosed,
   Play,
   Plus,
+  Timer,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -29,6 +30,7 @@ import { CONFIRMED_STATUSES, statusOn } from '@/domains/projects/model';
 import { FutureDayTasks, PastDayTasks, TodayTasks, estimateSummary } from '@/domains/tasks/components/TaskGroups';
 import { useDoneOn, useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
 import { selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
+import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
@@ -216,6 +218,7 @@ function DayTitle(props: {
 /** Le bloc de tâches suit le jour choisi : aujourd'hui, un jour à venir ou un jour passé. */
 function DayTasksSection(props: { day: string; today: string; openTasks: TaskItem[]; doneToday: TaskItem[] }) {
   const { day, today, openTasks, doneToday } = props;
+  const openPlan = useWorkPlanDialog((state) => state.openPlan);
   const diff = daysBetween(today, day);
   let estimate: string | null = null;
   if (diff === 0) {
@@ -230,7 +233,19 @@ function DayTasksSection(props: { day: string; today: string; openTasks: TaskIte
       <div className="mb-1 flex items-baseline gap-2.5">
         <h2 className="font-semibold">{dayTasksHeading(day, today)}</h2>
         {estimate && <span className="text-meta text-ink-3">{estimate}</span>}
-        <Link to="/tasks" className="ml-auto text-meta text-ink-3 hover:text-ink">
+        {/* « Je veux travailler… » : composer le programme d'aujourd'hui (P). */}
+        {diff === 0 && (
+          <button
+            type="button"
+            onClick={openPlan}
+            title="Composer le programme d’aujourd’hui · P"
+            className="ml-auto flex items-center gap-1.5 text-meta text-ink-2 transition-colors hover:text-ink"
+          >
+            <Timer className="size-3.5" strokeWidth={1.75} />
+            Je veux travailler…
+          </button>
+        )}
+        <Link to="/tasks" className={`${diff === 0 ? 'ml-4' : 'ml-auto'} text-meta text-ink-3 hover:text-ink`}>
           Toutes les tâches →
         </Link>
       </div>
@@ -256,6 +271,7 @@ export function DashboardPage() {
   const day = search.day ?? today;
   const openCreate = useCreateStore((state) => state.openCreate);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const openPlan = useWorkPlanDialog((state) => state.openPlan);
   const { data: deadlineDaysSetting } = useSetting(SETTINGS.deadlineDays);
   const deadlineDays = resolveDeadlineDays(deadlineDaysSetting);
   // Prochains jours : 7 jours à partir d'aujourd'hui, aujourd'hui compris.
@@ -278,6 +294,7 @@ export function DashboardPage() {
     arrowright: () => goTo(addDaysISO(day, 1)),
     t: () => goTo(today),
     d: () => setPickerOpen(true),
+    p: openPlan,
   });
 
   if (!projects || !openTasks || !finance || !agenda || !deadlineAgenda || showAmounts === undefined || deadlineDaysSetting === undefined)

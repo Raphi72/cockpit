@@ -10,10 +10,20 @@ type TaskListProps = {
   shownDay?: string;
   /** Vrai : une sous-tâche dont la parente est dans la liste est rangée juste sous elle, en retrait. */
   nested?: boolean;
+  /** Programme du jour : « Retirer du programme » au survol de chaque ligne. */
+  onUnplan?: (task: TaskItem) => void;
 };
 
 /** Liste de tâches (vues globales, fiche projet repliée…), sans glisser-déposer. */
-export function TaskList({ tasks, today, showProject = true, showCompletion = false, shownDay, nested = false }: TaskListProps) {
+export function TaskList({
+  tasks,
+  today,
+  showProject = true,
+  showCompletion = false,
+  shownDay,
+  nested = false,
+  onUnplan,
+}: TaskListProps) {
   const rows = nested ? nestTasks(tasks) : tasks.map((task) => ({ task, depth: 0 as const }));
   return (
     <>
@@ -27,6 +37,7 @@ export function TaskList({ tasks, today, showProject = true, showCompletion = fa
           showProject={showProject}
           showCompletion={showCompletion}
           shownDay={shownDay}
+          onUnplan={onUnplan && (() => onUnplan(task))}
         />
       ))}
     </>

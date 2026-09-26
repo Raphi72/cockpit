@@ -53,6 +53,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['←', '→'], label: 'Jour précédent ou suivant' },
       { keys: ['D'], label: 'Choisir un jour dans le calendrier' },
       { keys: ['T'], label: 'Revenir à aujourd’hui' },
+      { keys: ['P'], label: 'Je veux travailler… (programme du jour)' },
     ],
   },
   {
@@ -69,6 +70,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['←', '→'], label: 'Période précédente ou suivante' },
       { keys: ['T'], label: 'Revenir à aujourd’hui' },
       { keys: ['M', 'R'], label: 'Zoom mois ou trimestre' },
+      { keys: ['P'], label: 'Je veux travailler… (programme du jour)' },
     ],
   },
 ];

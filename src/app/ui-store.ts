@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { AgendaSource, CalendarView } from '@/domains/agenda/model';
 import type { PlanningZoom } from '@/domains/agenda/timeline/model';
+import { DEFAULT_PLAN_REQUEST, type PlanRequest } from '@/domains/tasks/work-plan';
 
 /**
  * État d'interface uniquement (jamais de données métier ici).
@@ -39,6 +40,9 @@ type UiState = {
   /** Zoom du planning (mois ou trimestre), retrouvé à la visite suivante. */
   planningZoom: PlanningZoom;
   setPlanningZoom: (zoom: PlanningZoom) => void;
+  /** Dernière demande de « Je veux travailler… » (durée ou nombre), proposée la fois suivante. */
+  workPlanRequest: PlanRequest;
+  setWorkPlanRequest: (request: PlanRequest) => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -71,6 +75,8 @@ export const useUiStore = create<UiState>()(
       toggleCalendarPlainTasks: () => set((state) => ({ calendarPlainTasks: !state.calendarPlainTasks })),
       planningZoom: 'month',
       setPlanningZoom: (zoom) => set({ planningZoom: zoom }),
+      workPlanRequest: DEFAULT_PLAN_REQUEST,
+      setWorkPlanRequest: (request) => set({ workPlanRequest: request }),
     }),
     {
       name: 'cockpit-ui',
@@ -84,6 +90,7 @@ export const useUiStore = create<UiState>()(
         calendarHidden: state.calendarHidden,
         calendarPlainTasks: state.calendarPlainTasks,
         planningZoom: state.planningZoom,
+        workPlanRequest: state.workPlanRequest,
       }),
     },
   ),

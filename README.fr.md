@@ -14,7 +14,7 @@ Il s'installe pour l'utilisateur courant (pas besoin de droits administrateur). 
 
 - **Tableau de bord** : les tâches du jour, les deadlines proches, ce qui mérite attention, les prochains jours et les chiffres clés.
 - **Projets et clients** : statut, budget et échéancier, tâches et sous-tâches, idées.
-- **Tâches** : listes, kanban, sélection multiple, raccourcis clavier.
+- **Tâches** : listes, kanban, sélection multiple, raccourcis clavier, et « Je veux travailler… » qui compose le programme du jour pour une durée ou un nombre de tâches.
 - **Calendrier et planning** : toutes les dates au même endroit (événements, deadlines, encaissements), glisser-déposer, planning des projets.
 - **Finances** : comptes et soldes, encaissements attendus et reçus, transactions, virements.
 - **Notifications Windows** : deadlines, tâches prioritaires, encaissements, rendez-vous, résumé du matin.
@@ -57,4 +57,4 @@ Le dépôt ne contient jamais de base, de sauvegarde ni d'export (voir `.gitigno
 
 ## Feuille de route
 
-Voir [CONTRIBUTING.md](CONTRIBUTING.md) : ce qui est fait, la V1.1.2 à venir, puis la V2 et la V2.5.
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) : ce qui est fait (jusqu’à la V1.1.2), puis la V2 et la V2.5.

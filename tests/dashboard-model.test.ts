@@ -35,6 +35,7 @@ const task = (overrides: Partial<TaskItem>): TaskItem => ({
   parentTitle: null,
   subtasksTotal: 0,
   subtasksDone: 0,
+  plannedOn: null,
   ...overrides,
 });
 

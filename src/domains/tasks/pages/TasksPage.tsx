@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { Plus } from 'lucide-react';
+import { Plus, Timer } from 'lucide-react';
 import { useCreateStore } from '@/app/create-store';
 import { useToday } from '@/core/use-today';
 import { ColorDot } from '@/ui/data/ColorDot';
@@ -12,6 +12,7 @@ import { TaskList } from '../components/TaskList';
 import { useDoneTasks, useDoneToday, useOpenTasks } from '../hooks';
 import { dayHeading, groupByProject, selectOverdue, selectPriority, selectToday, selectUpcoming, type TaskItem } from '../model';
 import { TASK_VIEWS, TASK_VIEW_LABELS, type TaskView } from '../search';
+import { useWorkPlanDialog } from '../work-plan-store';
 
 function Empty({ children }: { children: string }) {
   return <p className="py-6 text-ink-3">{children}</p>;
@@ -56,6 +57,7 @@ export function TasksPage() {
   const search = useSearch({ from: '/tasks' });
   const navigate = useNavigate({ from: '/tasks' });
   const openCreate = useCreateStore((state) => state.openCreate);
+  const openPlan = useWorkPlanDialog((state) => state.openPlan);
   const today = useToday();
   const view: TaskView = search.view ?? 'today';
 
@@ -87,9 +89,14 @@ export function TasksPage() {
       title="Tâches"
       subtitle={subtitle}
       actions={
-        <Button variant="secondary" icon={Plus} shortcut="N" onClick={() => openCreate('task', { scheduledDate: today })}>
-          Nouvelle tâche
-        </Button>
+        <>
+          <Button variant="ghost" icon={Timer} onClick={openPlan} title="Composer le programme d’aujourd’hui">
+            Je veux travailler…
+          </Button>
+          <Button variant="secondary" icon={Plus} shortcut="N" onClick={() => openCreate('task', { scheduledDate: today })}>
+            Nouvelle tâche
+          </Button>
+        </>
       }
     >
       <div className="mb-6">

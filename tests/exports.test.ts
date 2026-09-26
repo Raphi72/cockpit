@@ -142,7 +142,7 @@ describe('exports', () => {
     const db = await setup();
     const data = JSON.parse(await buildExport(db, 'data', NOW)) as DataExport;
 
-    expect(data).toMatchObject({ application: 'Cockpit', format: 1, schemaVersion: 4, exportedAt: NOW });
+    expect(data).toMatchObject({ application: 'Cockpit', format: 1, schemaVersion: 5, exportedAt: NOW });
     expect(Object.keys(data.tables)).toEqual(EXPORT_TABLES.map((t) => t.key));
     expect(data.tables.projects.map((p) => p.name)).toEqual(['Site vitrine', 'Refonte']);
     expect(data.tables.payments).toHaveLength(3);

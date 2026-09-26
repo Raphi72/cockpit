@@ -12,6 +12,7 @@ import { CreateProjectDialog } from '@/domains/projects/components/CreateProject
 import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
 import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
+import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -54,6 +55,7 @@ export function AppShell() {
         <PaymentEditorDialog />
         <ClientEditorDialog />
         <TransactionEditorDialog />
+        <WorkPlanDialog />
         <TaskSheet />
         <EventSheet />
         <SelectionBar />

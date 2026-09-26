@@ -41,6 +41,11 @@ export type TaskItem = {
   /** Sous-tâches de cette tâche (calculé). */
   subtasksTotal: number;
   subtasksDone: number;
+  /**
+   * Jour où « Je veux travailler… » l'a mise au programme. Ce jour-là seulement, elle est dans
+   * Aujourd'hui ; ses dates ne changent pas, elle retrouve donc sa place le lendemain.
+   */
+  plannedOn: string | null;
 };
 
 export type TaskPatch = Partial<{
@@ -65,12 +70,19 @@ export function isTaskLate(task: Pick<TaskItem, 'status' | 'dueDate'>, today: st
 }
 
 /**
- * Tâche du jour : non terminée, prévue aujourd'hui ou avant (report automatique),
- * ou dont la deadline est aujourd'hui ou passée.
+ * Tâche du jour : non terminée, prévue aujourd'hui ou avant (report automatique), dont la
+ * deadline est aujourd'hui ou passée, ou mise au programme du jour (« Je veux travailler… »).
  */
-export function isTaskForToday(task: Pick<TaskItem, 'status' | 'scheduledDate' | 'dueDate'>, today: string): boolean {
+export function isTaskForToday(
+  task: Pick<TaskItem, 'status' | 'scheduledDate' | 'dueDate'> & Partial<Pick<TaskItem, 'plannedOn'>>,
+  today: string,
+): boolean {
   if (!isOpen(task)) return false;
-  return (task.scheduledDate !== null && task.scheduledDate <= today) || (task.dueDate !== null && task.dueDate <= today);
+  return (
+    task.plannedOn === today ||
+    (task.scheduledDate !== null && task.scheduledDate <= today) ||
+    (task.dueDate !== null && task.dueDate <= today)
+  );
 }
 
 /** Date qui situe la tâche dans le temps : son début, sinon la deadline. */
@@ -161,7 +173,7 @@ export function groupByProject(tasks: TaskItem[]): { projectId: string | null; n
     .sort((a, b) => (a.projectId === null ? 1 : b.projectId === null ? -1 : a.name.localeCompare(b.name, 'fr')));
 }
 
-function byPriorityThenOrder(a: TaskItem, b: TaskItem): number {
+export function byPriorityThenOrder(a: TaskItem, b: TaskItem): number {
   return b.priority - a.priority || a.sortOrder - b.sortOrder;
 }
 

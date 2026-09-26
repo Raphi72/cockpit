@@ -30,6 +30,7 @@ import { paymentContext, type PaymentListItem } from '@/domains/finance/payments
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { useTransactionEditor } from '@/domains/finance/transactions/editor-store';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
+import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { ColorDot, type PaletteKey } from '@/ui/data/ColorDot';
 import { WindowErrorBoundary } from '@/ui/overlays/WindowErrorBoundary';
 import { Kbd } from '@/ui/primitives/Kbd';
@@ -135,6 +136,7 @@ function usePaletteActions(close: () => void) {
   const openCreate = useCreateStore((state) => state.openCreate);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const setShortcutsOpen = useUiStore((state) => state.setShortcutsOpen);
+  const openPlan = useWorkPlanDialog((state) => state.openPlan);
   const openTask = useTaskSheet((state) => state.openTask);
   const openEvent = useEventSheet((state) => state.openEvent);
   const openPayment = usePaymentEditor((state) => state.openPayment);
@@ -181,6 +183,9 @@ function usePaletteActions(close: () => void) {
         break;
       case 'shortcuts':
         setShortcutsOpen(true);
+        break;
+      case 'work-plan':
+        openPlan();
         break;
       case 'sidebar':
         toggleSidebar();

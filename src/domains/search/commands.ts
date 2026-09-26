@@ -8,6 +8,7 @@ import {
   Keyboard,
   PanelLeft,
   SquareCheck,
+  Timer,
   User,
   type LucideIcon,
 } from 'lucide-react';
@@ -19,6 +20,7 @@ export type PaletteAction =
   | { type: 'create'; kind: CreateKind }
   | { type: 'go'; to: AppPath }
   | { type: 'receive' }
+  | { type: 'work-plan' }
   | { type: 'shortcuts' }
   | { type: 'sidebar' }
   | { type: 'backup' };
@@ -83,6 +85,15 @@ export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: b
       keywords: 'paiement payé argent reçu',
       icon: CircleCheck,
       action: { type: 'receive' },
+      suggested: true,
+    },
+    {
+      id: 'work-plan',
+      group: 'action',
+      label: 'Je veux travailler…',
+      keywords: 'programme planifier journée temps durée heures tâches',
+      icon: Timer,
+      action: { type: 'work-plan' },
       suggested: true,
     },
     {

@@ -1,4 +1,4 @@
-import { CalendarClock, Flag, ListPlus } from 'lucide-react';
+import { CalendarClock, CalendarMinus, Flag, ListPlus, type LucideIcon } from 'lucide-react';
 import { memo, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
 import { formatCompletedAt, relativeDateLabel, toISODate } from '@/core/dates';
 import { ColorDot } from '@/ui/data/ColorDot';
@@ -33,10 +33,31 @@ type TaskRowProps = {
   completion?: RowCompletion;
   /** Si fourni : « Ajouter une sous-tâche » au survol. */
   onAddSubtask?: () => void;
+  /** Si fourni : « Retirer du programme » au survol (programme du jour). */
+  onUnplan?: () => void;
   /** Propriétés de glisser-déposer, fournies par l'arbre des tâches d'un projet. */
   dragProps?: HTMLAttributes<HTMLDivElement>;
   style?: CSSProperties;
 };
+
+/** Action discrète d'une ligne, visible au survol (ou au clavier). */
+function HoverAction({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(event) => event.stopPropagation()}
+      title={label}
+      aria-label={label}
+      className="grid size-7 place-items-center rounded-md text-ink-3 opacity-0 transition-opacity duration-[120ms] ease-soft group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-active hover:text-ink"
+    >
+      <Icon className="size-4" strokeWidth={1.75} />
+    </button>
+  );
+}
 
 /**
  * Ligne de tâche : case, titre, puis seulement le projet et la date qui compte.
@@ -53,6 +74,7 @@ export const TaskRow = memo(function TaskRow({
   leaveOnDone = true,
   completion,
   onAddSubtask,
+  onUnplan,
   dragProps,
   style,
 }: TaskRowProps) {
@@ -133,21 +155,8 @@ export const TaskRow = memo(function TaskRow({
         )}
       </span>
       <span className="flex items-center gap-4 text-meta text-ink-3">
-        {onAddSubtask && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onAddSubtask();
-            }}
-            onPointerDown={(event) => event.stopPropagation()}
-            title="Ajouter une sous-tâche"
-            aria-label="Ajouter une sous-tâche"
-            className="grid size-7 place-items-center rounded-md text-ink-3 opacity-0 transition-opacity duration-[120ms] ease-soft group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-active hover:text-ink"
-          >
-            <ListPlus className="size-4" strokeWidth={1.75} />
-          </button>
-        )}
+        {onAddSubtask && <HoverAction icon={ListPlus} label="Ajouter une sous-tâche" onClick={onAddSubtask} />}
+        {onUnplan && <HoverAction icon={CalendarMinus} label="Retirer du programme" onClick={onUnplan} />}
         {showProject && task.projectName && (
           <span className="flex max-w-[200px] items-center gap-2">
             {task.projectColor && <ColorDot color={task.projectColor} />}

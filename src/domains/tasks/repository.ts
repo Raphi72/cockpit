@@ -5,7 +5,7 @@ import type { NewTaskInput, TaskItem, TaskPatch, TreePlacement } from './model';
 const COLUMNS = `
   t.id, t.project_id, p.name AS project_name, pt.color AS project_color,
   t.title, t.notes, t.status, t.priority, t.scheduled_date, t.due_date, t.estimate_min,
-  t.sort_order, t.completed_at, t.created_at, t.parent_id, par.title AS parent_title,
+  t.sort_order, t.completed_at, t.created_at, t.parent_id, par.title AS parent_title, t.planned_on,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id) AS subtasks_total,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id AND c.status = 'done') AS subtasks_done`;
 
@@ -126,8 +126,8 @@ export function restoreTaskStatement(task: TaskItem, now: string): Statement {
   return {
     sql: `INSERT INTO tasks
             (id, project_id, parent_id, title, notes, status, priority, scheduled_date, due_date, estimate_min,
-             sort_order, completed_at, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             sort_order, completed_at, planned_on, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     params: [
       task.id,
       task.projectId,
@@ -141,6 +141,7 @@ export function restoreTaskStatement(task: TaskItem, now: string): Statement {
       task.estimateMin,
       task.sortOrder,
       task.completedAt,
+      task.plannedOn,
       task.createdAt,
       now,
     ],
@@ -264,6 +265,42 @@ export function restoreTaskFieldsStatement(task: TaskItem, now: string): Stateme
           WHERE id = ?`,
     params: [task.status, task.completedAt, task.priority, task.scheduledDate, task.dueDate, now, task.id],
   };
+}
+
+// ─── Programme du jour (« Je veux travailler… ») ────────────────────────────
+
+/** Jour de programme des tâches que change un nouveau programme : de quoi tout remettre avec « Annuler ». */
+export function listPlanState(db: Db, day: string, ids: string[]): Promise<{ id: string; plannedOn: string | null }[]> {
+  const marks = ids.map(() => '?').join(', ');
+  return db.query(
+    `SELECT id, planned_on FROM tasks
+     WHERE (planned_on = ? AND status <> 'done')${ids.length > 0 ? ` OR id IN (${marks})` : ''}`,
+    [day, ...ids],
+  );
+}
+
+/**
+ * Nouveau programme pour `day` : les tâches `ids` y sont, les autres tâches à faire qui y étaient
+ * en sortent (une tâche déjà terminée le garde : c'est le bilan du jour). Aucune date n'est touchée.
+ */
+export function savePlanStatements(day: string, ids: string[], now: string): Statement[] {
+  const marks = ids.map(() => '?').join(', ');
+  const statements: Statement[] = [
+    {
+      sql: `UPDATE tasks SET planned_on = NULL, updated_at = ?
+            WHERE planned_on = ? AND status <> 'done'${ids.length > 0 ? ` AND id NOT IN (${marks})` : ''}`,
+      params: [now, day, ...ids],
+    },
+  ];
+  if (ids.length > 0) {
+    statements.push({ sql: `UPDATE tasks SET planned_on = ?, updated_at = ? WHERE id IN (${marks})`, params: [day, now, ...ids] });
+  }
+  return statements;
+}
+
+/** Jour de programme d'une tâche : la retirer du programme (`null`), ou l'y remettre (annulation). */
+export function setPlannedOnStatement(id: string, plannedOn: string | null, now: string): Statement {
+  return { sql: 'UPDATE tasks SET planned_on = ?, updated_at = ? WHERE id = ?', params: [plannedOn, now, id] };
 }
 
 /** Remet le statut d'une tâche (et sa date de fin) : annuler « Tâche terminée ». */

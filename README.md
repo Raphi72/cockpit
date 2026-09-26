@@ -14,7 +14,7 @@ It installs for the current user only (no administrator rights needed). The inst
 
 - **Dashboard**: today's tasks, upcoming deadlines, things to watch, the next few days and key figures.
 - **Projects and clients**: status, budget and payment schedule, tasks and subtasks, ideas.
-- **Tasks**: lists, kanban, multi-select, keyboard shortcuts.
+- **Tasks**: lists, kanban, multi-select, keyboard shortcuts, and "I want to work…", which builds the day's plan for a given time or number of tasks.
 - **Calendar and planning**: every date in one place (events, deadlines, payments), drag and drop, project timeline.
 - **Finances**: accounts and balances, expected and received payments, transactions, transfers.
 - **Windows notifications**: deadlines, priority tasks, payments, appointments, morning summary.
@@ -57,4 +57,4 @@ The repository never contains a database, backup or export (see `.gitignore`).
 
 ## Roadmap
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) (in French): what is done, V1.1.2 next, then V2 and V2.5.
+See [CONTRIBUTING.md](CONTRIBUTING.md) (in French): what is done (up to V1.1.2), then V2 and V2.5.

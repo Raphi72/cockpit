@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 (4 étapes, §7.2). La suite (V2) viendra seulement si l'usage le demande.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 le même jour (4 étapes, §7.2). La suite (V2) viendra seulement si l'usage le demande.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -471,6 +471,10 @@ CREATE TABLE ideas (
 ALTER TABLE tasks ADD COLUMN parent_id TEXT REFERENCES tasks(id) ON DELETE CASCADE;
 -- + index (parent_id, sort_order) ; project_progress recréée : une tâche qui a des
 --   sous-tâches ne compte pas elle-même, ce sont ses sous-tâches qui comptent.
+
+-- 0005_work_plan.sql (V1.1.2) : le jour où « Je veux travailler… » a mis la tâche au programme.
+-- Ses dates ne changent pas : elle est dans Aujourd'hui ce jour-là seulement, puis retrouve sa place.
+ALTER TABLE tasks ADD COLUMN planned_on TEXT;
 ```
 
 **Données initiales** :
@@ -498,7 +502,7 @@ Au premier lancement, une seule question est posée : « Quel est le solde actue
 | CA encaissé (période) | Σ encaissements reçus dont la date de réception tombe dans la période |
 | CA prévu (période) | Σ encaissements non reçus dont la date prévue tombe dans la période |
 | Dépenses pro | Σ transactions `expense` des comptes pro (hors virements et ajustements) |
-| Tâches d'aujourd'hui | Non terminées et (début ≤ aujourd'hui ou deadline ≤ aujourd'hui) |
+| Tâches d'aujourd'hui | Non terminées et (début ≤ aujourd'hui ou deadline ≤ aujourd'hui, ou au programme d'aujourd'hui : `planned_on` = aujourd'hui) |
 | Statut du jour d'un projet | « À venir » et date de début ≤ le jour regardé → « En cours » ; sinon le statut choisi (`statusOn`, et `STATUS_ON` en SQL) |
 | Deadlines du dashboard | Deadlines de projets (en retard comprises), de tâches et événements « Échéance » du jour affiché à J+N, N réglable (7 par défaut) (`selectDeadlines`) |
 | À prévoir | Non terminées, sans début, deadline dans les 7 prochains jours (pas aujourd'hui) |
@@ -840,7 +844,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
-| **V1.1.2** | En cours | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
+| **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
 | **V2** | Si besoin | Google Agenda dans le calendrier (lecture seule, adresse iCal secrète), zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
@@ -888,13 +892,24 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 1. **Terminer une tâche en douceur** (✓ fait) : la case se remplit, le titre se barre, puis la ligne s'efface ; toast « Tâche terminée : … » avec « Annuler ».
 2. **Titre complet** des tâches et des événements dans leur panneau : il passe à la ligne au lieu d'être coupé (✓ fait).
 3. **Deadlines du dashboard** (✓ fait) : le bloc suit le jour affiché ; un réglage fixe combien de jours avant sa deadline un élément y entre (7 par défaut), et les couleurs de l'urgence se recalent sur ce nombre.
-4. **« Je veux travailler… »** : l'app compose le programme du jour, pour une durée (sans jamais la dépasser) ou un nombre de tâches ; ce qui n'est pas fait revient à sa place le lendemain.
+4. **« Je veux travailler… »** (✓ fait) : l'app compose le programme du jour, pour une durée (sans jamais la dépasser) ou un nombre de tâches ; ce qui n'est pas fait revient à sa place le lendemain.
 
 ### 7.3 Points à reprendre, issus des jalons terminés
 
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main. (La fenêtre « Enregistrer sous » des exports, construite de la même façon, a été vérifiée dans la vraie fenêtre.)
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 - **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1.2, étape 4 (« Je veux travailler… »)**, à confirmer à l'usage :
+- **Où** : « Je veux travailler… » à côté du titre du bloc Aujourd'hui du dashboard (touche `P`), en haut des pages Tâches et Planning (`P` aussi sur le planning), et dans la palette Ctrl+K. Une seule fenêtre (`WorkPlanDialog`), qui compose le programme d'aujourd'hui.
+- **Demande** : « Un temps » (30 min, 1 h, 2 h, 4 h d'un clic, puis − / + au quart d'heure, de 15 min à 10 h) ou « Un nombre de tâches » (de 1 à 10, 3 par défaut). La dernière demande est retenue pour la fois suivante.
+- **Quelles tâches** (`planCandidates`) : toutes les tâches à faire, sauf celles qui ont des sous-tâches (une catégorie ; ses sous-tâches, elles, peuvent être choisies) et celles des projets en pause. Celles des projets à venir ou en proposition peuvent l'être : ce sont de vraies choses à faire.
+- **Ordre de préférence** (`rankForPlan`), par paliers : d'abord les retards et ce qui est dû aujourd'hui ; puis ce qui est prévu aujourd'hui (ou avant) ou dû dans les 3 jours ; puis les tâches hautes ou urgentes et les deadlines de la semaine ; puis le reste. Dans un palier : la deadline la plus proche, la priorité, le début le plus ancien, l'ordre manuel. La fenêtre le résume en une ligne.
+- **Par durée** : dans cet ordre, chaque tâche estimée qui tient dans le temps restant ; une tâche trop longue est sautée et une plus courte, plus loin, peut combler. Le total ne dépasse jamais la durée (pour 2 h et deux tâches de 1 h 30 : une seule). **Les tâches sans estimation ne sont pas proposées** (impossible de savoir si elles tiennent) : la fenêtre dit combien sont laissées de côté et invite à leur donner une durée. **Par nombre** : les premières dans l'ordre, estimées ou non.
+- **Ajuster** : « Pas celle-ci » au survol d'une tâche proposée (une autre prend sa place), « Autre proposition » (écarte toutes celles proposées ; quand il n'y a plus rien, on repart des premières). Les tâches écartées sont oubliées à la fermeture.
+- **Mettre au programme** (Ctrl+Entrée) : les tâches choisies reçoivent le jour (`planned_on`, migration 0005) ; leurs dates ne changent pas. Un nouveau programme remplace celui du jour (la fenêtre le dit, avec « Effacer le programme ») ; les tâches déjà terminées gardent le leur. Toast « 3 tâches au programme d'aujourd'hui. » avec « Annuler ».
+- **Dans Aujourd'hui** (dashboard et page Tâches) : un groupe « Au programme » en tête, avec son estimation et « Modifier », puis « En retard » et « Aussi aujourd'hui » pour le reste du jour. Une tâche venue d'un autre jour y montre sa date (« Dans 10 jours ») : on voit d'où elle vient. « Retirer du programme » au survol, avec « Annuler ». Tout fait : « Programme terminé : 3 tâches faites. ». Les compteurs (« 6 aujourd'hui ») comptent le programme ; une tâche au programme n'est plus répétée dans les jours à venir (7 jours, Prochains jours, un jour à venir du dashboard).
+- **En fin de journée** : rien n'est réécrit. Le lendemain, `planned_on` n'est plus aujourd'hui : une tâche du programme qui n'est pas faite est de nouveau à sa place, sa date d'avant (dans quelques jours, ou sans date). Une tâche en retard le reste. Le calendrier ne montre pas le programme : il garde les vraies dates.
 
 **Choix faits en V1.1.2, étape 3 (deadlines du dashboard)**, à confirmer à l'usage :
 - **Le bloc suit le jour affiché** (flèches, `D`) : il montre ce qui doit être fini de ce jour-là à J+N, avec un compte à rebours compté depuis ce jour (« Dans 5 jours » vu du 2 octobre pour le 7). Sa période s'affiche à côté du titre : « 7 prochains jours » aujourd'hui, sinon « du 2 au 9 oct. ». Un projet en retard ce jour-là reste en tête ; une tâche dont la deadline tombe avant ce jour n'y est plus (elle est dans les jours précédents). Les échéances du calendrier sont lues sur la même période. Le reste du dashboard ne change pas : les chiffres, À surveiller et Prochains jours restent ceux d'aujourd'hui.

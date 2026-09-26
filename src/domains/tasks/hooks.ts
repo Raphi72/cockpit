@@ -23,6 +23,9 @@ import {
   restoreTaskFieldsStatement,
   restoreTaskStatement,
   restoreTaskStatusStatement,
+  listPlanState,
+  savePlanStatements,
+  setPlannedOnStatement,
   updateTaskStatements,
 } from './repository';
 
@@ -306,5 +309,59 @@ export function useDeleteTask() {
         },
       });
     },
+  });
+}
+
+// ─── Programme du jour (« Je veux travailler… ») ────────────────────────────
+
+/**
+ * Enregistre le programme du jour : `ids` y sont, les autres tâches à faire qui y étaient en sortent.
+ * « Annuler » remet le programme d'avant. Aucune date n'est touchée.
+ */
+export function useSaveWorkPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ day, ids }: { day: string; ids: string[] }) => {
+      const before = await listPlanState(db, day, ids);
+      await db.batch(savePlanStatements(day, ids, nowTimestamp()));
+      return before;
+    },
+    onSuccess: (before, { ids }) => {
+      invalidateAfterTaskChange(queryClient);
+      const count = ids.length;
+      toast(count > 0 ? `${tasksWord(count)} au programme d’aujourd’hui.` : 'Programme effacé.', {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () => {
+            const now = nowTimestamp();
+            void db
+              .batch(before.map((t) => setPlannedOnStatement(t.id, t.plannedOn, now)))
+              .then(() => invalidateAfterTaskChange(queryClient));
+          },
+        },
+      });
+    },
+  });
+}
+
+/** Retire une tâche du programme du jour : elle retrouve sa place (ses dates n'ont pas changé). */
+export function useUnplanTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (task: TaskItem) => db.batch([setPlannedOnStatement(task.id, null, nowTimestamp())]),
+    onMutate: (task) => patchCachedTask(queryClient, task.id, { plannedOn: null }),
+    onSettled: () => invalidateAfterTaskChange(queryClient),
+    onSuccess: (_, task) =>
+      toast('Retirée du programme.', {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () =>
+            void db
+              .batch([setPlannedOnStatement(task.id, task.plannedOn, nowTimestamp())])
+              .then(() => invalidateAfterTaskChange(queryClient)),
+        },
+      }),
   });
 }

@@ -190,6 +190,7 @@ describe('sous-tâches : règles d’affichage', () => {
     parentTitle: null,
     subtasksTotal: 0,
     subtasksDone: 0,
+    plannedOn: null,
     ...overrides,
   });
 

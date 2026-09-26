@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et la V1.1 (8 étapes) sont faits. Prochaine étape : la **V1.1.2** (liste plus bas). La V2 ne viendra que si l'usage le demande.
+Cockpit en est à la **V1.1.2** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)), la V1.1 (8 étapes) et la V1.1.2 (4 étapes) sont faits. La V2 ne viendra que si l'usage le demande.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -57,7 +57,7 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 
 Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et de restauration, et les notifications dans l'app installée.
 
-## V1.1.2 (à faire, une étape à la fois)
+## V1.1.2 (terminée, branche `v1.1.2`)
 
 - [x] **Terminer une tâche en douceur** : cocher une tâche la fait disparaître trop brusquement. À la place, une petite animation plus lente (la case se remplit, le titre se barre, puis la ligne s'efface). Et un toast en bas à droite, comme pour le reste : « Tâche terminée : Faire la refonte graphique », avec « Annuler ».
 - [x] **Titre complet des tâches** : dans le panneau d'une tâche (ouvert depuis le calendrier ou ailleurs), un titre trop long est coupé. Il doit passer à la ligne pour se lire en entier. Même chose dans le panneau d'un événement.
@@ -65,11 +65,11 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
   - Défaut : le bloc Deadlines reste calé sur aujourd'hui, sur 7 jours, même quand on affiche un autre jour. Exemple : le 26 septembre, une tâche due le 7 octobre n'apparaît pas quand on se met au 2 octobre. Le bloc doit suivre le jour affiché.
   - Paramètres : choisir combien de jours avant sa deadline une tâche ou un projet apparaît dans le bloc (7 jours aujourd'hui).
   - Couleurs : toujours celles de l'urgence (rouge, ambre, bleu), mais recalées sur ce nombre de jours. Plus la deadline approche, plus la tâche ou le projet tire vers le rouge et attire l'œil.
-- [ ] **Planning : « Je veux travailler… »** : l'app compose la liste des tâches à faire aujourd'hui.
+- [x] **Planning : « Je veux travailler… »** : l'app compose la liste des tâches à faire aujourd'hui.
   - Par durée (30 min, 2 h, plus ou moins) : des tâches dont l'estimation tient dans ce temps, **sans jamais le dépasser**. Pour 2 h avec deux tâches de 1 h 30, une seule des deux est proposée.
   - Par nombre (« 3 tâches ») : quand on ne sait pas quoi faire, l'app pioche dans les tâches à faire.
   - Une tâche choisie par le planning mais pas terminée revient, en fin de journée, là d'où elle venait (sa date d'avant).
-  - À préciser au moment de s'y mettre : l'ordre de préférence (deadline, priorité…) et les tâches sans estimation en mode durée.
+  - Précisé en le faisant (conception, §7.3) : les retards et ce qui est dû aujourd'hui d'abord, puis ce qui est prévu ou dû dans les 3 jours, puis les tâches prioritaires et les deadlines de la semaine ; en mode durée, les tâches sans estimation ne sont pas proposées (la fenêtre dit combien).
 
 ## V2 : plus tard, seulement si l'usage le demande
 

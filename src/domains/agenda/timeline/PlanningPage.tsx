@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
-import { ChartGantt, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChartGantt, ChevronLeft, ChevronRight, Plus, Timer } from 'lucide-react';
 import { Fragment, useMemo } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { usePageShortcuts } from '@/app/shortcuts';
@@ -8,6 +8,7 @@ import { useToday } from '@/core/use-today';
 import { useWeekStartsOn } from '@/core/week-start';
 import { useOpenPayments, useReceivedPayments } from '@/domains/finance/payments/hooks';
 import { useProjects } from '@/domains/projects/hooks';
+import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import type { ProjectStatus } from '@/domains/projects/model';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
@@ -42,6 +43,7 @@ export function PlanningPage() {
   const zoom = useUiStore((state) => state.planningZoom);
   const setZoom = useUiStore((state) => state.setPlanningZoom);
   const openCreate = useCreateStore((state) => state.openCreate);
+  const openPlan = useWorkPlanDialog((state) => state.openPlan);
   const { data: projects } = useProjects({ statuses: PLANNED_STATUSES });
   const { data: open } = useOpenPayments();
   const { data: received } = useReceivedPayments();
@@ -57,6 +59,7 @@ export function PlanningPage() {
     t: () => goTo(today),
     m: () => setZoom('month'),
     r: () => setZoom('quarter'),
+    p: openPlan,
   });
 
   if (!projects || !open || !received) return null;
@@ -72,6 +75,9 @@ export function PlanningPage() {
       subtitle={planningTitle(period, today)}
       actions={
         <>
+          <Button variant="ghost" icon={Timer} shortcut="P" onClick={openPlan} className="mr-2" title="Composer le programme d’aujourd’hui">
+            Je veux travailler…
+          </Button>
           <SegmentedTabs
             tabs={PLANNING_ZOOMS.map((z) => ({ value: z, label: PLANNING_ZOOM_LABELS[z], title: `${PLANNING_ZOOM_LABELS[z]} · ${ZOOM_KEYS[z]}` }))}
             value={zoom}

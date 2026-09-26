@@ -40,6 +40,7 @@ const item = (id: string, sortOrder: number, overrides: Partial<TaskItem> = {}):
   parentTitle: null,
   subtasksTotal: 0,
   subtasksDone: 0,
+  plannedOn: null,
   ...overrides,
 });
 
