@@ -5,6 +5,7 @@ import { useCreateStore } from '@/app/create-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { useUiStore } from '@/app/ui-store';
 import { useToday } from '@/core/use-today';
+import { useWeekStartsOn } from '@/core/week-start';
 import { Page } from '@/ui/layout/Page';
 import { Menu, MenuCheckboxItem, MenuContent, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
@@ -88,7 +89,8 @@ export function CalendarPage() {
   const openItem = useOpenAgendaItem();
 
   const anchor = search.date ?? today;
-  const days = useMemo(() => viewDays(view, anchor), [view, anchor]);
+  const weekStartsOn = useWeekStartsOn();
+  const days = useMemo(() => viewDays(view, anchor, weekStartsOn), [view, anchor, weekStartsOn]);
   const { data: items } = useAgenda(viewRange(days), { plainTasks });
   const visible = useMemo(() => (items ?? []).filter((item) => !hidden.includes(item.source)), [items, hidden]);
   const empty = items !== undefined && visible.length === 0;
@@ -112,7 +114,7 @@ export function CalendarPage() {
 
   return (
     <Page
-      title={viewTitle(view, anchor, today)}
+      title={viewTitle(view, anchor, today, weekStartsOn)}
       actions={
         <>
           <SourceFilter />

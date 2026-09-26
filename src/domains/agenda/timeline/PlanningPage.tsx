@@ -5,6 +5,7 @@ import { useCreateStore } from '@/app/create-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { useUiStore } from '@/app/ui-store';
 import { useToday } from '@/core/use-today';
+import { useWeekStartsOn } from '@/core/week-start';
 import { useOpenPayments, useReceivedPayments } from '@/domains/finance/payments/hooks';
 import { useProjects } from '@/domains/projects/hooks';
 import type { ProjectStatus } from '@/domains/projects/model';
@@ -46,7 +47,8 @@ export function PlanningPage() {
   const { data: received } = useReceivedPayments();
 
   const anchor = search.date ?? today;
-  const period = useMemo(() => planningPeriod(zoom, anchor), [zoom, anchor]);
+  const weekStartsOn = useWeekStartsOn();
+  const period = useMemo(() => planningPeriod(zoom, anchor, weekStartsOn), [zoom, anchor, weekStartsOn]);
   const goTo = (date: string) => void navigate({ search: date === today ? {} : { date } });
 
   usePageShortcuts({

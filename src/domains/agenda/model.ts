@@ -1,5 +1,6 @@
 import { addMonths, format, parseISO, startOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { WeekStart } from '@/core/week-start';
 import {
   addDaysISO,
   daysBetween,
@@ -555,9 +556,9 @@ export const CALENDAR_VIEW_LABELS: Record<CalendarView, string> = { month: 'Mois
 /** Raccourcis des vues (touches seules). */
 export const CALENDAR_VIEW_KEYS: Record<CalendarView, string> = { month: 'M', week: 'S', day: 'J' };
 
-/** Les semaines commencent le lundi. */
-export function startOfWeekISO(day: string): string {
-  return toISODate(startOfWeek(parseISO(day), { weekStartsOn: 1 }));
+/** Premier jour de la semaine de `day` : le lundi, ou le dimanche selon Paramètres. */
+export function startOfWeekISO(day: string, weekStartsOn: WeekStart = 1): string {
+  return toISODate(startOfWeek(parseISO(day), { weekStartsOn }));
 }
 
 function daysFrom(first: string, count: number): string[] {
@@ -565,10 +566,10 @@ function daysFrom(first: string, count: number): string[] {
 }
 
 /** Jours affichés : 6 semaines complètes pour un mois, 7 jours pour une semaine, 1 pour un jour. */
-export function viewDays(view: CalendarView, anchor: string): string[] {
+export function viewDays(view: CalendarView, anchor: string, weekStartsOn: WeekStart = 1): string[] {
   if (view === 'day') return [anchor];
-  if (view === 'week') return daysFrom(startOfWeekISO(anchor), 7);
-  return daysFrom(startOfWeekISO(`${monthOf(anchor)}-01`), 42);
+  if (view === 'week') return daysFrom(startOfWeekISO(anchor, weekStartsOn), 7);
+  return daysFrom(startOfWeekISO(`${monthOf(anchor)}-01`, weekStartsOn), 42);
 }
 
 /** Plage à charger : du premier jour affiché inclus au lendemain du dernier exclu. */
@@ -583,12 +584,12 @@ export function shiftAnchor(view: CalendarView, anchor: string, delta: number): 
 }
 
 /** « Septembre », « 21 – 27 septembre », « 28 sept. – 4 oct. », « Jeudi 24 septembre ». */
-export function viewTitle(view: CalendarView, anchor: string, today: string): string {
+export function viewTitle(view: CalendarView, anchor: string, today: string, weekStartsOn: WeekStart = 1): string {
   const withYear = (day: string) => (day.slice(0, 4) === today.slice(0, 4) ? '' : ` ${day.slice(0, 4)}`);
   if (view === 'month') return formatMonth(monthOf(anchor), today);
   if (view === 'day') return formatLongDate(parseISO(anchor)) + withYear(anchor);
 
-  const days = viewDays('week', anchor);
+  const days = viewDays('week', anchor, weekStartsOn);
   const first = parseISO(days[0]!);
   const last = parseISO(days[6]!);
   const end = days[6]!;

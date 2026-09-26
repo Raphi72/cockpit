@@ -1,5 +1,6 @@
 //! Coquille native de Cockpit, volontairement fine : toute la logique métier est côté TypeScript.
-//! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite et envoi des notifications.
+//! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite, exports,
+//! envoi des notifications et mémoire de la fenêtre.
 
 mod backup;
 mod data;
@@ -9,12 +10,20 @@ mod notify;
 use backup::BackupDirs;
 use std::time::Duration;
 use tauri::Manager;
+use tauri_plugin_window_state::StateFlags;
 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        // La fenêtre se rouvre à la même taille et au même endroit (agrandie si elle l'était).
+        // Sauf sa visibilité : elle reste cachée jusqu'au premier rendu de l'interface.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(StateFlags::all() - StateFlags::VISIBLE)
+                .build(),
+        )
         .setup(|app| {
             // En développement, une base séparée : les essais ne touchent jamais les vraies données.
             let (db_file, backup_folder) = if cfg!(debug_assertions) {
@@ -60,6 +69,7 @@ pub fn run() {
             data::restore_cancel,
             data::open_data_dir,
             data::open_backup_dir,
+            data::export_save,
             notify::notify,
         ])
         .run(tauri::generate_context!())

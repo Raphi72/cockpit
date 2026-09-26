@@ -1,10 +1,10 @@
-//! Paramètres › Données : sauvegarder, restaurer, choisir le dossier des sauvegardes, ouvrir les dossiers.
-//! Les fenêtres de choix de fichier s'ouvrent ici, côté natif : l'interface ne transmet jamais de chemin,
-//! elle ne peut donc ni lire ni écrire un fichier arbitraire.
+//! Paramètres › Données : sauvegarder, restaurer, choisir le dossier des sauvegardes, ouvrir les dossiers,
+//! exporter. Les fenêtres de choix de fichier s'ouvrent ici, côté natif : l'interface ne transmet jamais
+//! de chemin, elle ne peut donc ni lire ni écrire un fichier arbitraire.
 
 use crate::backup::{self, Candidate, Reason};
 use crate::db::{self, migrations, Database};
-use tauri::{AppHandle, State, WebviewWindow};
+use tauri::{AppHandle, Manager, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -159,4 +159,67 @@ pub async fn open_backup_dir(app: AppHandle, db: State<'_, Database>) -> Result<
     app.opener()
         .open_path(dirs.active().to_string_lossy(), None::<&str>)
         .map_err(err)
+}
+
+/// Type d'un export d'après le nom proposé par l'interface : un simple nom `cockpit-export-….json`
+/// ou `….csv` (motif ignoré par Git), jamais un chemin.
+fn export_filter(file_name: &str) -> Option<(&'static str, &'static str)> {
+    let plain = !file_name.contains(['/', '\\', ':']) && !file_name.contains("..");
+    if !plain || !file_name.starts_with("cockpit-export-") {
+        return None;
+    }
+    if file_name.ends_with(".json") {
+        Some(("Données JSON", "json"))
+    } else if file_name.ends_with(".csv") {
+        Some(("Tableur CSV (Excel)", "csv"))
+    } else {
+        None
+    }
+}
+
+/// Exports : le contenu est préparé par l'interface ; ici, on demande seulement où l'enregistrer
+/// (par défaut dans Documents, sous le nom proposé). Renvoie le nom du fichier, ou rien si annulé.
+#[tauri::command]
+pub async fn export_save(
+    app: AppHandle,
+    window: WebviewWindow,
+    db: State<'_, Database>,
+    file_name: String,
+    content: String,
+) -> Result<Option<String>, String> {
+    let (label, extension) = export_filter(&file_name).ok_or("Nom d'export invalide.")?;
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_parent(&window)
+        .set_title("Exporter")
+        .set_file_name(&file_name)
+        .add_filter(label, &[extension]);
+    if let Ok(documents) = app.path().document_dir() {
+        dialog = dialog.set_directory(documents);
+    }
+    let Some(picked) = dialog.blocking_save_file() else { return Ok(None) };
+    let target = picked.into_path().map_err(err)?;
+    if backup::same_file(&target, &db.path) {
+        return Err("Choisis un autre fichier que la base elle-même.".into());
+    }
+
+    std::fs::write(&target, content).map_err(|e| format!("Enregistrement impossible : {e}"))?;
+    Ok(target.file_name().map(|name| name.to_string_lossy().into_owned()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::export_filter;
+
+    #[test]
+    fn export_names_are_plain_cockpit_exports() {
+        assert_eq!(export_filter("cockpit-export-donnees-2026-09-26.json").map(|f| f.1), Some("json"));
+        assert_eq!(export_filter("cockpit-export-transactions-2026-09-26.csv").map(|f| f.1), Some("csv"));
+        assert_eq!(export_filter("cockpit-export-x.db"), None);
+        assert_eq!(export_filter("notes.csv"), None);
+        assert_eq!(export_filter("cockpit-export-../cockpit.csv"), None);
+        assert_eq!(export_filter("cockpit-export-a\\b.csv"), None);
+        assert_eq!(export_filter("C:cockpit-export-a.csv"), None);
+    }
 }

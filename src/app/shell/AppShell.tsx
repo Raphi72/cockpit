@@ -14,6 +14,7 @@ import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { Toaster } from '@/ui/overlays/Toaster';
+import { usePreferencesSync } from '../preferences';
 import { useGlobalShortcuts } from '../shortcuts';
 import { useUiStore } from '../ui-store';
 import { ShortcutsDialog } from './ShortcutsDialog';
@@ -24,6 +25,7 @@ export function AppShell() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   useGlobalShortcuts();
   useNotificationScheduler();
+  usePreferencesSync();
   useEffect(announceRestoreIfDone, []);
 
   return (

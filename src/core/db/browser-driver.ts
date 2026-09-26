@@ -21,6 +21,8 @@ function open(): Promise<Database> {
     const db = new SQL.Database();
     db.exec('PRAGMA foreign_keys = ON');
     for (const path of Object.keys(migrations).sort()) db.exec(withoutFts5(migrations[path]!));
+    // Comme au démarrage de l'app : la version du schéma suit les migrations.
+    db.exec(`PRAGMA user_version = ${Object.keys(migrations).length}`);
     return db;
   });
   return database;

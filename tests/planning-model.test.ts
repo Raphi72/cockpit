@@ -65,6 +65,13 @@ describe('période du planning', () => {
     expect(planningTitle(month, TODAY)).toBe('14 sept. – 25 oct.');
   });
 
+  it('suit le premier jour de la semaine choisi', () => {
+    const month = planningPeriod('month', TODAY, 0);
+    expect(month.start).toBe('2026-09-13');
+    expect(month.weeks[1]).toBe('2026-09-20');
+    expect(month.days).toBe(42);
+  });
+
   it('avance de 4 semaines en mois, de 12 en trimestre', () => {
     expect(shiftPlanningAnchor('month', TODAY, 1)).toBe('2026-10-23');
     expect(shiftPlanningAnchor('quarter', TODAY, -1)).toBe('2026-07-03');

@@ -9,9 +9,11 @@ import {
   useAppInfo,
   useBackupNow,
   useChooseBackupDir,
+  useExport,
   useResetBackupDir,
   useRestoreConfirm,
   useRestorePick,
+  type ExportKind,
   type RestoreCandidate,
 } from '@/domains/data';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
@@ -22,8 +24,9 @@ import { Section } from '@/ui/layout/Section';
 import { ConfirmDialog } from '@/ui/overlays/ConfirmDialog';
 import { Button } from '@/ui/primitives/Button';
 import { Checkbox } from '@/ui/primitives/Checkbox';
+import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { useSaveSetting, useSetting } from '../hooks';
-import { SETTINGS } from '../model';
+import { SETTINGS, THEME_CHOICES, WEEK_START_CHOICES, resolveTheme, resolveWeekStart } from '../model';
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -142,6 +145,61 @@ function DataSection() {
   );
 }
 
+/** Thème et premier jour de la semaine : appliqués tout de suite (app/preferences.ts). */
+function AppearanceSection() {
+  const { data: theme } = useSetting(SETTINGS.theme);
+  const { data: weekStartsOn } = useSetting(SETTINGS.weekStartsOn);
+  const saveTheme = useSaveSetting(SETTINGS.theme);
+  const saveWeekStart = useSaveSetting(SETTINGS.weekStartsOn);
+  if (theme === undefined || weekStartsOn === undefined) return null;
+  return (
+    <Section title="Apparence">
+      <InfoRow label="Thème">
+        <ChoiceChips label="Thème" options={THEME_CHOICES} value={resolveTheme(theme)} onChange={(v) => saveTheme.mutate(v)} />
+      </InfoRow>
+      <InfoRow label="Premier jour de la semaine">
+        <ChoiceChips
+          label="Premier jour de la semaine"
+          options={WEEK_START_CHOICES.map(({ value, label }) => ({ value: String(value), label }))}
+          value={String(resolveWeekStart(weekStartsOn))}
+          onChange={(v) => saveWeekStart.mutate(resolveWeekStart(Number(v)))}
+        />
+        <span className="mt-1.5 block text-meta text-ink-3">Dans le calendrier, le planning et le choix des dates.</span>
+      </InfoRow>
+    </Section>
+  );
+}
+
+const EXPORTS: { kind: ExportKind; label: string }[] = [
+  { kind: 'data', label: 'Toutes les données (JSON)…' },
+  { kind: 'transactions', label: 'Transactions (CSV)…' },
+  { kind: 'payments', label: 'Encaissements (CSV)…' },
+];
+
+/** Exports : un fichier à garder ou à ouvrir ailleurs. Rien n'est modifié dans Cockpit. */
+function ExportSection() {
+  const exportFile = useExport();
+  return (
+    <Section title="Exports" meta="enregistrés où tu veux, Documents par défaut">
+      <p className="text-ink-2">
+        Toutes tes données dans un fichier JSON, ou tes finances en CSV, qui s’ouvre directement dans Excel.
+      </p>
+      <span className="mt-3 flex flex-wrap gap-2">
+        {EXPORTS.map(({ kind, label }, index) => (
+          <Button
+            key={kind}
+            variant={index === 0 ? 'secondary' : 'ghost'}
+            onClick={() => exportFile.mutate(kind)}
+            disabled={exportFile.isPending}
+          >
+            {label}
+          </Button>
+        ))}
+      </span>
+    </Section>
+  );
+}
+
 function DashboardSection() {
   const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
   const save = useSaveSetting(SETTINGS.dashboardShowAmounts);
@@ -162,6 +220,7 @@ function DashboardSection() {
 export function SettingsPage() {
   return (
     <Page title="Paramètres">
+      <AppearanceSection />
       <DashboardSection />
       <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
@@ -170,6 +229,7 @@ export function SettingsPage() {
       <Section title="Catégories de transactions" meta="clique sur un nom pour le modifier">
         <CategoriesEditor />
       </Section>
+      <ExportSection />
       <DataSection />
     </Page>
   );

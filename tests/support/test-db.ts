@@ -57,5 +57,7 @@ export function createTestDb(options: TestDbOptions = {}): { db: Db; raw: Databa
   raw.exec('PRAGMA foreign_keys = ON');
   const migrations = readMigrations().slice(0, options.migrations);
   for (const migration of migrations) raw.exec(options.fts === false ? withoutFts5(migration) : migration);
+  // Comme au démarrage de l'app (src-tauri/src/db/migrations.rs) : la version du schéma suit les migrations.
+  raw.exec(`PRAGMA user_version = ${migrations.length}`);
   return { db: createDb(createNodeDriver(raw)), raw };
 }

@@ -1,6 +1,7 @@
 import { addWeeks, format, parseISO, startOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { addDaysISO, daysBetween, toISODate } from '@/core/dates';
+import type { WeekStart } from '@/core/week-start';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
 import type { ProjectListItem } from '@/domains/projects/model';
 
@@ -19,25 +20,25 @@ const ZOOM_WEEKS: Record<PlanningZoom, { weeks: number; step: number }> = {
 };
 
 export type PlanningPeriod = {
-  /** Premier jour affiché (un lundi). */
+  /** Premier jour affiché (un lundi, ou un dimanche selon Paramètres). */
   start: string;
   /** Nombre de jours affichés. */
   days: number;
-  /** Le lundi de chaque semaine affichée. */
+  /** Le premier jour de chaque semaine affichée. */
   weeks: string[];
 };
 
-/** Lundi de la semaine de `day`. */
-function mondayOf(day: string): string {
-  return toISODate(startOfWeek(parseISO(day), { weekStartsOn: 1 }));
+/** Premier jour de la semaine de `day`. */
+function weekStartOf(day: string, weekStartsOn: WeekStart): string {
+  return toISODate(startOfWeek(parseISO(day), { weekStartsOn }));
 }
 
 /**
- * Période affichée autour de `anchor` (aujourd'hui par défaut) : elle commence le lundi de la semaine
+ * Période affichée autour de `anchor` (aujourd'hui par défaut) : elle commence au début de la semaine
  * précédente, pour garder un peu de passé en vue. 6 semaines en zoom mois, 13 en zoom trimestre.
  */
-export function planningPeriod(zoom: PlanningZoom, anchor: string): PlanningPeriod {
-  const start = addDaysISO(mondayOf(anchor), -7);
+export function planningPeriod(zoom: PlanningZoom, anchor: string, weekStartsOn: WeekStart = 1): PlanningPeriod {
+  const start = addDaysISO(weekStartOf(anchor, weekStartsOn), -7);
   const { weeks } = ZOOM_WEEKS[zoom];
   return { start, days: weeks * 7, weeks: Array.from({ length: weeks }, (_, i) => addDaysISO(start, i * 7)) };
 }

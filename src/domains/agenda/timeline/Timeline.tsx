@@ -24,7 +24,7 @@ function span(from: number, to: number): CSSProperties {
   return { left: pct(clamp(from)), width: pct(clamp(to) - clamp(from)) };
 }
 
-/** Mois en haut, puis le lundi de chaque semaine (sa date en zoom mois, son numéro de jour en trimestre). */
+/** Mois en haut, puis le premier jour de chaque semaine (sa date en zoom mois, son numéro de jour en trimestre). */
 function Header({ period, today, detailed }: { period: PlanningPeriod; today: string; detailed: boolean }) {
   const todayOffset = dayOffset(period, today);
   return (

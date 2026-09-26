@@ -1,8 +1,8 @@
-# Cockpit — Dossier de conception (étapes 1 à 6)
+# Cockpit — Dossier de conception (étapes 1 à 7)
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 6 faites.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 7 faites.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -10,7 +10,7 @@
 ## 0. En bref
 
 - **Application desktop locale** : Tauri 2 (coquille native légère) + React + TypeScript, avec une base **SQLite** dans `%APPDATA%`. Pas de serveur, pas de compte, 100 % hors ligne.
-- **Toute la logique métier est en TypeScript.** La partie Rust se limite à un pont SQLite d'environ 200 lignes, aux sauvegardes et aux notifications natives.
+- **Toute la logique métier est en TypeScript.** La partie Rust se limite à un pont SQLite d'environ 200 lignes, aux sauvegardes, aux fenêtres de fichier (sauvegarde, restauration, exports) et aux notifications natives.
 - **Chaque date est stockée à un seul endroit.** Les deadlines, débuts de projet et échéances de paiement ne sont jamais recopiés en « événements ». Le calendrier, le planning et le dashboard les *agrègent*.
 - **Rien de calculable n'est stocké** : la progression, le montant reçu, le reste à recevoir, les retards et les soldes sont tous calculés.
 - **L'argent a deux vues** : les *encaissements* (ce que tes clients te doivent) et les *transactions* (ce qui bouge réellement sur tes comptes). Les deux sont reliés quand un paiement est reçu.
@@ -203,7 +203,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
   - manuelle, via Paramètres › Données › « Sauvegarder mes données… », qui produit un fichier `.db` complet ;
   - restauration, avec vérification d'intégrité et sauvegarde de sécurité de la base actuelle avant remplacement ;
   - le dossier des sauvegardes peut être choisi (OneDrive…) ; s'il devient injoignable, les sauvegardes retombent dans le dossier par défaut et Paramètres le signale.
-- **Exports** : JSON (toutes les données, lisible) et CSV pour les finances (séparateur `;` et BOM UTF-8, pour une ouverture directe dans Excel en français).
+- **Exports** (Paramètres › Exports) : JSON (toutes les données, lisible) et CSV pour les finances, transactions et encaissements (séparateur `;` et BOM UTF-8, pour une ouverture directe dans Excel en français). Détail au §7.3 (V1.1, étape 7).
 - **Sécurité** : aucun contenu distant, une politique CSP stricte et des permissions Tauri minimales.
 
 ### 2.8 Notifications (V1.1)
@@ -727,16 +727,17 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 - **En-tête** : les soldes (un clic permet de corriger le solde, ce qui crée un ajustement), le montant à recevoir, les retards, l'encaissé du mois et les dépenses pro du mois.
 - **Onglets** :
   - Encaissements : À recevoir · Reçus · En retard ;
-  - Transactions : filtres par compte, type, catégorie et mois, export CSV.
+  - Transactions : filtres par compte, type, catégorie et mois (export CSV dans Paramètres › Exports).
 
 **Clients** : une liste et une fiche avec les coordonnées, les projets, le total encaissé et le montant à recevoir.
 
 **Paramètres** :
 
-- Général : devise, premier jour de la semaine, thème.
+- Apparence : thème (comme Windows, clair ou sombre) et premier jour de la semaine.
 - Notifications.
 - Types de projet & catégories.
-- Données : sauvegarder, restaurer, exporter, choisir le dossier des sauvegardes, ouvrir le dossier des données.
+- Exports : JSON et CSV.
+- Données : sauvegarder, restaurer, choisir le dossier des sauvegardes, ouvrir le dossier des données.
 - Raccourcis.
 
 ### 5.3 Éléments globaux (superposés à toutes les pages)
@@ -866,7 +867,7 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
    - réordonner les tâches au clavier (Alt+↑ / Alt+↓).
 5. **Planning** (✓ fait, branche `v1.1-planning`).
 6. **Notifications Windows** (✓ fait, branche `v1.1-notifications`).
-7. **Exports et paramètres complets**.
+7. **Exports et paramètres complets** (✓ fait, branche `v1.1-exports`).
 8. **Petits défauts** du §7.3.
 
 Détail des étapes 5 à 7 :
@@ -886,7 +887,6 @@ Détail des étapes 5 à 7 :
 - **Erreurs dans les fenêtres globales** : une erreur dans une fenêtre globale (création, panneau de tâche) remplace toute l'app par l'écran d'erreur. Il faudrait des « error boundaries » locales.
 - **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
 - **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
-- **Export CSV des transactions** : prévu avec les exports (V1.1).
 - **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
 - **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main.
@@ -894,6 +894,16 @@ Détail des étapes 5 à 7 :
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 - **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1, étape 7 (exports et paramètres)**, à confirmer à l'usage :
+- **Exports** (Paramètres › Exports, `data/export/`) : trois boutons. Le fichier est préparé par l'interface, puis la commande Rust `export_save` ouvre « Enregistrer sous » dans Documents, sous un nom daté (`cockpit-export-donnees-2026-09-26.json`, `…-transactions-….csv`, `…-encaissements-….csv`) : Entrée suffit. Rust refuse tout nom qui n'est pas un simple `cockpit-export-….json` ou `….csv` (motif ignoré par Git), et la base elle-même comme destination. Dans le navigateur de développement, un téléchargement ordinaire remplace la fenêtre native.
+- **JSON** : toutes les tables de données (types, catégories, comptes, clients, projets, tâches, idées, événements, encaissements, transactions), dans l'ordre des dépendances, avec la version du schéma et la date de l'export ; clés en camelCase, valeurs telles qu'en base (centimes, dates ISO). Ni les réglages, ni le journal des notifications, ni l'index de recherche : ce ne sont pas des données saisies (et un futur secret, comme l'adresse iCal de la V2, n'y sera jamais).
+- **CSV des transactions** : une ligne par mouvement sur un compte (un virement en a deux), du plus ancien au plus récent : date (JJ/MM/AAAA), compte, type, libellé, catégorie, projet, montant signé (« -35,00 », virgule décimale, sans espace ni symbole : Excel le lit comme un nombre), notes.
+- **CSV des encaissements** : libellé, projet, client (celui du projet, sinon le client direct), montant, date prévue, statut, date de réception, n° de facture, notes ; tous, y compris ceux des propositions, marqués « Prévu (proposition) ».
+- **Thème** (Paramètres › Apparence, réglage `appearance.theme`) : « Comme Windows » (par défaut), « Clair » ou « Sombre ». Il pose `data-theme` sur la page et règle aussi la barre de titre de Windows (permission `core:window:allow-set-theme`).
+- **Premier jour de la semaine** (réglage `calendar.weekStartsOn`) : lundi (par défaut) ou dimanche. Il vaut pour le calendrier (mois et semaine), le planning (semaines et bande « En parallèle ») et le sélecteur de date. Les règles pures le reçoivent en paramètre ; une copie dans `core/week-start.ts` évite une requête à chaque grille. « Lundi prochain » (raccourci des dates) reste un lundi.
+- **Au démarrage**, thème et premier jour sont lus avant le premier rendu, pendant que la fenêtre est encore cachée : ni éclair de l'autre thème, ni calendrier redessiné. Un changement dans Paramètres s'applique tout de suite.
+- **Fenêtre** : plugin officiel `window-state`, côté Rust seulement. Cockpit se rouvre à la même taille, au même endroit, agrandi s'il l'était ; sa visibilité n'est pas restaurée (la fenêtre reste cachée jusqu'au premier rendu). L'état est gardé dans le dossier de configuration de l'app (`.window-state.json`), partagé par l'app installée et celle de développement.
 
 **Choix faits en V1.1, étape 6 (notifications)**, à confirmer à l'usage :
 - **Règles** (`notifications/model.ts`), chacune une case de Paramètres › Notifications, toutes cochées par défaut (réglage `notifications.rules` ; une règle absente du réglage est cochée) :

@@ -169,6 +169,24 @@ describe('vues du calendrier', () => {
     expect(viewRange(viewDays('day', TODAY))).toEqual({ from: TODAY, to: '2026-09-25' });
   });
 
+  it('commence les semaines le dimanche si on le choisit', () => {
+    const month = viewDays('month', TODAY, 0);
+    expect(month[0]).toBe('2026-08-30'); // dimanche avant le 1er septembre
+    expect(month).toHaveLength(42);
+    expect(viewDays('week', TODAY, 0)).toEqual([
+      '2026-09-20',
+      '2026-09-21',
+      '2026-09-22',
+      '2026-09-23',
+      '2026-09-24',
+      '2026-09-25',
+      '2026-09-26',
+    ]);
+    // Le dimanche 27 ouvre alors une nouvelle semaine.
+    expect(viewDays('week', '2026-09-27', 0)[0]).toBe('2026-09-27');
+    expect(viewTitle('week', TODAY, TODAY, 0)).toBe('20 – 26 septembre');
+  });
+
   it('passe à la période suivante ou précédente', () => {
     expect(shiftAnchor('month', '2026-01-31', 1)).toBe('2026-02-28');
     expect(shiftAnchor('week', TODAY, -1)).toBe('2026-09-17');

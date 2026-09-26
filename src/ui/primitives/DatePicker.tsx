@@ -5,16 +5,22 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type R
 import { parseDateInput } from '@/core/date-input';
 import { addDaysISO, formatDateField, formatLongDate, monthOf, nextMondayISO, shiftMonth, toISODate } from '@/core/dates';
 import { useToday } from '@/core/use-today';
+import { useWeekStartsOn, type WeekStart } from '@/core/week-start';
 import { Popover, PopoverContent, PopoverTrigger } from '../overlays/Popover';
 
 /** Repère sous un jour de la grille : une deadline (rouge) ou des tâches prévues (gris). */
 export type DayMark = 'deadline' | 'task';
 
-const WEEKDAYS = ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'];
+/** Initiales des jours, du dimanche au samedi (numérotation de date-fns). */
+const WEEKDAYS = ['di', 'lu', 'ma', 'me', 'je', 've', 'sa'];
 
-/** Les 6 semaines affichées pour un mois 'YYYY-MM', du lundi au dimanche. */
-function monthGrid(month: string): string[] {
-  const first = toISODate(startOfWeek(parseISO(`${month}-01`), { weekStartsOn: 1 }));
+function weekdayHeaders(weekStartsOn: WeekStart): string[] {
+  return [...WEEKDAYS.slice(weekStartsOn), ...WEEKDAYS.slice(0, weekStartsOn)];
+}
+
+/** Les 6 semaines affichées pour un mois 'YYYY-MM', du lundi (ou du dimanche) au jour qui précède. */
+function monthGrid(month: string, weekStartsOn: WeekStart): string[] {
+  const first = toISODate(startOfWeek(parseISO(`${month}-01`), { weekStartsOn }));
   return Array.from({ length: 42 }, (_, index) => addDaysISO(first, index));
 }
 
@@ -50,6 +56,7 @@ type DatePickerPanelProps = {
  */
 export function DatePickerPanel({ value, onPick, clearable = false, marks }: DatePickerPanelProps) {
   const today = useToday();
+  const weekStartsOn = useWeekStartsOn();
   const [text, setText] = useState('');
   const [month, setMonth] = useState(monthOf(value ?? today));
   const [focusDay, setFocusDay] = useState(value ?? today);
@@ -158,14 +165,14 @@ export function DatePickerPanel({ value, onPick, clearable = false, marks }: Dat
       </div>
 
       <div className="grid grid-cols-7 text-center text-[11px] text-ink-3">
-        {WEEKDAYS.map((day) => (
+        {weekdayHeaders(weekStartsOn).map((day) => (
           <span key={day} className="py-1">
             {day}
           </span>
         ))}
       </div>
       <div ref={grid} role="group" aria-label={monthTitle(month)} onKeyDown={onGridKey} className="grid grid-cols-7 gap-y-0.5">
-        {monthGrid(month).map((day) => {
+        {monthGrid(month, weekStartsOn).map((day) => {
           const selected = day === value;
           const inMonth = monthOf(day) === month;
           const mark = marks?.get(day);

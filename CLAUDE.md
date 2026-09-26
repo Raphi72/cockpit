@@ -20,7 +20,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 
 - La vraie base est `%APPDATA%\com.cockpit.desktop\cockpit.db`, **hors du dépôt**, avec ses sauvegardes dans `backups\`.
 - En développement (`npm run tauri dev`), l'app utilise **`cockpit-dev.db`** (voir `src-tauri/src/lib.rs`) : les essais ne touchent jamais les vraies données.
-- `.gitignore` bloque `*.db`, `*.sqlite*`, `backups/`, `exports/` et `cockpit-export*`. Tout futur export doit être nommé `cockpit-export-…`.
+- `.gitignore` bloque `*.db`, `*.sqlite*`, `backups/`, `exports/` et `cockpit-export*`. Tout export est nommé `cockpit-export-…` (vérifié par la commande Rust `export_save`). Un dossier de code ne doit donc pas s'appeler `exports/` ni `backups/` : il serait ignoré sans bruit.
 - Ne jamais committer de données réelles, de captures d'écran de données réelles ni d'identifiants.
 - **Écrire dans une vraie base** (à la demande de l'utilisateur) : app fermée, sauvegarde d'abord (`backups\cockpit_…_manuelle.db`), une seule transaction, avec **Python `sqlite3`**. Jamais `node:sqlite` : sur cette machine, il ne voit pas le journal WAL écrit par l'app et lit une version périmée de la base (vide ou au mauvais schéma). Les tests Vitest, sur une base en mémoire, ne sont pas concernés.
 - **Quel Python** : pas le `python` par défaut, celui du Microsoft Store (`…\WindowsApps\python`) : il a sa propre vue de `%APPDATA%` et y lit une version périmée, sans le WAL ; ses écritures n'arrivent pas dans l'app (constaté le 26/09/2026 sur `cockpit-dev.db`). Utiliser `%LOCALAPPDATA%\Programs\Python\Python310\python.exe`, et vérifier d'abord qu'il lit bien ce que l'app affiche.

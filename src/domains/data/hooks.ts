@@ -1,13 +1,17 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, isTauri } from '@tauri-apps/api/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { db } from '@/core/db';
 import { UserError } from '@/core/db/errors';
+import { nowTimestamp, todayISO } from '@/core/dates';
 import { queryKeys } from '@/core/query-keys';
 import { toast } from '@/ui/overlays/toast';
+import { exportFileName, exportMimeType, type ExportKind } from './export/model';
+import { buildExport } from './export/service';
 import type { AppInfo, RestoreCandidate } from './model';
 
 /** Commandes natives de src-tauri/src/data.rs : leurs erreurs sont déjà rédigées pour l'utilisateur. */
-function call<T>(command: string): Promise<T> {
-  return invoke<T>(command).catch((error: unknown) => {
+function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  return invoke<T>(command, args).catch((error: unknown) => {
     throw new UserError(String(error));
   });
 }
@@ -107,4 +111,31 @@ export function openDataDir(): void {
 
 export function openBackupDir(): void {
   void call('open_backup_dir').catch((error: Error) => toast(error.message, { tone: 'danger' }));
+}
+
+/** Navigateur de développement : un téléchargement ordinaire remplace la fenêtre « Enregistrer sous ». */
+function downloadInBrowser(fileName: string, content: string, mime: string): string {
+  const url = URL.createObjectURL(new Blob([content], { type: `${mime};charset=utf-8` }));
+  const link = Object.assign(document.createElement('a'), { href: url, download: fileName });
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return fileName;
+}
+
+/**
+ * Exports : le fichier est préparé ici, puis la commande native demande où l'enregistrer
+ * (Documents par défaut, sous un nom `cockpit-export-…` : Entrée suffit).
+ */
+export function useExport() {
+  return useMutation({
+    mutationFn: async (kind: ExportKind) => {
+      const content = await buildExport(db, kind, nowTimestamp());
+      const fileName = exportFileName(kind, todayISO());
+      if (!isTauri()) return downloadInBrowser(fileName, content, exportMimeType(kind));
+      return call<string | null>('export_save', { fileName, content });
+    },
+    onSuccess: (fileName) => {
+      if (fileName) toast(`Export enregistré : ${fileName}`);
+    },
+  });
 }
