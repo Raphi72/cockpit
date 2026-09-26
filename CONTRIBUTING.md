@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et la V1.1 (8 étapes) sont faits. La V2 ne viendra que si l'usage le demande.
+Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et la V1.1 (8 étapes) sont faits. Prochaine étape : la **V1.1.2** (liste plus bas). La V2 ne viendra que si l'usage le demande.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -57,6 +57,20 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 
 Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et de restauration, et les notifications dans l'app installée.
 
+## V1.1.2 (à faire, une étape à la fois)
+
+- [ ] **Terminer une tâche en douceur** : cocher une tâche la fait disparaître trop brusquement. À la place, une petite animation plus lente (la case se remplit, le titre se barre, puis la ligne s'efface). Et un toast en bas à droite, comme pour le reste : « Tâche terminée : Faire la refonte graphique », avec « Annuler ».
+- [ ] **Titre complet des tâches** : dans le panneau d'une tâche (ouvert depuis le calendrier ou ailleurs), un titre trop long est coupé. Il doit passer à la ligne pour se lire en entier. Même chose dans le panneau d'un événement.
+- [ ] **Deadlines du dashboard** :
+  - Défaut : le bloc Deadlines reste calé sur aujourd'hui, sur 7 jours, même quand on affiche un autre jour. Exemple : le 26 septembre, une tâche due le 7 octobre n'apparaît pas quand on se met au 2 octobre. Le bloc doit suivre le jour affiché.
+  - Paramètres : choisir combien de jours avant sa deadline une tâche ou un projet apparaît dans le bloc (7 jours aujourd'hui).
+  - Couleurs : toujours celles de l'urgence (rouge, ambre, bleu), mais recalées sur ce nombre de jours. Plus la deadline approche, plus la tâche ou le projet tire vers le rouge et attire l'œil.
+- [ ] **Planning : « Je veux travailler… »** : l'app compose la liste des tâches à faire aujourd'hui.
+  - Par durée (30 min, 2 h, plus ou moins) : des tâches dont l'estimation tient dans ce temps, **sans jamais le dépasser**. Pour 2 h avec deux tâches de 1 h 30, une seule des deux est proposée.
+  - Par nombre (« 3 tâches ») : quand on ne sait pas quoi faire, l'app pioche dans les tâches à faire.
+  - Une tâche choisie par le planning mais pas terminée revient, en fin de journée, là d'où elle venait (sa date d'avant).
+  - À préciser au moment de s'y mettre : l'ordre de préférence (deadline, priorité…) et les tâches sans estimation en mode durée.
+
 ## V2 : plus tard, seulement si l'usage le demande
 
 - [ ] **Google Agenda dans le calendrier** : voir aussi ce qu'on a dans son agenda Google (cours, rendez-vous perso…), dans le calendrier et dans Prochains jours du dashboard. En lecture seule, en option, sans rien changer côté Google.
@@ -68,3 +82,11 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
 - [ ] Raccourci global, même app fermée.
 - [ ] Événements récurrents.
 - [ ] Chiffre d'affaires par mois ou trimestre (pour l'URSSAF).
+- [ ] **Refonte visuelle, à faire ensemble** : mieux voir ce qu'on fait d'un coup d'œil, tout en restant sobre et professionnel. À travailler avec l'utilisateur, écran par écran, avec des maquettes validées avant de coder. Les principes du design system restent (peu d'informations à la fois, beaucoup d'espace, pas de cartes partout) : il s'agit de mieux hiérarchiser, pas de charger.
+
+## V2.5 : partage de projets
+
+- [ ] **Être plusieurs sur un projet** : partager un projet avec d'autres personnes, qui voient et gèrent avec soi ses tâches, son budget, ses encaissements et ses dates.
+  - C'est un changement de nature : Cockpit est aujourd'hui local, hors ligne et sans compte. Partager demande des comptes, un serveur de synchronisation et la gestion des modifications faites en même temps.
+  - Seuls les projets partagés quittent l'ordinateur ; le reste (finances perso, autres projets) reste local.
+  - À préciser au moment de s'y mettre : les droits de chacun (lecture, modification), ce qu'on voit des finances d'un projet partagé, et le fonctionnement hors ligne.
