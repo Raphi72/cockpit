@@ -13,10 +13,10 @@ import {
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
 
 /** Projet dont les tâches restent visibles : ni terminé, ni annulé, ni archivé. */
-const OPEN_PROJECT = `p.status NOT IN ('done', 'cancelled') AND p.archived_at IS NULL`;
+export const OPEN_PROJECT = `p.status NOT IN ('done', 'cancelled') AND p.archived_at IS NULL`;
 
 /** Projet dont le début et la deadline sont dans l'agenda : ouvert et validé (pas une Proposition). */
-const CONFIRMED_PROJECT = `${OPEN_PROJECT} AND p.status <> 'proposal'`;
+export const CONFIRMED_PROJECT = `${OPEN_PROJECT} AND p.status <> 'proposal'`;
 
 type AgendaRow = Omit<AgendaItem, 'key' | 'allDay'> & { allDay: number };
 

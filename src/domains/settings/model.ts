@@ -4,7 +4,7 @@ export type SettingDef<T> = { key: string; fallback: T };
 export const SETTINGS = {
   /**
    * Montants sur le dashboard : chiffres clés (soldes, à recevoir, encaissé du mois), montants des
-   * paiements dans « À surveiller » et « Prochains jours ». La page Finances les montre toujours.
+   * paiements dans « À surveiller », « Prochains jours » et les notifications. La page Finances les montre toujours.
    */
   dashboardShowAmounts: { key: 'dashboard.showAmounts', fallback: true } as SettingDef<boolean>,
 };

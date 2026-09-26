@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 5 faites.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 6 faites.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -215,7 +215,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
   - début de projet ;
   - événement, 15 minutes avant ;
   - résumé du matin (optionnel).
-- **Planification** : les règles sont évaluées au lancement, puis toutes les 5 minutes tant que l'app tourne. La table `notification_log` garantit qu'une même notification n'est jamais envoyée deux fois.
+- **Planification** : une vérification à l'ouverture, puis chaque minute tant que l'app tourne (même réduite). Les rendez-vous sont regardés à chaque vérification ; les autres règles, seulement lors d'une « tournée » : à l'ouverture, puis chaque matin à 8 h. Le résumé du matin n'est envoyé qu'à la tournée de 8 h. La table `notification_log` garantit qu'une même notification n'est jamais envoyée deux fois. Détail des choix au §7.3 (V1.1, étape 6).
 - **Limite** : quand l'app est fermée, aucune notification n'arrive. La V2 propose deux options pour y remédier : « rester dans la zone de notification » et « lancer au démarrage de Windows ».
 
 ### 2.9 Bibliothèques retenues
@@ -865,7 +865,7 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
    - fiche projet : glisser une tâche dans les idées et une idée dans les tâches ; déposer une tâche sur une autre pour en faire une sous-tâche (et l'en sortir) ;
    - réordonner les tâches au clavier (Alt+↑ / Alt+↓).
 5. **Planning** (✓ fait, branche `v1.1-planning`).
-6. **Notifications Windows**.
+6. **Notifications Windows** (✓ fait, branche `v1.1-notifications`).
 7. **Exports et paramètres complets**.
 8. **Petits défauts** du §7.3.
 
@@ -893,6 +893,22 @@ Détail des étapes 5 à 7 :
 - **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
 - **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
+- **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1, étape 6 (notifications)**, à confirmer à l'usage :
+- **Règles** (`notifications/model.ts`), chacune une case de Paramètres › Notifications, toutes cochées par défaut (réglage `notifications.rules` ; une règle absente du réglage est cochée) :
+  - **Rendez-vous** : tout événement à heure fixe, 15 minutes avant (« Dans 15 minutes, à 14:00 · lieu ») ; moins si Cockpit vient d'être ouvert, « Maintenant » s'il commence.
+  - **Deadlines** : projets ouverts et validés (pas les Propositions) et événements « Échéance », une fois dans les 3 jours qui précèdent (« Deadline dans 3 jours · mercredi 30 septembre », ou « demain » si Cockpit était fermé à J-3), puis le jour même. Pas les deadlines de tâches : c'est la règle suivante.
+  - **Tâches prioritaires** : Haute ou Urgente, la veille de leur deadline (« Tâche urgente, deadline demain · projet »).
+  - **Encaissements** : attendus (règle `EXPECTED_PAYMENT`), la veille de la date prévue (« Prévu demain : Acompte · 600 € »), puis une fois en retard (« En retard de 3 jours : … »). À la première ouverture, ceux qui sont déjà en retard sont signalés une fois.
+  - **Débuts de projet** : À venir ou En cours, le jour même (« Commence aujourd'hui : il passe En cours »).
+  - **Résumé du matin** : la phrase de synthèse du dashboard (« 3 tâches aujourd'hui, dont 1 en retard · rendez-vous à 14:00 »), titrée par la date ; rien s'il n'y a rien de prévu.
+- **Quand** (`roundFor`) : les rendez-vous à chaque vérification (une par minute) ; le reste pendant une tournée, à l'ouverture puis à 8 h si Cockpit est resté ouvert. Ainsi, rien ne sonne à minuit, et un élément qu'on vient de saisir (une tâche prioritaire pour demain) ne déclenche pas de notification sur-le-champ. Une ouverture après 8 h vaut la tournée du jour. Le résumé n'est que de la tournée de 8 h (à l'ouverture, le dashboard est déjà à l'écran), et plus après midi (ordinateur sorti de veille l'après-midi).
+- **Une seule fois** : la clé de chaque notification (`project-deadline:<id>:<date>:J-3`, `event:<id>:<début>`…) est réservée dans `notification_log` avant l'envoi, une instruction par clé : deux vérifications simultanées ne l'envoient jamais deux fois. La date fait partie de la clé : décaler une deadline ou un rendez-vous relance son rappel. Le journal oublie ce qui a plus de six mois.
+- **Regroupement** : au-delà de 3 notifications dans une même vérification (ouverture après quelques jours), les 2 plus urgentes partent, puis une seule « N autres rappels » avec leurs titres.
+- **Montants** : le réglage « Afficher les montants » (Tableau de bord) vaut aussi pour les notifications, qui se voient à l'écran.
+- **Envoi** : commande Rust `notify` (`src-tauri/src/notify.rs`, plugin officiel `notification` utilisé côté Rust seulement : aucune permission ajoutée à l'interface). En développement, Windows attribue les notifications à « Windows PowerShell » ; l'app installée a son nom et son icône. Dans le navigateur de développement, un toast les remplace. « Envoyer une notification d'essai » dans Paramètres.
+- **Limites** : un clic sur la notification n'ouvre pas Cockpit (le plugin ne le permet pas sous Windows) ; app fermée, rien n'arrive (V2 : zone de notification, démarrage avec Windows) ; « Ne pas déranger » de Windows les retient.
 
 **Choix faits en V1.1, étape 5 (planning)**, à confirmer à l'usage :
 - **Période** (`agenda/timeline/model.ts`) : elle commence le lundi de la semaine précédente, pour garder un peu de passé en vue. Zoom **mois** : 6 semaines, chaque lundi daté (« 28 sept. ») ; zoom **trimestre** : 13 semaines, le numéro du jour sous le nom du mois. Les flèches avancent de 4 ou 12 semaines (on garde du contexte), `T` revient à aujourd'hui, `M` et `R` changent de zoom. Le jour est dans l'URL interne (`?date=`), le zoom est mémorisé.

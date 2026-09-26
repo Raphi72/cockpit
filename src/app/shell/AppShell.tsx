@@ -7,6 +7,7 @@ import { announceRestoreIfDone } from '@/domains/data';
 import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/payments/components/PaymentDialog';
 import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
 import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
+import { useNotificationScheduler } from '@/domains/notifications';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
 import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
 import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
@@ -22,6 +23,7 @@ import { Topbar } from './Topbar';
 export function AppShell() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   useGlobalShortcuts();
+  useNotificationScheduler();
   useEffect(announceRestoreIfDone, []);
 
   return (

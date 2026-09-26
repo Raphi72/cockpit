@@ -15,6 +15,7 @@ import {
   type RestoreCandidate,
 } from '@/domains/data';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
+import { NotificationSettings } from '@/domains/notifications';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
 import { Page } from '@/ui/layout/Page';
 import { Section } from '@/ui/layout/Section';
@@ -151,7 +152,8 @@ function DashboardSection() {
         Afficher les montants
       </Checkbox>
       <p className="mt-1.5 pl-[26px] text-meta text-ink-3">
-        Soldes, à recevoir, encaissé du mois et montants des paiements. Ils restent toujours visibles dans Finances.
+        Soldes, à recevoir, encaissé du mois et montants des paiements, notifications comprises. Ils restent toujours
+        visibles dans Finances.
       </p>
     </Section>
   );
@@ -161,6 +163,7 @@ export function SettingsPage() {
   return (
     <Page title="Paramètres">
       <DashboardSection />
+      <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />
       </Section>
