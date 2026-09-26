@@ -1,8 +1,8 @@
-# Cockpit — Dossier de conception (étapes 1 à 7)
+# Cockpit — Dossier de conception (V1.1)
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 en cours, par étapes (§7.2) : étapes 1 à 7 faites.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2). La suite (V2) viendra seulement si l'usage le demande.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -729,13 +729,13 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
   - Encaissements : À recevoir · Reçus · En retard ;
   - Transactions : filtres par compte, type, catégorie et mois (export CSV dans Paramètres › Exports).
 
-**Clients** : une liste et une fiche avec les coordonnées, les projets, le total encaissé et le montant à recevoir.
+**Clients** : une liste et une fiche avec les coordonnées, les projets, le total encaissé et le montant à recevoir ; un client qu'on ne suit plus s'archive.
 
 **Paramètres** :
 
 - Apparence : thème (comme Windows, clair ou sombre) et premier jour de la semaine.
 - Notifications.
-- Types de projet & catégories.
+- Types de projet, comptes et catégories.
 - Exports : JSON et CSV.
 - Données : sauvegarder, restaurer, choisir le dossier des sauvegardes, ouvrir le dossier des données.
 - Raccourcis.
@@ -839,7 +839,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **4. Calendrier** | ✓ Fait | Événements, agrégation des dates (P8), vues mois / semaine / jour | Toutes mes dates au même endroit, sans doublon |
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
-| **V1.1** | En cours | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
+| **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V2** | Si besoin | Google Agenda dans le calendrier (lecture seule, adresse iCal secrète), zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
@@ -868,7 +868,7 @@ Découpée en étapes, validées une à une (branches `v1.1-…`) :
 5. **Planning** (✓ fait, branche `v1.1-planning`).
 6. **Notifications Windows** (✓ fait, branche `v1.1-notifications`).
 7. **Exports et paramètres complets** (✓ fait, branche `v1.1-exports`).
-8. **Petits défauts** du §7.3.
+8. **Petits défauts** du §7.3 (✓ fait, branche `v1.1-defauts`).
 
 Détail des étapes 5 à 7 :
 
@@ -882,18 +882,19 @@ Détail des étapes 5 à 7 :
 
 ### 7.3 Points à reprendre, issus des jalons terminés
 
-- **Ctrl+N** : non vérifié dans la fenêtre WebView2. La touche `N` seule fonctionne partout.
-- **Clients** : pas encore d'archivage.
-- **Erreurs dans les fenêtres globales** : une erreur dans une fenêtre globale (création, panneau de tâche) remplace toute l'app par l'écran d'erreur. Il faudrait des « error boundaries » locales.
-- **Comptes** : seuls les deux comptes de départ existent. Ni création, ni renommage, ni archivage dans l'interface (la table le permet déjà).
-- **Clients** : la fiche n'affiche pas encore le total encaissé ni le montant à recevoir (§5.2).
-- **Fiche projet** : les « prochains événements » du panneau de propriétés (§5.2) ne sont pas encore affichés.
-- **Vue mois** : sur un écran 1080p à 125 %, un mois chargé peut dépasser de quelques pixels en bas.
-- **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main.
-- **Ctrl+K et ?** : vérifiés dans le navigateur de test ; à confirmer dans la fenêtre WebView2.
-- **Suppr** : fonctionne sur les lignes de liste, pas encore dans les panneaux latéraux (tâche, événement) ni sur la fiche projet.
+- **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main. (La fenêtre « Enregistrer sous » des exports, construite de la même façon, a été vérifiée dans la vraie fenêtre.)
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 - **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1, étape 8 (petits défauts)**, à confirmer à l'usage :
+- **Suppr partout** : dans le panneau d'une tâche ou d'un événement, Suppr supprime ce qu'il montre (« Annuler » dans le toast, Ctrl+Z), sauf pendant la saisie, sur une sous-tâche (Suppr supprime alors la sous-tâche) ou dans un menu ouvert par-dessus (`handlePanelDeleteKey`). Sur la fiche projet, Suppr supprime le projet seulement quand rien d'autre n'a le focus (ni champ, ni ligne, ni bouton ou lien : `useDeleteShortcut`), puis revient à la liste ; « Annuler » le remet avec tout ce qu'il contenait. Le menu « … » de la fiche l'indique.
+- **Clients** : « Archiver » dans la fiche, avec « Annuler » ; « Réactiver » depuis la fiche d'un client archivé. Un client archivé garde ses projets et ses paiements, n'est plus proposé dans les formulaires (celui déjà choisi reste affiché) et apparaît sous « N clients archivés », replié, en bas de la page Clients. La fiche montre « 600 € encaissés · 1 550 € à recevoir » (propositions exclues, comme partout ; ses paiements directs compris).
+- **Comptes** (Paramètres › Comptes) : ajouter (nom, professionnel ou personnel), renommer d'un clic, changer le type, archiver. Un compte ne s'archive qu'à 0 € (sinon cet argent disparaîtrait des soldes : « fais d'abord un virement ») et s'il en reste un autre ; ses transactions restent. Archivés : listés à part, avec « Réactiver ».
+- **Fiche projet** : « Prochains événements » entre Propriétés et Finances : les 3 plus proches qui ne sont pas passés (un événement en cours sur plusieurs jours compris), avec « Aujourd'hui · 16:00 · Visio », « Lundi · 09:30 » ou « Jusqu'à demain », puis « et N autres dans le calendrier » et « + Événement » (lié au projet). Un clic ouvre le panneau de l'événement.
+- **Erreurs dans les fenêtres** : une erreur dans une fenêtre (`Dialog`), un panneau de tâche ou d'événement ou la palette s'affiche dans cette fenêtre (« Cette fenêtre a rencontré un problème », avec le message et « Fermer ») : le reste de l'app continue. Un dernier filet (`OverlaysBoundary`) entoure toutes les fenêtres globales : il les ferme et le dit dans un toast, sans jamais remplacer la page.
+- **Vue mois** : seulement les semaines du mois (4 à 6, plus de sixième semaine entièrement au mois suivant). Les rangées se partagent la hauteur de la fenêtre et la page ne défile plus ; chaque case montre ce qui tient dans sa rangée (3 éléments au plus, barres comprises), la dernière ligne cédant sa place à « +N » (règle `monthCellLimit`). Sous 82 px par rangée (fenêtre très basse), la page défile. « Aucune date sur cette période » passe sous le titre.
+- **Vérifié dans la vraie fenêtre** (WebView2) : Ctrl+N ouvre « Nouvelle tâche » (l'aide des raccourcis l'indique désormais), Ctrl+K la palette, ? l'aide.
+- **Au passage** : « 100 % » ne passe plus à la ligne à côté d'une barre de progression étroite (projets en cours du dashboard).
 
 **Choix faits en V1.1, étape 7 (exports et paramètres)**, à confirmer à l'usage :
 - **Exports** (Paramètres › Exports, `data/export/`) : trois boutons. Le fichier est préparé par l'interface, puis la commande Rust `export_save` ouvre « Enregistrer sous » dans Documents, sous un nom daté (`cockpit-export-donnees-2026-09-26.json`, `…-transactions-….csv`, `…-encaissements-….csv`) : Entrée suffit. Rust refuse tout nom qui n'est pas un simple `cockpit-export-….json` ou `….csv` (motif ignoré par Git), et la base elle-même comme destination. Dans le navigateur de développement, un téléchargement ordinaire remplace la fenêtre native.

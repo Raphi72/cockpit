@@ -21,6 +21,7 @@ import {
   getEvent,
   insertEventStatement,
   listAgenda,
+  listProjectEvents,
   restoreEventStatement,
   updateEventStatement,
 } from './repository';
@@ -38,6 +39,14 @@ export function useAgenda(range: { from: string; to: string }, options: { plainT
     queryKey: [...queryKeys.agenda.range(range.from, range.to), { plainTasks }],
     queryFn: () => listAgenda(db, range.from, range.to, { plainTasks }),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Prochains événements d'un projet (fiche projet). */
+export function useProjectEvents(projectId: string, today: string) {
+  return useQuery({
+    queryKey: [...queryKeys.agenda.all, 'project', projectId, today],
+    queryFn: () => listProjectEvents(db, projectId, today),
   });
 }
 

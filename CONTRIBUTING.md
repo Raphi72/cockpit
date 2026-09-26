@@ -1,11 +1,11 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et les étapes 1 à 7 de la V1.1 sont faits. La suite de la V1.1 est en cours.
+Cockpit en est à la **version 1.1.0** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)) et la V1.1 (8 étapes) sont faits. La V2 ne viendra que si l'usage le demande.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
 
-## V1.1 (en cours, une étape à la fois)
+## V1.1 (terminée)
 
 ### Étape 1 : retours d'usage (branche `v1.1-retours`)
 
@@ -43,17 +43,19 @@ Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données p
 - [x] **Exports** (étape 7, branche `v1.1-exports`) : JSON (toutes les données) et CSV pour les finances (transactions, encaissements), qui s'ouvre directement dans Excel. Les fichiers sont nommés `cockpit-export-…` (motif ignoré par Git).
 - [x] **Paramètres complets** (étape 7) : thème clair ou sombre forcé, premier jour de la semaine, et l'app qui se rouvre à la même taille et au même endroit.
 
-## Petits défauts à reprendre (§7.3 de la conception)
+## Petits défauts (étape 8, branche `v1.1-defauts`)
 
 - [x] Remplacer le sélecteur de date natif, gênant au clic, par un sélecteur maison qui comprend « auj. », « demain » ou « +3j » (étape 3).
-- [ ] Supprimer avec Suppr aussi dans les panneaux latéraux et sur la fiche projet.
-- [ ] Clients : archivage, total encaissé et montant à recevoir sur la fiche.
-- [ ] Comptes : en créer, en renommer ou en archiver depuis l'interface.
-- [ ] Fiche projet : afficher ses prochains événements.
+- [x] Supprimer avec Suppr aussi dans les panneaux latéraux et sur la fiche projet.
+- [x] Clients : archivage, total encaissé et montant à recevoir sur la fiche.
+- [x] Comptes : en créer, en renommer ou en archiver depuis l'interface.
+- [x] Fiche projet : afficher ses prochains événements.
 - [x] Calendrier : un événement sur plusieurs jours en une seule barre continue.
-- [ ] Une erreur dans une fenêtre (création, panneau de tâche) remplace toute l'app par l'écran d'erreur ; elle devrait rester dans la fenêtre.
-- [ ] Vue mois : un mois chargé dépasse de quelques pixels en 1080p à 125 %.
-- [ ] `Ctrl+N` à vérifier dans la vraie fenêtre (la touche `N` seule fonctionne).
+- [x] Une erreur dans une fenêtre (création, panneau de tâche) remplace toute l'app par l'écran d'erreur ; elle devrait rester dans la fenêtre.
+- [x] Vue mois : un mois chargé dépasse de quelques pixels en 1080p à 125 %.
+- [x] `Ctrl+N` à vérifier dans la vraie fenêtre (la touche `N` seule fonctionne) : il fonctionne, comme Ctrl+K et ?.
+
+Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et de restauration, et les notifications dans l'app installée.
 
 ## V2 : plus tard, seulement si l'usage le demande
 

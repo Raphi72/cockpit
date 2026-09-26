@@ -63,6 +63,8 @@ export const queryKeys = {
   finance: {
     all: ['finance'] as const,
     accounts: ['finance', 'accounts'] as const,
+    /** Paramètres › Comptes : archivés compris. */
+    managedAccounts: ['finance', 'accounts', 'managed'] as const,
     summary: (today: string) => ['finance', 'summary', today] as const,
     categories: ['finance', 'categories'] as const,
     /** Faut-il encore demander les soldes de départ ? */

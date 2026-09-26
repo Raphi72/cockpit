@@ -16,6 +16,7 @@ import {
   type ExportKind,
   type RestoreCandidate,
 } from '@/domains/data';
+import { AccountsEditor } from '@/domains/finance/accounts/components/AccountsEditor';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
 import { NotificationSettings } from '@/domains/notifications';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
@@ -225,6 +226,9 @@ export function SettingsPage() {
       <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />
+      </Section>
+      <Section title="Comptes" meta="clique sur un nom pour le modifier">
+        <AccountsEditor />
       </Section>
       <Section title="Catégories de transactions" meta="clique sur un nom pour le modifier">
         <CategoriesEditor />

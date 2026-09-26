@@ -7,10 +7,22 @@ export type Client = {
 };
 
 export type ClientListItem = Client & {
+  /** Archivé : il n'est plus proposé dans les projets ni les encaissements, mais garde tout son historique. */
+  archivedAt: string | null;
   projectCount: number;
-  /** Encaissements non reçus de ses projets (ou directement liés au client). */
+  /** Encaissements attendus de ses projets (ou directement liés au client), propositions exclues. */
   dueCents: number;
+  /** Tout ce qu'il a déjà payé. */
+  receivedCents: number;
 };
+
+/** Clients actifs, puis archivés : la page Clients les sépare, les formulaires ne proposent que les actifs. */
+export function splitArchived<T extends { archivedAt: string | null }>(clients: T[]): { active: T[]; archived: T[] } {
+  return {
+    active: clients.filter((client) => client.archivedAt === null),
+    archived: clients.filter((client) => client.archivedAt !== null),
+  };
+}
 
 export type ClientInput = Omit<Client, 'id'>;
 

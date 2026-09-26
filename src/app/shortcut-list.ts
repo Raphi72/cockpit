@@ -19,7 +19,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     title: 'Partout',
     entries: [
       { keys: ['Ctrl K'], label: 'Rechercher ou lancer une commande' },
-      { keys: ['N'], label: 'Nouvelle tâche' },
+      { keys: ['N', 'Ctrl N'], label: 'Nouvelle tâche' },
       { keys: ['C'], label: 'Nouveau…, puis T, E, P, L, R ou D' },
       { keys: ['Ctrl 1 … 6'], label: 'Aller aux pages principales' },
       { keys: ['Ctrl B'], label: 'Réduire ou déplier la barre latérale' },
@@ -32,6 +32,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     entries: [
       { keys: ['Ctrl Entrée'], label: 'Enregistrer' },
       { keys: ['Échap'], label: 'Fermer' },
+      { keys: ['Suppr'], label: 'Supprimer (panneau de tâche ou d’événement, fiche projet)' },
     ],
   },
   {

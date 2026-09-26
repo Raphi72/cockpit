@@ -105,6 +105,24 @@ export async function getEvent(db: Db, id: string): Promise<AgendaEvent | undefi
   return row && { ...row, allDay: row.allDay === 1 };
 }
 
+/**
+ * Événements d'un projet qui ne sont pas encore passés (en cours compris), du plus proche au plus lointain.
+ * Un événement à heure fixe compte jusqu'à la fin de sa journée.
+ */
+export async function listProjectEvents(db: Db, projectId: string, today: string): Promise<AgendaEvent[]> {
+  const rows = await db.query<EventRow>(
+    `SELECT e.id, e.title, e.kind, e.all_day, e.starts_at, e.ends_at, e.location, e.notes, e.project_id,
+            p.name AS project_name, pt.color AS project_color, e.created_at
+     FROM events e
+     LEFT JOIN projects p ON p.id = e.project_id
+     LEFT JOIN project_types pt ON pt.id = p.type_id
+     WHERE e.project_id = ? AND substr(COALESCE(e.ends_at, e.starts_at), 1, 10) >= ?
+     ORDER BY e.starts_at, e.title`,
+    [projectId, today],
+  );
+  return rows.map((row) => ({ ...row, allDay: row.allDay === 1 }));
+}
+
 export function insertEventStatement(id: string, input: NewEventInput, now: string): Statement {
   const { allDay, startsAt, endsAt } = timingColumns(input.timing);
   return {

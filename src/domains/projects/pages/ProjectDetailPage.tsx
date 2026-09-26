@@ -1,6 +1,8 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { useDeleteShortcut } from '@/app/shortcuts';
 import { ArrowLeft, Ellipsis, Trash2 } from 'lucide-react';
 import { useToday } from '@/core/use-today';
+import { ProjectEvents } from '@/domains/agenda/components/ProjectEvents';
 import { PageContainer } from '@/ui/layout/Page';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
@@ -22,6 +24,17 @@ export function ProjectDetailPage() {
   const navigate = useNavigate();
   const today = useToday();
 
+  // « Annuler » est dans le toast : pas de confirmation.
+  const remove = () => {
+    if (!project) return;
+    deleteProject.mutate(project.id, {
+      onSuccess: (result) => {
+        if (result.status === 'deleted') void navigate({ to: '/projects' });
+      },
+    });
+  };
+  useDeleteShortcut(remove);
+
   if (isPending) return null;
   if (!project) {
     return (
@@ -33,14 +46,6 @@ export function ProjectDetailPage() {
       </PageContainer>
     );
   }
-
-  // « Annuler » est dans le toast : pas de confirmation.
-  const remove = () =>
-    deleteProject.mutate(project.id, {
-      onSuccess: (result) => {
-        if (result.status === 'deleted') void navigate({ to: '/projects' });
-      },
-    });
 
   return (
     <PageContainer>
@@ -57,7 +62,7 @@ export function ProjectDetailPage() {
             <Button variant="ghost" icon={Ellipsis} aria-label="Actions du projet" />
           </MenuTrigger>
           <MenuContent align="end">
-            <MenuItem icon={Trash2} tone="danger" onSelect={remove}>
+            <MenuItem icon={Trash2} tone="danger" onSelect={remove} shortcut="Suppr">
               Supprimer le projet
             </MenuItem>
           </MenuContent>
@@ -100,6 +105,10 @@ export function ProjectDetailPage() {
         <aside className="border-l border-line pl-8">
           <SideHeading>Propriétés</SideHeading>
           <ProjectProperties project={project} today={today} />
+          <div className="mt-8">
+            <SideHeading>Prochains événements</SideHeading>
+            <ProjectEvents projectId={project.id} today={today} />
+          </div>
           <div className="mt-8">
             <SideHeading>Finances</SideHeading>
             <ProjectFinance project={project} today={today} />

@@ -20,6 +20,8 @@ import {
   validateTiming,
   viewDays,
   viewRange,
+  monthCellLimit,
+  eventWhenLabel,
   viewTitle,
   visibleHours,
   type AgendaItem,
@@ -152,11 +154,13 @@ describe('agenda', () => {
 });
 
 describe('vues du calendrier', () => {
-  it('affiche 6 semaines complètes pour un mois, du lundi au dimanche', () => {
+  it('affiche les semaines complètes du mois, du lundi au dimanche', () => {
     const days = viewDays('month', TODAY);
-    expect(days).toHaveLength(42);
+    expect(days).toHaveLength(35);
     expect(days[0]).toBe('2026-08-31'); // lundi avant le 1er septembre (un mardi)
-    expect(viewRange(days)).toEqual({ from: '2026-08-31', to: '2026-10-12' });
+    expect(viewRange(days)).toEqual({ from: '2026-08-31', to: '2026-10-05' }); // jusqu'au dimanche 4 oct.
+    expect(viewDays('month', '2026-08-10')).toHaveLength(42); // août 2026 : du lundi 27 juillet au dimanche 6 sept.
+    expect(viewDays('month', '2027-02-10')).toHaveLength(28); // février 2027 : du lundi 1er au dimanche 28
     expect(viewDays('week', TODAY)).toEqual([
       '2026-09-21',
       '2026-09-22',
@@ -172,7 +176,7 @@ describe('vues du calendrier', () => {
   it('commence les semaines le dimanche si on le choisit', () => {
     const month = viewDays('month', TODAY, 0);
     expect(month[0]).toBe('2026-08-30'); // dimanche avant le 1er septembre
-    expect(month).toHaveLength(42);
+    expect(month.at(-1)).toBe('2026-10-03');
     expect(viewDays('week', TODAY, 0)).toEqual([
       '2026-09-20',
       '2026-09-21',
@@ -185,6 +189,33 @@ describe('vues du calendrier', () => {
     // Le dimanche 27 ouvre alors une nouvelle semaine.
     expect(viewDays('week', '2026-09-27', 0)[0]).toBe('2026-09-27');
     expect(viewTitle('week', TODAY, TODAY, 0)).toBe('20 – 26 septembre');
+  });
+
+  it('dit quand a lieu un événement à venir (fiche projet)', () => {
+    const timed = (startsAt: string) => ({ allDay: false, startsAt, endsAt: null });
+    expect(eventWhenLabel(timed('2026-09-24T14:00'), TODAY)).toBe('Aujourd’hui · 14:00');
+    expect(eventWhenLabel(timed('2026-09-25T09:30'), TODAY)).toBe('Demain · 09:30');
+    expect(eventWhenLabel(timed('2026-09-28T10:00'), TODAY)).toBe('Lundi · 10:00');
+    expect(eventWhenLabel({ allDay: true, startsAt: '2026-10-12', endsAt: null }, TODAY)).toBe('12 oct.');
+    // Commencé, sur plusieurs jours : jusqu'à quand.
+    expect(eventWhenLabel({ allDay: true, startsAt: '2026-09-22', endsAt: '2026-09-25' }, TODAY)).toBe('Jusqu’à demain');
+    expect(eventWhenLabel({ allDay: true, startsAt: '2026-09-22', endsAt: '2026-10-27' }, TODAY)).toBe('Jusqu’au 27 oct.');
+  });
+
+  it('remplit une case du mois selon la place, puis « +N »', () => {
+    // 4 lignes : 3 éléments au plus, « +N » au-delà.
+    expect(monthCellLimit(4, 0, 3)).toBe(3);
+    expect(monthCellLimit(4, 0, 5)).toBe(3);
+    // 3 lignes : tout tient jusqu'à 3 ; au-delà, 2 éléments et « +N ».
+    expect(monthCellLimit(3, 0, 3)).toBe(3);
+    expect(monthCellLimit(3, 0, 4)).toBe(2);
+    // 2 lignes : 1 élément et « +N ».
+    expect(monthCellLimit(2, 0, 2)).toBe(2);
+    expect(monthCellLimit(2, 0, 3)).toBe(1);
+    // Les barres de plusieurs jours prennent leurs lignes.
+    expect(monthCellLimit(4, 2, 1)).toBe(1);
+    expect(monthCellLimit(4, 2, 3)).toBe(1);
+    expect(monthCellLimit(3, 2, 2)).toBe(0); // seulement « +2 »
   });
 
   it('passe à la période suivante ou précédente', () => {

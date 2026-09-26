@@ -1,5 +1,23 @@
 import type { KeyboardEvent } from 'react';
 
+/** Vrai si la touche part d'un champ de saisie : Suppr y efface du texte. */
+function fromTextField(target: EventTarget): boolean {
+  return target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]') !== null;
+}
+
+/**
+ * Suppr dans un panneau latéral (tâche, événement) : supprime ce qu'il montre, avec « Annuler ».
+ * Sauf pendant la saisie, sur une ligne qui gère déjà Suppr (sous-tâche) ou dans un menu ouvert
+ * par-dessus (rendu ailleurs dans la page, il n'est pas dans le panneau).
+ */
+export function handlePanelDeleteKey(event: KeyboardEvent<HTMLElement>, remove: () => void): void {
+  if (event.key !== 'Delete' || event.defaultPrevented) return;
+  if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey) return;
+  if (!(event.target instanceof Node) || !event.currentTarget.contains(event.target) || fromTextField(event.target)) return;
+  event.preventDefault();
+  remove();
+}
+
 /** Lignes parcourables au clavier : tout élément marqué `data-row`, dans l'ordre de la page. */
 const ROW_SELECTOR = '[data-row]';
 

@@ -1,5 +1,6 @@
 import { Dialog as RadixDialog } from 'radix-ui';
 import type { ReactNode } from 'react';
+import { WindowErrorBoundary } from './WindowErrorBoundary';
 
 type DialogProps = {
   open: boolean;
@@ -33,7 +34,7 @@ export function Dialog({ open, onOpenChange, title, description, width = 540, re
           ) : (
             <RadixDialog.Description className="sr-only">{title}</RadixDialog.Description>
           )}
-          {children}
+          <WindowErrorBoundary onClose={() => onOpenChange(false)}>{children}</WindowErrorBoundary>
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>

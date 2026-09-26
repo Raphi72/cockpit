@@ -7,11 +7,61 @@ import { getSetting, setSettingStatement } from '@/domains/settings/repository';
 import { toast } from '@/ui/overlays/toast';
 import { useInvalidateMoney } from '../hooks';
 import { deleteTransactionStatement } from '../transactions/repository';
-import { INITIAL_BALANCES_SETTING, adjustmentCents, type Account } from './model';
-import { adjustBalanceStatement, countAdjustments, listAccounts } from './repository';
+import { INITIAL_BALANCES_SETTING, adjustmentCents, type Account, type AccountKind } from './model';
+import {
+  adjustBalanceStatement,
+  countAdjustments,
+  insertAccountStatement,
+  listAccounts,
+  listManagedAccounts,
+  setAccountArchivedStatement,
+  updateAccountStatement,
+} from './repository';
 
 export function useAccounts() {
   return useQuery({ queryKey: queryKeys.finance.accounts, queryFn: () => listAccounts(db) });
+}
+
+/** Paramètres › Comptes : tous les comptes, archivés compris. */
+export function useManagedAccounts() {
+  return useQuery({ queryKey: queryKeys.finance.managedAccounts, queryFn: () => listManagedAccounts(db) });
+}
+
+export function useCreateAccount() {
+  const invalidate = useInvalidateMoney();
+  return useMutation({
+    mutationFn: (account: { name: string; kind: AccountKind }) => {
+      const ctx = batchContext();
+      return db.batch([insertAccountStatement({ id: ctx.newId(), ...account }, ctx.now)]);
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateAccount() {
+  const invalidate = useInvalidateMoney();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: { name?: string; kind?: AccountKind } }) =>
+      db.batch([updateAccountStatement(id, patch)]),
+    onSuccess: invalidate,
+  });
+}
+
+/** Archiver un compte (solde à 0 €) : il sort des soldes et des formulaires, avec « Annuler ». */
+export function useArchiveAccount() {
+  const invalidate = useInvalidateMoney();
+  const setArchived = (id: string, archivedAt: string | null) =>
+    db.batch([setAccountArchivedStatement(id, archivedAt)]).then(invalidate);
+  return useMutation({
+    mutationFn: ({ account, archived }: { account: Account; archived: boolean }) =>
+      setArchived(account.id, archived ? batchContext().now : null),
+    onSuccess: (_, { account, archived }) => {
+      if (!archived) return toast(`Compte « ${account.name} » réactivé.`);
+      toast(`Compte « ${account.name} » archivé.`, {
+        action: { label: 'Annuler', undo: true, onClick: () => void setArchived(account.id, null) },
+      });
+    },
+  });
 }
 
 /**

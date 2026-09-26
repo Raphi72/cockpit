@@ -8,6 +8,23 @@ export type Account = {
   balanceCents: number;
 };
 
+export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = { business: 'Professionnel', personal: 'Personnel' };
+
+/** Compte vu depuis Paramètres › Comptes : archivés compris. */
+export type ManagedAccount = Account & { archivedAt: string | null; transactionCount: number };
+
+/**
+ * Pourquoi un compte ne peut pas être archivé, ou `null`. Un compte archivé sort des soldes et des
+ * formulaires : il doit être à 0 € (sinon cet argent disparaîtrait des chiffres) et il en faut un autre.
+ */
+export function archiveBlocker(account: Pick<Account, 'balanceCents'>, activeCount: number): string | null {
+  if (activeCount <= 1) return 'Il faut garder au moins un compte.';
+  if (account.balanceCents !== 0) {
+    return 'Son solde doit être à 0 € : fais d’abord un virement vers un autre compte, ou corrige son solde.';
+  }
+  return null;
+}
+
 /** Clé du réglage qui retient que la question des soldes de départ a été posée. */
 export const INITIAL_BALANCES_SETTING = 'finance.initialBalancesAsked';
 

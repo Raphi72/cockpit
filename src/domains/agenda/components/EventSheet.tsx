@@ -4,8 +4,10 @@ import { Dialog as RadixDialog } from 'radix-ui';
 import { formatShortDate, toISODate } from '@/core/dates';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
+import { handlePanelDeleteKey } from '@/ui/data/row-keys';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '@/ui/overlays/Menu';
+import { WindowErrorBoundary } from '@/ui/overlays/WindowErrorBoundary';
 import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
 import { Checkbox } from '@/ui/primitives/Checkbox';
@@ -48,9 +50,8 @@ function EventKindMenu({ value, onChange }: { value: EventKind; onChange: (kind:
   );
 }
 
-function EventSheetContent({ event, onClose }: { event: AgendaEvent; onClose: () => void }) {
+function EventSheetContent({ event, onClose, remove }: { event: AgendaEvent; onClose: () => void; remove: () => void }) {
   const update = useUpdateEvent();
-  const remove = useDeleteEvent();
   const today = useToday();
   const save = (patch: EventPatch) => update.mutate({ id: event.id, patch });
   const timing = timingOf(event);
@@ -88,11 +89,8 @@ function EventSheetContent({ event, onClose }: { event: AgendaEvent; onClose: ()
             size="lg"
             icon={Trash2}
             aria-label="Supprimer l’événement"
-            title="Supprimer"
-            onClick={() => {
-              onClose();
-              remove.mutate(event);
-            }}
+            title="Supprimer · Suppr"
+            onClick={remove}
           />
           <RadixDialog.Close asChild>
             <Button variant="ghost" size="lg" icon={X} aria-label="Fermer" title="Fermer · Échap" />
@@ -194,17 +192,28 @@ export function EventSheet() {
   const eventId = useEventSheet((state) => state.eventId);
   const close = useEventSheet((state) => state.close);
   const { data: event } = useEvent(eventId);
+  const deleteEvent = useDeleteEvent();
+  const remove = () => {
+    if (!event) return;
+    close();
+    deleteEvent.mutate(event);
+  };
 
   return (
     <RadixDialog.Root open={eventId !== null} onOpenChange={(open) => !open && close()}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-40 animate-fade bg-backdrop" />
-        <RadixDialog.Content className="fixed inset-y-0 right-0 z-50 w-[min(460px,100vw)] overflow-y-auto border-l border-line bg-elevated px-7 py-5 shadow-overlay animate-slide-in focus:outline-none">
-          {event ? (
-            <EventSheetContent event={event} onClose={close} />
-          ) : (
-            <RadixDialog.Title className="sr-only">Événement</RadixDialog.Title>
-          )}
+        <RadixDialog.Content
+          onKeyDown={(keyEvent) => handlePanelDeleteKey(keyEvent, remove)}
+          className="fixed inset-y-0 right-0 z-50 w-[min(460px,100vw)] overflow-y-auto border-l border-line bg-elevated px-7 py-5 shadow-overlay animate-slide-in focus:outline-none"
+        >
+          <WindowErrorBoundary onClose={close}>
+            {event ? (
+              <EventSheetContent event={event} onClose={close} remove={remove} />
+            ) : (
+              <RadixDialog.Title className="sr-only">Événement</RadixDialog.Title>
+            )}
+          </WindowErrorBoundary>
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>

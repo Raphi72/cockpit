@@ -2,18 +2,26 @@ import type { Db, Statement } from '@/core/db';
 import { EXPECTED_PAYMENT } from '@/domains/finance/payments/repository';
 import type { Client, ClientInput, ClientListItem } from './model';
 
+/** Paiements d'un client : ceux de ses projets, et ceux qui lui sont directement rattachés. */
+const CLIENT_PAYMENTS = `FROM payments pay
+               LEFT JOIN projects p ON p.id = pay.project_id
+              WHERE (p.client_id = c.id OR pay.client_id = c.id)`;
+
+/** Tous les clients, archivés compris (`archivedAt`), avec ce qu'ils ont payé et ce qu'on attend d'eux. */
 export function listClients(db: Db): Promise<ClientListItem[]> {
   return db.query<ClientListItem>(
-    `SELECT c.id, c.name, c.email, c.phone, c.notes,
+    `SELECT c.id, c.name, c.email, c.phone, c.notes, c.archived_at,
             (SELECT COUNT(*) FROM projects p WHERE p.client_id = c.id) AS project_count,
-            (SELECT COALESCE(SUM(pay.amount_cents), 0)
-               FROM payments pay
-               LEFT JOIN projects p ON p.id = pay.project_id
-              WHERE ${EXPECTED_PAYMENT} AND (p.client_id = c.id OR pay.client_id = c.id)) AS due_cents
+            (SELECT COALESCE(SUM(pay.amount_cents), 0) ${CLIENT_PAYMENTS} AND ${EXPECTED_PAYMENT}) AS due_cents,
+            (SELECT COALESCE(SUM(pay.amount_cents), 0) ${CLIENT_PAYMENTS} AND pay.status = 'received') AS received_cents
      FROM clients c
-     WHERE c.archived_at IS NULL
      ORDER BY c.name COLLATE NOCASE`,
   );
+}
+
+/** Archiver (un horodatage) ou réactiver (`null`) un client. */
+export function setClientArchivedStatement(id: string, archivedAt: string | null, now: string): Statement {
+  return { sql: 'UPDATE clients SET archived_at = ?, updated_at = ? WHERE id = ?', params: [archivedAt, now, id] };
 }
 
 export function insertClientStatement(id: string, input: ClientInput, now: string): Statement {

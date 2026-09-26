@@ -31,6 +31,7 @@ import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { useTransactionEditor } from '@/domains/finance/transactions/editor-store';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { ColorDot, type PaletteKey } from '@/ui/data/ColorDot';
+import { WindowErrorBoundary } from '@/ui/overlays/WindowErrorBoundary';
 import { Kbd } from '@/ui/primitives/Kbd';
 import { COMMAND_GROUP_LABELS, filterCommands, paletteCommands, type PaletteAction, type PaletteCommand } from '../commands';
 import { useSearch } from '../hooks';
@@ -335,7 +336,11 @@ export function CommandPalette() {
           style={{ width: 'min(620px, calc(100vw - 32px))' }}
         >
           <Dialog.Title className="sr-only">Rechercher ou lancer une commande</Dialog.Title>
-          {open && <PaletteBody close={() => setOpen(false)} />}
+          {open && (
+            <WindowErrorBoundary onClose={() => setOpen(false)} className="p-6">
+              <PaletteBody close={() => setOpen(false)} />
+            </WindowErrorBoundary>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

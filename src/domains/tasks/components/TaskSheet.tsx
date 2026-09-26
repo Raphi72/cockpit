@@ -6,7 +6,9 @@ import { deadlineStatus } from '@/core/deadline';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
+import { handlePanelDeleteKey } from '@/ui/data/row-keys';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
+import { WindowErrorBoundary } from '@/ui/overlays/WindowErrorBoundary';
 import { Button } from '@/ui/primitives/Button';
 import { InlineDate, InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
 import { useDeleteTask, useSubtasks, useTask, useUpdateTask } from '../hooks';
@@ -48,10 +50,9 @@ function Subtasks({ task, today }: { task: TaskItem; today: string }) {
   );
 }
 
-function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => void }) {
+function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: () => void; remove: () => void }) {
   const openTask = useTaskSheet((state) => state.openTask);
   const update = useUpdateTask();
-  const remove = useDeleteTask();
   const today = useToday();
   const save = (patch: TaskPatch) => update.mutate({ id: task.id, patch });
   const done = task.status === 'done';
@@ -93,11 +94,8 @@ function TaskSheetContent({ task, onClose }: { task: TaskItem; onClose: () => vo
             size="lg"
             icon={Trash2}
             aria-label="Supprimer la tâche"
-            title="Supprimer"
-            onClick={() => {
-              onClose();
-              remove.mutate(task);
-            }}
+            title="Supprimer · Suppr"
+            onClick={remove}
           />
           <RadixDialog.Close asChild>
             <Button variant="ghost" size="lg" icon={X} aria-label="Fermer" title="Fermer · Échap" />
@@ -175,19 +173,29 @@ export function TaskSheet() {
   const taskId = useTaskSheet((state) => state.taskId);
   const close = useTaskSheet((state) => state.close);
   const { data: task } = useTask(taskId);
+  const deleteTask = useDeleteTask();
+  // « Annuler » est dans le toast : pas de confirmation.
+  const remove = () => {
+    if (!task) return;
+    close();
+    deleteTask.mutate(task);
+  };
 
   return (
     <RadixDialog.Root open={taskId !== null} onOpenChange={(open) => !open && close()}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-40 animate-fade bg-backdrop" />
         <RadixDialog.Content
+          onKeyDown={(event) => handlePanelDeleteKey(event, remove)}
           className="fixed inset-y-0 right-0 z-50 w-[min(460px,100vw)] overflow-y-auto border-l border-line bg-elevated px-7 py-5 shadow-overlay animate-slide-in focus:outline-none"
         >
-          {task ? (
-            <TaskSheetContent task={task} onClose={close} />
-          ) : (
-            <RadixDialog.Title className="sr-only">Tâche</RadixDialog.Title>
-          )}
+          <WindowErrorBoundary onClose={close}>
+            {task ? (
+              <TaskSheetContent task={task} onClose={close} remove={remove} />
+            ) : (
+              <RadixDialog.Title className="sr-only">Tâche</RadixDialog.Title>
+            )}
+          </WindowErrorBoundary>
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>

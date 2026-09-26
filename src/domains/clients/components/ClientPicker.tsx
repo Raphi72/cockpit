@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { normalizeText as normalize } from '@/core/text';
 import { PropertyButton } from '@/ui/primitives/PropertyButton';
 import { useClients } from '../hooks';
-import type { ClientChoice } from '../model';
+import { splitArchived, type ClientChoice } from '../model';
 
 const itemClass =
   'flex h-8 cursor-default items-center gap-2.5 rounded-[6px] px-2 select-none data-[selected=true]:bg-hover';
@@ -18,7 +18,9 @@ type ClientPickerProps = {
 
 /** Choisir un client existant, ou le créer en tapant simplement son nom. */
 export function ClientPicker({ value, onChange, variant = 'inline' }: ClientPickerProps) {
-  const { data: clients = [] } = useClients();
+  const { data } = useClients();
+  // Un client archivé n'est plus proposé (celui qui est déjà choisi reste affiché).
+  const clients = splitArchived(data ?? []).active;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const typed = search.trim();

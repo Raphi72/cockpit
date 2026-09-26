@@ -111,6 +111,30 @@ export function useGlobalShortcuts(): void {
 }
 
 /**
+ * Suppr sur une fiche (projet) : supprime ce qu'elle montre, avec « Annuler » dans le toast.
+ * Seulement quand rien d'autre n'a le focus : ni un champ, ni une ligne (Suppr y supprime la ligne),
+ * ni un bouton ou un lien, ni une fenêtre ou un menu ouvert.
+ */
+export function useDeleteShortcut(onDelete: () => void): void {
+  const latest = useRef(onDelete);
+  useLayoutEffect(() => {
+    latest.current = onDelete;
+  });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' || event.defaultPrevented) return;
+      if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || isBusy(event.target)) return;
+      if (event.target instanceof Element && event.target.closest('button, a, [data-row], [role="button"]')) return;
+      event.preventDefault();
+      latest.current();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+}
+
+/**
  * Raccourcis propres à une page : des touches seules (`event.key` en minuscules : 't', 'arrowleft'…),
  * inactives pendant la saisie ou quand une fenêtre / un menu est ouvert.
  * Les lettres sont lues comme caractères : elles suivent la disposition du clavier (AZERTY).
@@ -123,6 +147,7 @@ export function usePageShortcuts(handlers: Record<string, () => void>): void {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || isBusy(event.target)) return;
       const handler = latest.current[event.key.toLowerCase()];
       if (handler) {

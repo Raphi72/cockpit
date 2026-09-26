@@ -115,6 +115,12 @@ export function CalendarPage() {
   return (
     <Page
       title={viewTitle(view, anchor, today, weekStartsOn)}
+      subtitle={
+        empty
+          ? `${hidden.length > 0 ? 'Rien à afficher avec ces filtres.' : 'Aucune date sur cette période.'} Clique sur un jour pour ajouter un événement.`
+          : undefined
+      }
+      fill={view === 'month'}
       actions={
         <>
           <SourceFilter />
@@ -173,12 +179,6 @@ export function CalendarPage() {
         )}
       </CalendarDnd>
 
-      {empty && (
-        <p className="mt-6 text-meta text-ink-3">
-          {hidden.length > 0 ? 'Rien à afficher avec ces filtres.' : 'Aucune date sur cette période.'} Clique sur un jour pour
-          ajouter un événement.
-        </p>
-      )}
     </Page>
   );
 }

@@ -5,6 +5,7 @@ import {
   getEvent,
   insertEventStatement,
   listAgenda,
+  listProjectEvents,
   restoreEventStatement,
   updateEventStatement,
 } from '@/domains/agenda/repository';
@@ -237,5 +238,29 @@ describe('événements', () => {
     expect(await getEvent(db, 'ev1')).toBeUndefined();
     await db.batch([restoreEventStatement(updated, NOW)]);
     expect(await getEvent(db, 'ev1')).toEqual(updated);
+  });
+});
+
+describe('prochains événements d’un projet (fiche projet)', () => {
+  it('garde ceux d’aujourd’hui et ceux en cours, du plus proche au plus lointain', async () => {
+    const { db, projectId } = await setup();
+    const at = (date: string, startTime: string | null, endDate: string | null = null) => ({
+      date,
+      allDay: startTime === null,
+      endDate,
+      startTime,
+      endTime: null,
+    });
+    await db.batch([
+      insertEventStatement('passe', newEvent({ title: 'Passé', projectId, timing: at('2026-09-20', '10:00') }), NOW),
+      insertEventStatement('ce-matin', newEvent({ title: 'Ce matin', projectId, timing: at('2026-09-24', '08:00') }), NOW),
+      insertEventStatement('salon', newEvent({ title: 'Salon', projectId, timing: at('2026-09-23', null, '2026-09-25') }), NOW),
+      insertEventStatement('recette', newEvent({ title: 'Recette', projectId, timing: at('2026-10-06', '14:00') }), NOW),
+      insertEventStatement('autre', newEvent({ title: 'Sans projet', timing: at('2026-09-25', '09:00') }), NOW),
+    ]);
+
+    const events = await listProjectEvents(db, projectId, '2026-09-24');
+    expect(events.map((event) => event.title)).toEqual(['Salon', 'Ce matin', 'Recette']);
+    expect(events[0]).toMatchObject({ allDay: true, projectName: 'Site vitrine' });
   });
 });

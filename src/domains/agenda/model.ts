@@ -1,4 +1,4 @@
-import { addMonths, format, parseISO, startOfWeek } from 'date-fns';
+import { addMonths, endOfMonth, endOfWeek, format, parseISO, startOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { WeekStart } from '@/core/week-start';
 import {
@@ -89,6 +89,21 @@ export function timingOf(event: Pick<AgendaEvent, 'allDay' | 'startsAt' | 'endsA
     startTime: event.startsAt.slice(11, 16) || null,
     endTime: event.endsAt?.slice(11, 16) || null,
   };
+}
+
+/**
+ * Quand a lieu un événement à venir (fiche projet) : « Aujourd’hui · 14:00 », « Demain », « Lundi · 09:30 »,
+ * « 12 oct. ». Commencé et sur plusieurs jours : « Jusqu’à demain », « Jusqu’au 27 oct. ».
+ */
+export function eventWhenLabel(event: Pick<AgendaEvent, 'allDay' | 'startsAt' | 'endsAt'>, today: string): string {
+  const timing = timingOf(event);
+  if (timing.date < today && timing.endDate) {
+    const label = relativeDateLabel(timing.endDate, today);
+    return /^\d/.test(label) ? `Jusqu’au ${label}` : `Jusqu’à ${label}`;
+  }
+  const day = relativeDateLabel(timing.date, today).replace("aujourd'hui", 'aujourd’hui');
+  const label = day.charAt(0).toUpperCase() + day.slice(1);
+  return timing.startTime ? `${label} · ${timing.startTime}` : label;
 }
 
 /** Colonnes enregistrées : `starts_at`, `ends_at` et `all_day`. */
@@ -565,11 +580,33 @@ function daysFrom(first: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => addDaysISO(first, index));
 }
 
-/** Jours affichés : 6 semaines complètes pour un mois, 7 jours pour une semaine, 1 pour un jour. */
+/**
+ * Jours affichés : les semaines complètes qui couvrent le mois (4 à 6, pas de semaine entière du mois
+ * suivant), 7 jours pour une semaine, 1 pour un jour.
+ */
 export function viewDays(view: CalendarView, anchor: string, weekStartsOn: WeekStart = 1): string[] {
   if (view === 'day') return [anchor];
   if (view === 'week') return daysFrom(startOfWeekISO(anchor, weekStartsOn), 7);
-  return daysFrom(startOfWeekISO(`${monthOf(anchor)}-01`, weekStartsOn), 42);
+  const first = startOfWeekISO(`${monthOf(anchor)}-01`, weekStartsOn);
+  const last = toISODate(endOfWeek(endOfMonth(parseISO(anchor)), { weekStartsOn }));
+  return daysFrom(first, daysBetween(first, last) + 1);
+}
+
+// ─── Cases du mois ──────────────────────────────────────────────────────────
+
+/** Une case montre 3 éléments au plus, barres comprises, puis « +N ». */
+export const MONTH_MAX_PER_DAY = 3;
+
+/**
+ * Nombre d'éléments à montrer dans une case du mois, selon la place : `lines` lignes tiennent dans la
+ * rangée, dont `lanes` prises par les barres de plusieurs jours. Si tout ne tient pas, la dernière
+ * ligne libre revient à « +N ». Ainsi, un mois chargé ne dépasse jamais de sa rangée.
+ */
+export function monthCellLimit(lines: number, lanes: number, count: number): number {
+  const allowed = MONTH_MAX_PER_DAY - lanes;
+  const free = lines - lanes;
+  if (count <= Math.min(allowed, free)) return count;
+  return Math.max(Math.min(allowed, free - 1), 0);
 }
 
 /** Plage à charger : du premier jour affiché inclus au lendemain du dernier exclu. */

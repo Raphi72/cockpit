@@ -1,16 +1,25 @@
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useRef } from 'react';
 import { formatLongDate, monthOf } from '@/core/dates';
-import { layoutRow, weekdayShort, type AgendaItem } from '../model';
+import { FILL_BOTTOM_GAP } from '@/ui/layout/Page';
+import { useFillHeight } from '@/ui/layout/use-fill-height';
+import { layoutRow, monthCellLimit, weekdayShort, type AgendaItem } from '../model';
 import { DayItems } from './AgendaChip';
 import { useDayDrop } from './drag';
 import { SpanBars, lanesSpacer } from './SpanBars';
 
-/** 3 éléments au plus par jour (barres comprises), puis « +N ». */
-const MAX_PER_DAY = 3;
-
 /** Haut d'une case jusqu'à la première barre : marge (4 px), numéro du jour (24 + 2 px), espace (1 px). */
 const SPANS_TOP = 31;
+
+/** Ce qu'une case prend hors éléments : marges (4 + 6 px) et numéro du jour (26 px). */
+const CELL_CHROME = 36;
+
+/** Une ligne d'élément (22 px) et son espace (1 px) ; une barre de plusieurs jours prend la même place. */
+const LINE_HEIGHT = 23;
+
+/** En dessous (le numéro du jour et deux lignes), la page défile plutôt que de tasser les cases. */
+const MIN_ROW_HEIGHT = 82;
 
 type MonthViewProps = {
   anchor: string;
@@ -34,6 +43,9 @@ function MonthDay(props: {
   today: string;
   /** Couloirs de barres de la semaine : la place à réserver en haut. */
   lanes: number;
+  /** Hauteur de la rangée, et le nombre de lignes qui y tiennent. */
+  height: number;
+  lines: number;
   items: AgendaItem[];
   onOpen: (item: AgendaItem) => void;
   onCreate: (day: string) => void;
@@ -50,8 +62,9 @@ function MonthDay(props: {
       data-day={day}
       onClick={() => props.onCreate(day)}
       title="Clic : nouvel événement ce jour-là"
+      style={{ height: props.height }}
       className={
-        'flex min-h-[92px] min-w-0 cursor-default flex-col gap-px border-t border-line px-1 pt-1 pb-1.5 ' +
+        'flex min-w-0 cursor-default flex-col gap-px overflow-hidden border-t border-line px-1 pt-1 pb-1.5 ' +
         'transition-colors duration-[120ms] ease-soft ' +
         (drop.isOver ? 'bg-accent-soft ' : 'hover:bg-hover/50 ') +
         (props.first ? '' : 'border-l')
@@ -81,7 +94,7 @@ function MonthDay(props: {
       <DayItems
         day={day}
         items={props.items}
-        limit={Math.max(MAX_PER_DAY - props.lanes, 1)}
+        limit={monthCellLimit(props.lines, props.lanes, props.items.length)}
         today={today}
         onOpen={props.onOpen}
         onShowDay={() => props.onShowDay(day)}
@@ -91,12 +104,17 @@ function MonthDay(props: {
 }
 
 /**
- * Grille de 6 semaines × 7 jours, séparée par des filets fins, sans cadre. Chaque semaine est une
- * rangée : ce qui dure plusieurs jours y est dessiné en une seule barre continue.
+ * Les semaines du mois × 7 jours, séparées par des filets fins, sans cadre. Chaque semaine est une
+ * rangée : ce qui dure plusieurs jours y est dessiné en une seule barre continue. Les rangées se
+ * partagent la hauteur de la fenêtre ; chaque case montre ce qui y tient, puis « +N ».
  */
 export function MonthView({ anchor, days, items, today, onOpen, onCreate, onShowDay }: MonthViewProps) {
   const month = monthOf(anchor);
   const weeks = Array.from({ length: days.length / 7 }, (_, index) => days.slice(index * 7, index * 7 + 7));
+  const grid = useRef<HTMLDivElement>(null);
+  const available = useFillHeight(grid, FILL_BOTTOM_GAP);
+  const height = Math.max(MIN_ROW_HEIGHT, Math.floor((available ?? 0) / weeks.length));
+  const lines = Math.floor((height - CELL_CHROME) / LINE_HEIGHT);
   return (
     <div>
       <div className="grid grid-cols-7">
@@ -106,36 +124,40 @@ export function MonthView({ anchor, days, items, today, onOpen, onCreate, onShow
           </div>
         ))}
       </div>
-      {weeks.map((week) => {
-        const row = layoutRow(items, week);
-        return (
-          <div key={week[0]} className="relative grid grid-cols-7">
-            {week.map((day, index) => (
-              <MonthDay
-                key={day}
-                day={day}
-                first={index === 0}
-                inMonth={monthOf(day) === month}
+      <div ref={grid}>
+        {weeks.map((week) => {
+          const row = layoutRow(items, week);
+          return (
+            <div key={week[0]} className="relative grid grid-cols-7">
+              {week.map((day, index) => (
+                <MonthDay
+                  key={day}
+                  day={day}
+                  first={index === 0}
+                  inMonth={monthOf(day) === month}
+                  today={today}
+                  lanes={row.lanes}
+                  height={height}
+                  lines={lines}
+                  items={row.singles.get(day) ?? []}
+                  onOpen={onOpen}
+                  onCreate={onCreate}
+                  onShowDay={onShowDay}
+                />
+              ))}
+              <SpanBars
+                spans={row.spans}
+                columns={7}
                 today={today}
-                lanes={row.lanes}
-                items={row.singles.get(day) ?? []}
                 onOpen={onOpen}
-                onCreate={onCreate}
-                onShowDay={onShowDay}
+                rowKey={week[0]!}
+                className="inset-x-0"
+                style={{ top: SPANS_TOP }}
               />
-            ))}
-            <SpanBars
-              spans={row.spans}
-              columns={7}
-              today={today}
-              onOpen={onOpen}
-              rowKey={week[0]!}
-              className="inset-x-0"
-              style={{ top: SPANS_TOP }}
-            />
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

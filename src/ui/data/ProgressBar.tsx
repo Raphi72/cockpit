@@ -8,7 +8,8 @@ export function ProgressBar({ percent, tone = 'default' }: { percent: number; to
           style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
         />
       </span>
-      <span className="tnum w-9 text-right">{percent} %</span>
+      {/* « 100 % » tient sur une ligne, sans décaler les barres voisines. */}
+      <span className="tnum w-10 shrink-0 text-right whitespace-nowrap">{percent} %</span>
     </span>
   );
 }

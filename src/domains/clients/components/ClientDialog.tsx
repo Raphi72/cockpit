@@ -1,6 +1,9 @@
 import { Link } from '@tanstack/react-router';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore } from '@/app/create-store';
+import { formatShortDate, toISODate } from '@/core/dates';
+import { formatMoney } from '@/core/money';
+import { useToday } from '@/core/use-today';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
@@ -9,8 +12,8 @@ import { ColorDot } from '@/ui/data/ColorDot';
 import { useProjects } from '@/domains/projects/hooks';
 import { PROJECT_STATUSES, STATUS_LABELS } from '@/domains/projects/model';
 import { useClientEditor } from '../editor-store';
-import { useClients, useCreateClient, useDeleteClient, useUpdateClient } from '../hooks';
-import { validateClient, type Client, type ClientInput } from '../model';
+import { useArchiveClient, useClients, useCreateClient, useDeleteClient, useUpdateClient } from '../hooks';
+import { validateClient, type ClientInput, type ClientListItem } from '../model';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -44,7 +47,28 @@ function ClientProjects({ clientId, onNavigate }: { clientId: string; onNavigate
   );
 }
 
-function ClientForm({ client, onDone }: { client?: Client; onDone: () => void }) {
+/** « 1 200 € encaissés · 800 € à recevoir » : propositions exclues, comme partout. */
+function ClientMoney({ client }: { client: ClientListItem }) {
+  const parts = [
+    { cents: client.receivedCents, label: 'encaissés' },
+    { cents: client.dueCents, label: 'à recevoir' },
+  ].filter((part) => part.cents > 0);
+  if (parts.length === 0) return <p className="pt-2 text-ink-3">Rien pour l’instant.</p>;
+  return (
+    <p className="tnum pt-2">
+      {parts.map((part, index) => (
+        <span key={part.label}>
+          {index > 0 && <span className="text-ink-3"> · </span>}
+          {formatMoney(part.cents)} <span className="text-ink-3">{part.label}</span>
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function ClientForm({ client, onDone }: { client?: ClientListItem; onDone: () => void }) {
+  const today = useToday();
+  const archiveClient = useArchiveClient();
   const [input, setInput] = useState<ClientInput>({
     name: client?.name ?? '',
     email: client?.email ?? '',
@@ -85,6 +109,12 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
       }}
       className="mt-5"
     >
+      {client?.archivedAt && (
+        <p className="-mt-2 mb-4 text-meta text-ink-3">
+          Archivé le {formatShortDate(toISODate(new Date(client.archivedAt)), today)} : il n’est plus proposé dans les
+          projets et les encaissements.
+        </p>
+      )}
       <div className="grid grid-cols-[92px_minmax(0,1fr)] gap-x-4 gap-y-3">
         <Row label="Nom">
           <Input autoFocus value={input.name} onChange={(e) => set('name')(e.target.value)} aria-label="Nom" />
@@ -117,21 +147,34 @@ function ClientForm({ client, onDone }: { client?: Client; onDone: () => void })
           />
         </Row>
         {client && (
-          <Row label="Projets">
-            <ClientProjects clientId={client.id} onNavigate={onDone} />
-          </Row>
+          <>
+            <Row label="Paiements">
+              <ClientMoney client={client} />
+            </Row>
+            <Row label="Projets">
+              <ClientProjects clientId={client.id} onNavigate={onDone} />
+            </Row>
+          </>
         )}
       </div>
 
       <DialogFooter>
         {client && (
-          <Button
-            variant="ghost"
-            className="mr-auto !text-danger"
-            onClick={() => deleteClient.mutate(client.id, { onSuccess: onDone })}
-          >
-            Supprimer
-          </Button>
+          <span className="mr-auto flex gap-1">
+            <Button
+              variant="ghost"
+              className="!text-danger"
+              onClick={() => deleteClient.mutate(client.id, { onSuccess: onDone })}
+            >
+              Supprimer
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => archiveClient.mutate({ client, archived: !client.archivedAt }, { onSuccess: onDone })}
+            >
+              {client.archivedAt ? 'Réactiver' : 'Archiver'}
+            </Button>
+          </span>
         )}
         <Button variant="ghost" onClick={onDone}>
           Annuler
@@ -148,7 +191,7 @@ type ClientDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Absent : création. Présent : modification. */
-  client?: Client;
+  client?: ClientListItem;
 };
 
 export function ClientDialog({ open, onOpenChange, client }: ClientDialogProps) {

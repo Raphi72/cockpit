@@ -17,6 +17,7 @@ import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
 import { useGlobalShortcuts } from '../shortcuts';
 import { useUiStore } from '../ui-store';
+import { OverlaysBoundary } from './OverlaysBoundary';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -41,22 +42,24 @@ export function AppShell() {
         </main>
       </div>
 
-      {/* Fenêtres globales, ouvrables depuis n'importe quelle page. */}
-      <CreateTaskDialog />
-      <CreateEventDialog />
-      <CreateProjectDialog />
-      <CreateClientDialog />
-      <CreatePaymentDialog />
-      <CreateTransactionDialog />
-      <ReceivePaymentDialog />
-      <PaymentEditorDialog />
-      <ClientEditorDialog />
-      <TransactionEditorDialog />
-      <TaskSheet />
-      <EventSheet />
-      <SelectionBar />
-      <CommandPalette />
-      <ShortcutsDialog />
+      {/* Fenêtres globales, ouvrables depuis n'importe quelle page. Une erreur n'y emporte jamais toute l'app. */}
+      <OverlaysBoundary>
+        <CreateTaskDialog />
+        <CreateEventDialog />
+        <CreateProjectDialog />
+        <CreateClientDialog />
+        <CreatePaymentDialog />
+        <CreateTransactionDialog />
+        <ReceivePaymentDialog />
+        <PaymentEditorDialog />
+        <ClientEditorDialog />
+        <TransactionEditorDialog />
+        <TaskSheet />
+        <EventSheet />
+        <SelectionBar />
+        <CommandPalette />
+        <ShortcutsDialog />
+      </OverlaysBoundary>
       <Toaster />
     </div>
   );
