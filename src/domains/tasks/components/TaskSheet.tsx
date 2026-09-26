@@ -117,7 +117,8 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
               value={task.title}
               onSave={(title) => save({ title })}
               required
-              className={`h-10 text-[17px] font-semibold tracking-tight transition-colors duration-300 ${done ? 'text-ink-3 line-through' : ''}`}
+              wrap
+              className={`min-h-10 py-2 text-[17px] leading-[1.4] font-semibold tracking-tight transition-colors duration-300 ${done ? 'text-ink-3 line-through' : ''}`}
               aria-label="Titre de la tâche"
             />
           </div>

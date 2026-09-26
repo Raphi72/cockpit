@@ -104,7 +104,8 @@ function EventSheetContent({ event, onClose, remove }: { event: AgendaEvent; onC
             value={event.title}
             onSave={(title) => save({ title })}
             required
-            className="h-10 text-[17px] font-semibold tracking-tight"
+            wrap
+            className="min-h-10 py-2 text-[17px] leading-[1.4] font-semibold tracking-tight"
             aria-label="Titre de l’événement"
           />
         </div>

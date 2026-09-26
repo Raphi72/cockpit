@@ -886,7 +886,7 @@ Détail des étapes 5 à 7 :
 Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par étape) :
 
 1. **Terminer une tâche en douceur** (✓ fait) : la case se remplit, le titre se barre, puis la ligne s'efface ; toast « Tâche terminée : … » avec « Annuler ».
-2. **Titre complet** des tâches et des événements dans leur panneau : il passe à la ligne au lieu d'être coupé.
+2. **Titre complet** des tâches et des événements dans leur panneau : il passe à la ligne au lieu d'être coupé (✓ fait).
 3. **Deadlines du dashboard** : le bloc suit le jour affiché ; un réglage fixe combien de jours avant sa deadline un élément y entre (7 par défaut), et les couleurs de l'urgence se recalent sur ce nombre.
 4. **« Je veux travailler… »** : l'app compose le programme du jour, pour une durée (sans jamais la dépasser) ou un nombre de tâches ; ce qui n'est pas fait revient à sa place le lendemain.
 
@@ -895,6 +895,8 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main. (La fenêtre « Enregistrer sous » des exports, construite de la même façon, a été vérifiée dans la vraie fenêtre.)
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 - **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1.2, étape 2 (titres complets)** : dans le panneau d'une tâche et d'un événement, le titre passe à la ligne et le champ grandit avec lui (`InlineText` avec `wrap`). Il reste un titre d'une ligne : Entrée l'enregistre, un retour à la ligne collé devient un espace. La case d'une tâche reste alignée sur la première ligne. Les listes gardent leurs titres sur une ligne, coupés : le panneau les montre en entier.
 
 **Choix faits en V1.1.2, étape 1 (terminer une tâche en douceur)**, à confirmer à l'usage :
 - **Animation** (1,2 s, `tasks/completion-store.ts` et `global.css`) : la case se remplit et la coche se dessine, le titre se barre de gauche à droite et passe en gris, puis la ligne s'efface et se replie sans à-coup. La tâche n'est terminée en base qu'à la fin : recocher pendant l'animation la garde à faire, sans rien écrire ; la supprimer pendant l'animation l'empêche d'être terminée. Changer de page pendant l'animation ne perd rien (le minuteur ne dépend d'aucun composant).

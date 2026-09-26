@@ -29,11 +29,16 @@ type InlineTextProps = {
   onSave: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  /**
+   * Passe à la ligne au lieu de couper un texte long (titre d'un panneau) : le champ grandit avec
+   * le texte. Il reste d'une seule ligne : Entrée enregistre, un retour à la ligne collé devient un espace.
+   */
+  wrap?: boolean;
   className?: string;
   'aria-label': string;
 };
 
-export function InlineText({ value, onSave, placeholder, required = false, className = '', ...aria }: InlineTextProps) {
+export function InlineText({ value, onSave, placeholder, required = false, wrap = false, className = '', ...aria }: InlineTextProps) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
 
@@ -42,6 +47,21 @@ export function InlineText({ value, onSave, placeholder, required = false, class
     if (required && next === '') return setDraft(value);
     if (next !== value) onSave(next);
   };
+
+  if (wrap) {
+    return (
+      <textarea
+        value={draft}
+        placeholder={placeholder}
+        rows={1}
+        onChange={(e) => setDraft(e.target.value.replace(/\s*\r?\n\s*/g, ' '))}
+        onBlur={commit}
+        onKeyDown={(e) => blurOnEnterOrEscape(e, () => setDraft(value))}
+        className={`block resize-none [field-sizing:content] ${inlineClass} ${className}`}
+        {...aria}
+      />
+    );
+  }
 
   return (
     <input
