@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { db } from '@/core/db';
+import { humanizeError } from '@/core/db/errors';
 import { addDaysISO, nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
+import { shorten } from '@/core/text';
 import { toast } from '@/ui/overlays/toast';
-import { startOfDayTimestamp, type NewTaskInput, type TaskItem, type TaskPatch, type TreePlacement } from './model';
+import { COMPLETE_DELAY_MS, cancelCompleting, isCompleting, startCompleting } from './completion-store';
+import { completeInList, startOfDayTimestamp, type NewTaskInput, type TaskItem, type TaskPatch, type TreePlacement } from './model';
 import {
   deleteTaskStatement,
   getTask,
@@ -18,6 +22,7 @@ import {
   placeTaskStatements,
   restoreTaskFieldsStatement,
   restoreTaskStatement,
+  restoreTaskStatusStatement,
   updateTaskStatements,
 } from './repository';
 
@@ -116,6 +121,71 @@ export function useUpdateTask() {
 }
 
 /**
+ * Fin de l'animation : la tâche est terminée dans les listes en cache (sa ligne effacée disparaît
+ * sans laisser de trou), puis en base, avec sa parente et ses sous-tâches (updateTaskStatements).
+ * Le toast « Tâche terminée : … » propose « Annuler », qui remet chacune comme avant.
+ */
+async function commitCompletion(queryClient: QueryClient, task: TaskItem): Promise<void> {
+  await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all });
+  const now = nowTimestamp();
+  queryClient.setQueriesData<TaskItem[] | TaskItem | null>({ queryKey: queryKeys.tasks.all }, (data) => {
+    if (Array.isArray(data)) return completeInList(data, task.id, now);
+    return data && data.id === task.id ? { ...data, status: 'done', completedAt: now } : data;
+  });
+  queryClient.setQueryData<TaskItem[]>(queryKeys.tasks.open, (open) => open?.filter((t) => t.status !== 'done'));
+
+  void (async () => {
+    try {
+      const before = await listTasksAround(db, [task.id]);
+      await db.batch(updateTaskStatements(task.id, { status: 'done' }, now));
+      toast(`Tâche terminée : ${shorten(task.title)}`, {
+        action: {
+          label: 'Annuler',
+          undo: true,
+          onClick: () => {
+            const at = nowTimestamp();
+            void db
+              .batch(before.map((t) => restoreTaskStatusStatement(t, at)))
+              .then(() => invalidateAfterTaskChange(queryClient));
+          },
+        },
+      });
+    } catch (error) {
+      toast(humanizeError(error), { tone: 'danger' });
+    } finally {
+      invalidateAfterTaskChange(queryClient);
+    }
+  })();
+}
+
+/**
+ * Cocher une tâche : la case se remplit, le titre se barre, puis la ligne s'efface (voir
+ * completion-store et rowCompletion) ; la tâche n'est terminée qu'à la fin. Recocher pendant
+ * l'animation l'annule. `delay` : plus court dans le panneau d'une tâche, où rien ne s'efface.
+ */
+export function useCompleteTask() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (task: TaskItem, delay = COMPLETE_DELAY_MS) => {
+      if (isCompleting(task.id)) return cancelCompleting(task.id);
+      if (task.status === 'done') return;
+      startCompleting(task.id, delay, () => commitCompletion(queryClient, task));
+    },
+    [queryClient],
+  );
+}
+
+/** Case d'une tâche : la terminer en douceur, ou la rouvrir tout de suite. */
+export function useToggleTask() {
+  const complete = useCompleteTask();
+  const update = useUpdateTask();
+  return (task: TaskItem, delay?: number) => {
+    if (task.status === 'done' && !isCompleting(task.id)) update.mutate({ id: task.id, patch: { status: 'todo' } });
+    else complete(task, delay);
+  };
+}
+
+/**
  * Nouvelle place dans l'arbre d'un projet (glisser-déposer, Alt + flèches). La liste du projet est
  * mise à jour tout de suite (parente et ordres), puis relue : compteurs et progression suivent.
  */
@@ -157,9 +227,10 @@ export function useBulkUpdateTasks() {
       await db.batch(ids.flatMap((id) => updateTaskStatements(id, patch, now)));
       return before;
     },
-    onSuccess: (before, { ids }) => {
+    onSuccess: (before, { ids, patch }) => {
       invalidateAfterTaskChange(queryClient);
-      toast(`${tasksWord(ids.length)} modifiée${ids.length > 1 ? 's' : ''}.`, {
+      const verb = patch.status === 'done' ? 'terminée' : 'modifiée';
+      toast(`${tasksWord(ids.length)} ${verb}${ids.length > 1 ? 's' : ''}.`, {
         action: {
           label: 'Annuler',
           undo: true,
@@ -180,6 +251,7 @@ export function useBulkDeleteTasks() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (ids: string[]) => {
+      ids.forEach(cancelCompleting);
       const removed = (await listTasksAround(db, ids)).filter((t) => ids.includes(t.id) || (t.parentId && ids.includes(t.parentId)));
       await db.batch(ids.map((id) => deleteTaskStatement(id)));
       return removed;
@@ -212,6 +284,8 @@ export function useDeleteTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (task: TaskItem) => {
+      // Supprimée pendant qu'elle s'effaçait : elle ne sera pas terminée.
+      cancelCompleting(task.id);
       const subtasks = await listSubtasks(db, task.id);
       await db.batch([deleteTaskStatement(task.id)]);
       return subtasks;

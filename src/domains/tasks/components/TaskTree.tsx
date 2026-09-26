@@ -1,7 +1,8 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Fragment, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useCompletingTasks } from '../completion-store';
 import { useMoveTask } from '../hooks';
-import { keyboardDrop, placeInTree, type TaskItem, type TaskNode, type TreeKey } from '../model';
+import { IDLE_ROW, keyboardDrop, placeInTree, treeCompletion, type RowCompletion, type TaskItem, type TaskNode, type TreeKey } from '../model';
 import { TASK_ROW_ATTRIBUTE } from '../selection-store';
 import { TASKS_END_ZONE, taskDragId, usePlanDrag, useTreeHint } from '../tree-dnd';
 import { InlineAddTask } from './InlineAddTask';
@@ -42,6 +43,7 @@ function TreeRow(props: {
   task: TaskItem;
   depth: 0 | 1;
   today: string;
+  completion: RowCompletion;
   onAddSubtask?: () => void;
   onTreeKey: (task: TaskItem, key: TreeKey) => void;
 }) {
@@ -73,6 +75,7 @@ function TreeRow(props: {
         depth={depth}
         showParent={false}
         showProject={false}
+        completion={props.completion}
         onAddSubtask={props.onAddSubtask}
         dragProps={drag.listeners}
         style={drag.isDragging ? { opacity: 0.35 } : undefined}
@@ -107,6 +110,10 @@ export function TreeEndZone({ children }: { children: ReactNode }) {
 export function TaskTree({ nodes, today, projectId }: { nodes: TaskNode[]; today: string; projectId: string }) {
   const move = useMoveTask(projectId);
   const [addingTo, setAddingTo] = useState<string | null>(null);
+  // Cocher une tâche : elle s'efface avec ses sous-tâches ; une sous-tâche cochée reste, barrée.
+  const completing = useCompletingTasks((state) => state.ids);
+  const completion = treeCompletion(nodes, completing);
+  const rowState = (id: string) => completion.get(id) ?? IDLE_ROW;
 
   const onTreeKey = (task: TaskItem, key: TreeKey) => {
     const drop = keyboardDrop(nodes, task.id, key);
@@ -120,9 +127,16 @@ export function TaskTree({ nodes, today, projectId }: { nodes: TaskNode[]; today
     <>
       {nodes.map(({ task, children }) => (
         <Fragment key={task.id}>
-          <TreeRow task={task} depth={0} today={today} onAddSubtask={() => setAddingTo(task.id)} onTreeKey={onTreeKey} />
+          <TreeRow
+            task={task}
+            depth={0}
+            today={today}
+            completion={rowState(task.id)}
+            onAddSubtask={() => setAddingTo(task.id)}
+            onTreeKey={onTreeKey}
+          />
           {children.map((child) => (
-            <TreeRow key={child.id} task={child} depth={1} today={today} onTreeKey={onTreeKey} />
+            <TreeRow key={child.id} task={child} depth={1} today={today} completion={rowState(child.id)} onTreeKey={onTreeKey} />
           ))}
           {addingTo === task.id && (
             <InlineAddTask parentId={task.id} projectId={task.projectId} autoEdit indent onClose={() => setAddingTo(null)} />

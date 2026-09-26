@@ -1,11 +1,12 @@
 import { CalendarClock, Flag, ListPlus } from 'lucide-react';
-import { memo, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
+import { memo, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
 import { formatCompletedAt, relativeDateLabel, toISODate } from '@/core/dates';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
-import { useDeleteTask, useUpdateTask } from '../hooks';
-import { taskDateLabel, type TaskItem } from '../model';
+import { useCompletingTasks } from '../completion-store';
+import { useDeleteTask, useToggleTask } from '../hooks';
+import { rowCompletion, taskDateLabel, type RowCompletion, type TaskItem } from '../model';
 import { TASK_ROW_ATTRIBUTE, useTaskSelection } from '../selection-store';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
@@ -23,6 +24,13 @@ type TaskRowProps = {
   showCompletion?: boolean;
   /** Jour que montre la liste : une date prévue ce jour-là n'est pas répétée sur la ligne. */
   shownDay?: string;
+  /**
+   * Vrai (par défaut) : la liste ne garde pas les tâches terminées, la ligne s'efface quand on la
+   * coche. Faux : elle reste, barrée (sous-tâches d'un panneau).
+   */
+  leaveOnDone?: boolean;
+  /** État imposé pendant qu'on termine une tâche (arbre d'un projet, voir treeCompletion). */
+  completion?: RowCompletion;
   /** Si fourni : « Ajouter une sous-tâche » au survol. */
   onAddSubtask?: () => void;
   /** Propriétés de glisser-déposer, fournies par l'arbre des tâches d'un projet. */
@@ -42,18 +50,32 @@ export const TaskRow = memo(function TaskRow({
   depth = 0,
   showCompletion = false,
   shownDay,
+  leaveOnDone = true,
+  completion,
   onAddSubtask,
   dragProps,
   style,
 }: TaskRowProps) {
-  const update = useUpdateTask();
+  const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
   const openTask = useTaskSheet((state) => state.openTask);
   const selected = useTaskSelection((state) => state.ids.includes(task.id));
+  // Pendant qu'on la termine : 1, cochée ; 2, cochée, et la ligne s'efface.
+  const phase = useCompletingTasks((state) => {
+    const row = completion ?? rowCompletion(task, state.ids, leaveOnDone);
+    return row.leaving ? 2 : row.checked ? 1 : 0;
+  });
   const done = task.status === 'done';
+  const checking = phase > 0 && !done;
+  const leaving = phase === 2;
+  const rowRef = useRef<HTMLDivElement>(null);
+  // La ligne se replie depuis sa hauteur réelle.
+  useLayoutEffect(() => {
+    if (leaving) rowRef.current?.style.setProperty('--leave-height', `${rowRef.current.offsetHeight}px`);
+  }, [leaving]);
   const label = taskDateLabel(task, today);
   const date = label?.kind === 'scheduled' && task.scheduledDate === shownDay ? null : label;
-  const toggle = () => update.mutate({ id: task.id, patch: { status: done ? 'todo' : 'done' } });
+  const toggle = () => toggleTask(task);
 
   const onClick = (event: MouseEvent) => {
     const selection = useTaskSelection.getState();
@@ -65,6 +87,7 @@ export const TaskRow = memo(function TaskRow({
 
   return (
     <div
+      ref={rowRef}
       style={style}
       role="button"
       tabIndex={0}
@@ -82,18 +105,24 @@ export const TaskRow = memo(function TaskRow({
         'group -mx-2.5 grid min-h-11 cursor-default grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3.5 rounded-md pr-2.5 outline-none ' +
         'transition-colors duration-[120ms] ease-soft focus-visible:ring-2 focus-visible:ring-accent-soft ' +
         (depth === 1 ? 'pl-[38px] ' : 'pl-2.5 ') +
+        (leaving ? 'task-leave ' : '') +
         (selected ? 'bg-accent-soft' : 'hover:bg-hover')
       }
     >
-      <TaskCheckbox status={task.status} onToggle={toggle} />
+      <TaskCheckbox status={task.status} checking={checking} onToggle={toggle} />
       <span className="flex min-w-0 items-center gap-2.5">
-        {task.priority >= 2 && !done && (
+        {task.priority >= 2 && !done && !checking && (
           <span
             title={task.priority === 3 ? 'Urgente' : 'Haute'}
             className={`size-1.5 shrink-0 rounded-full ${task.priority === 3 ? 'bg-danger' : 'bg-warning'}`}
           />
         )}
-        <span className={`truncate ${done ? 'text-ink-3 line-through decoration-line-strong' : ''}`}>
+        <span
+          className={
+            'truncate transition-colors duration-300 ease-soft ' +
+            (checking ? 'task-strike text-ink-3' : done ? 'text-ink-3 line-through decoration-line-strong' : '')
+          }
+        >
           {showParent && task.parentTitle && <span className="text-ink-3">{task.parentTitle} › </span>}
           {task.title}
         </span>

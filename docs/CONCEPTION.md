@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2). La suite (V2) viendra seulement si l'usage le demande.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 (4 étapes, §7.2). La suite (V2) viendra seulement si l'usage le demande.
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -840,6 +840,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **5. Dashboard final** | ✓ Fait | Chiffres clés, « Prochains jours », actions directes d'« À surveiller », synthèse avec le prochain rendez-vous | Les 5 questions du §1.1 ont leur réponse en quelques secondes |
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
+| **V1.1.2** | En cours | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
 | **V2** | Si besoin | Google Agenda dans le calendrier (lecture seule, adresse iCal secrète), zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
 
 ### 7.2 Détail des jalons restants
@@ -880,11 +881,27 @@ Détail des étapes 5 à 7 :
   - premier jour de la semaine ;
   - mémorisation de la taille et de la position de la fenêtre (plugin `window-state`).
 
+#### V1.1.2
+
+Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par étape) :
+
+1. **Terminer une tâche en douceur** (✓ fait) : la case se remplit, le titre se barre, puis la ligne s'efface ; toast « Tâche terminée : … » avec « Annuler ».
+2. **Titre complet** des tâches et des événements dans leur panneau : il passe à la ligne au lieu d'être coupé.
+3. **Deadlines du dashboard** : le bloc suit le jour affiché ; un réglage fixe combien de jours avant sa deadline un élément y entre (7 par défaut), et les couleurs de l'urgence se recalent sur ce nombre.
+4. **« Je veux travailler… »** : l'app compose le programme du jour, pour une durée (sans jamais la dépasser) ou un nombre de tâches ; ce qui n'est pas fait revient à sa place le lendemain.
+
 ### 7.3 Points à reprendre, issus des jalons terminés
 
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main. (La fenêtre « Enregistrer sous » des exports, construite de la même façon, a été vérifiée dans la vraie fenêtre.)
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
 - **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+
+**Choix faits en V1.1.2, étape 1 (terminer une tâche en douceur)**, à confirmer à l'usage :
+- **Animation** (1,2 s, `tasks/completion-store.ts` et `global.css`) : la case se remplit et la coche se dessine, le titre se barre de gauche à droite et passe en gris, puis la ligne s'efface et se replie sans à-coup. La tâche n'est terminée en base qu'à la fin : recocher pendant l'animation la garde à faire, sans rien écrire ; la supprimer pendant l'animation l'empêche d'être terminée. Changer de page pendant l'animation ne perd rien (le minuteur ne dépend d'aucun composant).
+- **Partout où l'on coche** : lignes de tâches (dashboard, page Tâches, fiche projet), cartes du kanban (la carte s'efface de sa colonne puis passe dans « Terminé »), panneau d'une tâche (case ou statut « Terminé » : rien ne s'efface, la case et le titre suffisent, 0,45 s). Une carte déposée dans la colonne « Terminé » est terminée tout de suite. Espace sur une ligne fait pareil.
+- **Fiche projet** : une sous-tâche cochée reste sous sa parente, barrée ; cocher une tâche qui a des sous-tâches, ou la dernière sous-tâche ouverte (ce qui termine la parente), efface tout le groupe, qui passe dans les terminées (règle `treeCompletion`). Dans le panneau d'une tâche, ses sous-tâches cochées restent aussi.
+- **Toast** : « Tâche terminée : Faire la refonte graphique » (titre raccourci au-delà de 60 caractères), avec « Annuler » (et Ctrl+Z), qui remet la tâche, sa parente et ses sous-tâches comme avant (statut et date de fin). Rouvrir une tâche terminée reste immédiat, sans toast. La barre de sélection dit « 3 tâches terminées. ».
+- Avec « Réduire les animations » de Windows, rien ne bouge : la ligne disparaît à la fin du délai.
 
 **Choix faits en V1.1, étape 8 (petits défauts)**, à confirmer à l'usage :
 - **Suppr partout** : dans le panneau d'une tâche ou d'un événement, Suppr supprime ce qu'il montre (« Annuler » dans le toast, Ctrl+Z), sauf pendant la saisie, sur une sous-tâche (Suppr supprime alors la sous-tâche) ou dans un menu ouvert par-dessus (`handlePanelDeleteKey`). Sur la fiche projet, Suppr supprime le projet seulement quand rien d'autre n'a le focus (ni champ, ni ligne, ni bouton ou lien : `useDeleteShortcut`), puis revient à la liste ; « Annuler » le remet avec tout ce qu'il contenait. Le menu « … » de la fiche l'indique.

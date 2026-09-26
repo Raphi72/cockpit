@@ -59,6 +59,73 @@
   }
 }
 
+/*
+  Terminer une tâche en douceur (1,2 s, voir tasks/completion-store.ts) : la case se remplit
+  (0 – 0,26 s), la coche se dessine, le titre se barre de gauche à droite (0,12 – 0,54 s), puis,
+  quand la tâche quitte la liste, la ligne s'efface (0,7 – 0,98 s) et se replie (0,9 – 1,18 s).
+  La hauteur de départ (--leave-height) est mesurée sur la ligne.
+*/
+@layer utilities {
+  .check-pop {
+    animation: check-pop 260ms var(--ease-soft);
+  }
+  .check-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: check-draw 220ms var(--ease-soft) 90ms forwards;
+  }
+  .task-strike {
+    background-image: linear-gradient(var(--border-strong), var(--border-strong));
+    background-repeat: no-repeat;
+    background-position: 0 55%;
+    background-size: 0 1px;
+    box-decoration-break: clone;
+    animation: task-strike 420ms var(--ease-soft) 120ms forwards;
+  }
+  .task-leave {
+    overflow: hidden;
+    animation:
+      task-fade 280ms ease-out 700ms forwards,
+      task-collapse 280ms ease-in-out 900ms forwards;
+  }
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+}
+@keyframes check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes task-strike {
+  to {
+    background-size: 100% 1px;
+  }
+}
+@keyframes task-fade {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes task-collapse {
+  from {
+    height: var(--leave-height, auto);
+  }
+  to {
+    height: 0;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

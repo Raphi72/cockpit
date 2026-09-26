@@ -263,6 +263,68 @@ export function nestTasks(tasks: TaskItem[]): { task: TaskItem; depth: 0 | 1 }[]
     ]);
 }
 
+// ─── Terminer une tâche en douceur ──────────────────────────────────────────
+
+/**
+ * Ce que « terminer » change dans une liste déjà chargée, avant de relire la base (même règle
+ * qu'updateTaskStatements) : la tâche et ses sous-tâches sont terminées, et sa parente aussi s'il ne
+ * lui reste aucune autre sous-tâche ouverte dans la liste.
+ */
+export function completeInList(tasks: TaskItem[], id: string, completedAt: string): TaskItem[] {
+  const parentId = tasks.find((t) => t.id === id)?.parentId ?? null;
+  const done = new Set([id, ...tasks.filter((t) => t.parentId === id).map((t) => t.id)]);
+  const siblings = tasks.filter((t) => parentId !== null && t.parentId === parentId);
+  if (parentId !== null && siblings.every((t) => done.has(t.id) || t.status === 'done')) done.add(parentId);
+  return tasks.map((t) => (done.has(t.id) && t.status !== 'done' ? { ...t, status: 'done' as const, completedAt } : t));
+}
+
+/**
+ * Une ligne pendant qu'on termine une tâche : `checked`, la case se remplit et le titre se barre ;
+ * `leaving`, la ligne s'efface ensuite, parce que la tâche va quitter la liste.
+ */
+export type RowCompletion = { checked: boolean; leaving: boolean };
+
+export const IDLE_ROW: RowCompletion = { checked: false, leaving: false };
+
+/**
+ * Ligne d'une liste de tâches : cochée si la tâche ou sa parente est en train d'être terminée
+ * (terminer une parente termine ses sous-tâches). Elle s'efface si la liste ne garde pas les tâches
+ * terminées (`leaveOnDone`), et toujours avec sa parente.
+ */
+export function rowCompletion(
+  task: Pick<TaskItem, 'id' | 'parentId'>,
+  completing: readonly string[],
+  leaveOnDone = true,
+): RowCompletion {
+  const self = completing.includes(task.id);
+  const parent = task.parentId !== null && completing.includes(task.parentId);
+  if (!self && !parent) return IDLE_ROW;
+  return { checked: true, leaving: parent || leaveOnDone };
+}
+
+/**
+ * Lignes de l'arbre d'un projet (voir projectTaskTree) pendant qu'on termine des tâches. Une tâche
+ * terminée du premier niveau part dans les terminées, avec toutes ses sous-tâches : tout son groupe
+ * s'efface. C'est aussi le cas quand on coche sa dernière sous-tâche ouverte, qui termine la parente.
+ * Sinon, une sous-tâche cochée reste sous sa parente, barrée.
+ */
+export function treeCompletion(nodes: TaskNode[], completing: readonly string[]): Map<string, RowCompletion> {
+  const rows = new Map<string, RowCompletion>();
+  if (completing.length === 0) return rows;
+  const isCompleting = (id: string) => completing.includes(id);
+  for (const { task, children } of nodes) {
+    const lastChildren =
+      children.some((c) => isCompleting(c.id)) && children.every((c) => c.status === 'done' || isCompleting(c.id));
+    if (isCompleting(task.id) || lastChildren) {
+      rows.set(task.id, { checked: true, leaving: true });
+      for (const child of children) rows.set(child.id, { checked: child.status !== 'done', leaving: true });
+      continue;
+    }
+    for (const child of children) if (isCompleting(child.id)) rows.set(child.id, { checked: true, leaving: false });
+  }
+  return rows;
+}
+
 /** Avancement d'une liste : une tâche qui a des sous-tâches ne compte pas, ses sous-tâches si. */
 export function leafProgress(tasks: TaskItem[]): { done: number; total: number } {
   const leaves = tasks.filter((t) => t.subtasksTotal === 0);

@@ -266,6 +266,14 @@ export function restoreTaskFieldsStatement(task: TaskItem, now: string): Stateme
   };
 }
 
+/** Remet le statut d'une tâche (et sa date de fin) : annuler « Tâche terminée ». */
+export function restoreTaskStatusStatement(task: Pick<TaskItem, 'id' | 'status' | 'completedAt'>, now: string): Statement {
+  return {
+    sql: 'UPDATE tasks SET status = ?, completed_at = ?, updated_at = ? WHERE id = ?',
+    params: [task.status, task.completedAt, now, task.id],
+  };
+}
+
 /**
  * Nouvelle place dans l'arbre d'un projet (glisser-déposer, Alt + flèches) : la parente si elle change
  * (avec ce que cela entraîne, voir updateTaskStatements), puis les ordres, dans le même lot.

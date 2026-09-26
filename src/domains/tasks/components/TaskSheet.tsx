@@ -11,7 +11,8 @@ import { PropertyRow } from '@/ui/layout/PropertyRow';
 import { WindowErrorBoundary } from '@/ui/overlays/WindowErrorBoundary';
 import { Button } from '@/ui/primitives/Button';
 import { InlineDate, InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
-import { useDeleteTask, useSubtasks, useTask, useUpdateTask } from '../hooks';
+import { COMPLETE_IN_PANEL_DELAY_MS, useCompletingTasks } from '../completion-store';
+import { useCompleteTask, useDeleteTask, useSubtasks, useTask, useToggleTask, useUpdateTask } from '../hooks';
 import type { TaskItem, TaskPatch } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { InlineAddTask } from './InlineAddTask';
@@ -43,7 +44,7 @@ function Subtasks({ task, today }: { task: TaskItem; today: string }) {
         )}
       </h3>
       {subtasks.map((subtask) => (
-        <TaskRow key={subtask.id} task={subtask} today={today} showProject={false} showParent={false} />
+        <TaskRow key={subtask.id} task={subtask} today={today} showProject={false} showParent={false} leaveOnDone={false} />
       ))}
       <InlineAddTask parentId={task.id} projectId={task.projectId} label="Ajouter une sous-tâche" />
     </section>
@@ -53,9 +54,12 @@ function Subtasks({ task, today }: { task: TaskItem; today: string }) {
 function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: () => void; remove: () => void }) {
   const openTask = useTaskSheet((state) => state.openTask);
   const update = useUpdateTask();
+  const complete = useCompleteTask();
+  const toggle = useToggleTask();
   const today = useToday();
   const save = (patch: TaskPatch) => update.mutate({ id: task.id, patch });
-  const done = task.status === 'done';
+  const checking = useCompletingTasks((state) => state.ids.includes(task.id)) && task.status !== 'done';
+  const done = task.status === 'done' || checking;
 
   return (
     <>
@@ -105,7 +109,7 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
 
       <div className="mt-5 flex items-start gap-3">
         <span className="pt-2.5">
-          <TaskCheckbox status={task.status} onToggle={() => save({ status: done ? 'todo' : 'done' })} />
+          <TaskCheckbox status={task.status} checking={checking} onToggle={() => toggle(task, COMPLETE_IN_PANEL_DELAY_MS)} />
         </span>
         <RadixDialog.Title asChild>
           <div className="min-w-0 flex-1">
@@ -113,7 +117,7 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
               value={task.title}
               onSave={(title) => save({ title })}
               required
-              className={`h-10 text-[17px] font-semibold tracking-tight ${done ? 'text-ink-3 line-through' : ''}`}
+              className={`h-10 text-[17px] font-semibold tracking-tight transition-colors duration-300 ${done ? 'text-ink-3 line-through' : ''}`}
               aria-label="Titre de la tâche"
             />
           </div>
@@ -127,7 +131,10 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
           label="Statut"
           hint={done && task.completedAt && <span className="text-ink-3">Terminée {formatCompletedAt(task.completedAt, today)}</span>}
         >
-          <TaskStatusMenu value={task.status} onChange={(status) => save({ status })} />
+          <TaskStatusMenu
+            value={task.status}
+            onChange={(status) => (status === 'done' ? complete(task, COMPLETE_IN_PANEL_DELAY_MS) : save({ status }))}
+          />
         </PropertyRow>
         <PropertyRow label="Projet">
           <ProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />

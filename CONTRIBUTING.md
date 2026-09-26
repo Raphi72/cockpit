@@ -59,7 +59,7 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
 
 ## V1.1.2 (à faire, une étape à la fois)
 
-- [ ] **Terminer une tâche en douceur** : cocher une tâche la fait disparaître trop brusquement. À la place, une petite animation plus lente (la case se remplit, le titre se barre, puis la ligne s'efface). Et un toast en bas à droite, comme pour le reste : « Tâche terminée : Faire la refonte graphique », avec « Annuler ».
+- [x] **Terminer une tâche en douceur** : cocher une tâche la fait disparaître trop brusquement. À la place, une petite animation plus lente (la case se remplit, le titre se barre, puis la ligne s'efface). Et un toast en bas à droite, comme pour le reste : « Tâche terminée : Faire la refonte graphique », avec « Annuler ».
 - [ ] **Titre complet des tâches** : dans le panneau d'une tâche (ouvert depuis le calendrier ou ailleurs), un titre trop long est coupé. Il doit passer à la ligne pour se lire en entier. Même chose dans le panneau d'un événement.
 - [ ] **Deadlines du dashboard** :
   - Défaut : le bloc Deadlines reste calé sur aujourd'hui, sur 7 jours, même quand on affiche un autre jour. Exemple : le 26 septembre, une tâche due le 7 octobre n'apparaît pas quand on se met au 2 octobre. Le bloc doit suivre le jour affiché.
