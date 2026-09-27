@@ -64,12 +64,12 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
 - [x] **Deadlines du dashboard** :
   - Défaut : le bloc Deadlines reste calé sur aujourd'hui, sur 7 jours, même quand on affiche un autre jour. Exemple : le 26 septembre, une tâche due le 7 octobre n'apparaît pas quand on se met au 2 octobre. Le bloc doit suivre le jour affiché.
   - Paramètres : choisir combien de jours avant sa deadline une tâche ou un projet apparaît dans le bloc (7 jours aujourd'hui).
-  - Couleurs : toujours celles de l'urgence (rouge, ambre, bleu), mais recalées sur ce nombre de jours. Plus la deadline approche, plus la tâche ou le projet tire vers le rouge et attire l'œil.
+  - Couleurs : toujours celles de l'urgence (rouge, ambre, bleu), mais recalées sur ce nombre de jours, partout dans l'app (une même deadline a la même couleur dans le bloc et sur sa ligne). Plus la deadline approche, plus la tâche ou le projet tire vers le rouge et attire l'œil.
 - [x] **Planning : « Je veux travailler… »** : l'app compose la liste des tâches à faire aujourd'hui.
   - Par durée (30 min, 2 h, plus ou moins) : des tâches dont l'estimation tient dans ce temps, **sans jamais le dépasser**. Pour 2 h avec deux tâches de 1 h 30, une seule des deux est proposée.
   - Par nombre (« 3 tâches ») : quand on ne sait pas quoi faire, l'app pioche dans les tâches à faire.
   - Une tâche choisie par le planning mais pas terminée revient, en fin de journée, là d'où elle venait (sa date d'avant).
-  - Précisé en le faisant (conception, §7.3) : les retards et ce qui est dû aujourd'hui d'abord, puis ce qui est prévu ou dû dans les 3 jours, puis les tâches prioritaires et les deadlines de la semaine ; en mode durée, les tâches sans estimation ne sont pas proposées (la fenêtre dit combien).
+  - Précisé en le faisant (conception, §7.3) : les retards et ce qui est dû aujourd'hui d'abord, puis ce qui est prévu, dû dans les 3 jours ou urgent, puis les tâches de priorité haute et les deadlines de la semaine ; en mode durée, les tâches sans estimation ne sont pas proposées (la fenêtre dit combien et permet de leur donner une durée sur place).
 
 ## V2 : plus tard, seulement si l'usage le demande
 

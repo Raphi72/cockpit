@@ -102,6 +102,9 @@ describe('valeurs calculées d’un projet', () => {
     expect(deadlineTone(project({ deadline: '2026-10-10' }), TODAY)).toBe('normal');
     expect(deadlineTone(project({ deadline: '2026-09-22', status: 'done' }), TODAY)).toBe('normal');
     expect(deadlineTone(project(), TODAY)).toBeNull();
+    // Horizon des deadlines de 14 jours : « bientôt » jusqu'à 6 jours (l'ambre de cette échelle).
+    expect(deadlineTone(project({ deadline: '2026-09-30' }), TODAY, 14)).toBe('soon');
+    expect(deadlineTone(project({ deadline: '2026-09-30' }), TODAY)).toBe('normal');
   });
 
   it('validation de la création', () => {

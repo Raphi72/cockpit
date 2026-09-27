@@ -1,7 +1,7 @@
 import { addDays, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { addDaysISO, daysBetween, isISODate, toISODate } from '@/core/dates';
-import { deadlineStatus, relativeDayText, type DeadlineTone } from '@/core/deadline';
+import { DEADLINE_HORIZON, deadlineStatus, relativeDayText, type DeadlineTone } from '@/core/deadline';
 import type { Priority } from '@/domains/projects/model';
 import type { PaletteKey } from '@/ui/data/ColorDot';
 
@@ -185,14 +185,16 @@ export type TaskDateLabel = { kind: 'due' | 'scheduled'; label: string; tone: De
  * L'unique date affichée sur une ligne de tâche : la deadline si elle existe, avec son texte
  * calculé (« En retard de 2 jours », « Aujourd'hui », « Dans 3 jours »…, voir core/deadline.ts),
  * sinon le début quand il est à venir (« Demain », « Dans 4 jours »), sans couleur.
+ * `horizon` : le réglage des deadlines (useDeadlineHorizon), sur lequel se répartissent les couleurs.
  */
 export function taskDateLabel(
   task: Pick<TaskItem, 'status' | 'scheduledDate' | 'dueDate'>,
   today: string,
+  horizon = DEADLINE_HORIZON,
 ): TaskDateLabel | null {
   if (!isOpen(task)) return null;
   if (task.dueDate && isISODate(task.dueDate)) {
-    const { text, tone } = deadlineStatus(task.dueDate, today);
+    const { text, tone } = deadlineStatus(task.dueDate, today, { horizon });
     return { kind: 'due', label: text, tone };
   }
   if (task.scheduledDate && task.scheduledDate > today) {

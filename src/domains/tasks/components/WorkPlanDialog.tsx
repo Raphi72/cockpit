@@ -1,13 +1,14 @@
 import { CalendarClock, Flag, Minus, Plus, Shuffle, X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useUiStore } from '@/app/ui-store';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { useToday } from '@/core/use-today';
 import { useProjects } from '@/domains/projects/hooks';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { Button } from '@/ui/primitives/Button';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
-import { useOpenTasks, useSaveWorkPlan } from '../hooks';
+import { useOpenTasks, useSaveWorkPlan, useUpdateTask } from '../hooks';
 import { formatDuration, taskDateLabel, type TaskItem } from '../model';
 import {
   PLAN_COUNT_MAX,
@@ -24,6 +25,7 @@ import {
   type PlanRequest,
 } from '../work-plan';
 import { useWorkPlanDialog } from '../work-plan-store';
+import { TaskEstimateMenu } from './TaskFields';
 
 const MODES: { value: PlanMode; label: string }[] = [
   { value: 'duration', label: 'Un temps' },
@@ -43,7 +45,7 @@ function Stepper(props: { label: string; value: string; onStep: (direction: 1 | 
 
 /** Une tâche proposée : son titre, d'où elle vient (projet, deadline ou début), son estimation, et « Pas celle-ci ». */
 function ProposalRow({ task, today, onRemove }: { task: TaskItem; today: string; onRemove: () => void }) {
-  const date = taskDateLabel(task, today);
+  const date = taskDateLabel(task, today, useDeadlineHorizon());
   return (
     <li className="group -mx-2.5 grid min-h-11 grid-cols-[minmax(0,1fr)_auto_28px] items-center gap-3 rounded-md px-2.5 py-1.5 hover:bg-hover">
       <span className="min-w-0">
@@ -78,6 +80,53 @@ function ProposalRow({ task, today, onRemove }: { task: TaskItem; today: string;
         <X className="size-4" strokeWidth={1.75} />
       </button>
     </li>
+  );
+}
+
+/** Tâches sans estimation montrées d'emblée quand on déplie la liste ; les autres s'estiment dans leur panneau. */
+const UNESTIMATED_SHOWN = 5;
+
+/**
+ * Mode durée : les tâches sans estimation ne sont pas proposées. « Leur donner une durée… » les
+ * liste (les premières dans l'ordre de préférence) : une durée choisie ici les fait entrer dans le calcul.
+ */
+function Unestimated({ tasks }: { tasks: TaskItem[] }) {
+  const [open, setOpen] = useState(false);
+  const update = useUpdateTask();
+  const count = tasks.length;
+  const hidden = count - Math.min(count, UNESTIMATED_SHOWN);
+  return (
+    <div className="mt-2">
+      <p className="text-meta text-ink-3">
+        {count === 1 ? '1 tâche sans estimation n’est pas proposée.' : `${count} tâches sans estimation ne sont pas proposées.`}{' '}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="text-ink-2 underline-offset-2 transition-colors hover:text-ink hover:underline"
+        >
+          {open ? 'Masquer' : count === 1 ? 'Lui donner une durée…' : 'Leur donner une durée…'}
+        </button>
+      </p>
+      {open && (
+        <ul className="mt-1">
+          {tasks.slice(0, UNESTIMATED_SHOWN).map((task) => (
+            <li key={task.id} className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+              <span className="truncate text-ink-2">
+                {task.parentTitle && <span className="text-ink-3">{task.parentTitle} › </span>}
+                {task.title}
+              </span>
+              <TaskEstimateMenu value={null} onChange={(estimateMin) => update.mutate({ id: task.id, patch: { estimateMin } })} />
+            </li>
+          ))}
+          {hidden > 0 && (
+            <li className="pt-1 text-meta text-ink-3">
+              Et {hidden} autre{hidden > 1 ? 's' : ''}, à estimer dans leur panneau.
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -177,13 +226,7 @@ function WorkPlanForm({ onDone }: { onDone: () => void }) {
             ))}
           </ul>
         )}
-        {request.mode === 'duration' && proposal.unestimated > 0 && (
-          <p className="mt-2 text-meta text-ink-3">
-            {proposal.unestimated === 1
-              ? '1 tâche sans estimation n’est pas proposée : donne-lui une durée pour qu’elle le soit.'
-              : `${proposal.unestimated} tâches sans estimation ne sont pas proposées : donne-leur une durée pour qu’elles le soient.`}
-          </p>
-        )}
+        {request.mode === 'duration' && proposal.unestimated.length > 0 && <Unestimated tasks={proposal.unestimated} />}
         <p className="mt-1 text-meta text-ink-3">Retards et tâches du jour d’abord, puis deadlines proches et priorités.</p>
       </section>
 

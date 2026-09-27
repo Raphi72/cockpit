@@ -3,6 +3,7 @@ import { ArrowUpRight, ChevronRight, Trash2, X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
 import { formatCompletedAt, formatShortDate, toISODate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
@@ -22,11 +23,12 @@ import { TaskRow } from './TaskRow';
 
 /**
  * Sous la deadline : « Dans 6 jours », « En retard de 2 jours », « Terminée »…
- * Rien au-delà d'une semaine : ce serait la date, déjà affichée au-dessus.
+ * Rien au-delà de l'horizon des deadlines : ce serait la date, déjà affichée au-dessus.
  */
 function DeadlineHint({ task, today }: { task: TaskItem; today: string }) {
+  const horizon = useDeadlineHorizon();
   if (!task.dueDate) return null;
-  const { text, tone } = deadlineStatus(task.dueDate, today, { done: task.status === 'done' });
+  const { text, tone } = deadlineStatus(task.dueDate, today, { done: task.status === 'done', horizon });
   return tone === 'later' ? null : <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
 }
 

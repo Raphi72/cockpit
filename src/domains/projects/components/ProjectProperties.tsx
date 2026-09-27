@@ -1,5 +1,6 @@
 import { formatCompletedAt, formatShortDate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { ClientPicker } from '@/domains/clients/components/ClientPicker';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
@@ -25,11 +26,12 @@ import { StatusIcon } from './StatusIcon';
 
 /**
  * Sous la deadline : « Dans 6 jours », « En retard de 2 jours »… Rien pour un projet clos, ni
- * au-delà d'une semaine (ce serait la date, déjà affichée au-dessus).
+ * au-delà de l'horizon des deadlines (ce serait la date, déjà affichée au-dessus).
  */
 function DeadlineHint({ project, today }: { project: ProjectDetail; today: string }) {
+  const horizon = useDeadlineHorizon();
   if (!project.deadline || CLOSED_STATUSES.includes(project.status)) return null;
-  const { text, tone } = deadlineStatus(project.deadline, today);
+  const { text, tone } = deadlineStatus(project.deadline, today, { horizon });
   return tone === 'later' ? null : <span className={DEADLINE_TONE_CLASS[tone]}>{text}</span>;
 }
 

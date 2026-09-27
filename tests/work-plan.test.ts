@@ -69,12 +69,13 @@ describe('programme : quelles tâches', () => {
 });
 
 describe('programme : ordre de préférence', () => {
-  it('les retards et ce qui est dû aujourd’hui, puis le prévu ou proche, puis les priorités, puis le reste', () => {
+  it('les retards et ce qui est dû aujourd’hui, puis le prévu, le proche et l’urgent, puis le reste', () => {
     expect(planTier(task({ dueDate: '2026-09-20' }), TODAY)).toBe(0);
     expect(planTier(task({ dueDate: TODAY }), TODAY)).toBe(0);
     expect(planTier(task({ scheduledDate: '2026-09-25' }), TODAY)).toBe(1);
     expect(planTier(task({ dueDate: '2026-09-29' }), TODAY)).toBe(1);
-    expect(planTier(task({ priority: 3 }), TODAY)).toBe(2);
+    expect(planTier(task({ priority: 3 }), TODAY)).toBe(1);
+    expect(planTier(task({ priority: 2 }), TODAY)).toBe(2);
     expect(planTier(task({ dueDate: '2026-10-03' }), TODAY)).toBe(2);
     expect(planTier(task({ dueDate: '2026-10-20' }), TODAY)).toBe(3);
     expect(planTier(task({ scheduledDate: '2026-10-06' }), TODAY)).toBe(3);
@@ -93,7 +94,8 @@ describe('programme : ordre de préférence', () => {
       ],
       TODAY,
     );
-    expect(ids(ranked)).toEqual(['retard', 'jour', 'semaine', 'urgente', 'haute', 'loin', 'rien']);
+    // « Urgente » rejoint le prévu du jour, et passe devant par sa priorité ; à palier égal, la deadline d'abord.
+    expect(ids(ranked)).toEqual(['retard', 'urgente', 'jour', 'semaine', 'haute', 'loin', 'rien']);
   });
 });
 
@@ -122,7 +124,7 @@ describe('programme : par durée', () => {
     const tasks = [task({ id: 'x', dueDate: TODAY }), task({ id: 'y' }), task({ id: 'a', estimateMin: 30 })];
     const proposal = proposePlan(tasks, duration(30), TODAY);
     expect(ids(proposal.tasks)).toEqual(['a']);
-    expect(proposal.unestimated).toBe(2);
+    expect(ids(proposal.unestimated)).toEqual(['x', 'y']);
   });
 
   it('écarte les tâches refusées (« Pas celle-ci ») : une autre prend la place', () => {

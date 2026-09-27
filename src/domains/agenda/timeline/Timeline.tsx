@@ -5,6 +5,7 @@ import { Flag } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { formatShortDate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { formatMoney } from '@/core/money';
 import { usePaymentEditor } from '@/domains/finance/payments/editor-store';
 import { projectProgress } from '@/domains/projects/model';
@@ -134,11 +135,12 @@ function barTitle(row: PlanningRow, today: string): string {
  */
 function Track({ row, period, today }: { row: PlanningRow; period: PlanningPeriod; today: string }) {
   const { project } = row;
+  const horizon = useDeadlineHorizon();
   const dayWidth = 1 / period.days;
   const from = row.from ? dayOffset(period, row.from) : -1;
   const to = row.to ? dayOffset(period, row.to) + dayWidth : 2;
   const planned = project.status === 'planned';
-  const tone = row.to ? deadlineStatus(row.to, today).tone : null;
+  const tone = row.to ? deadlineStatus(row.to, today, { horizon }).tone : null;
   const progress = projectProgress(project);
   const visible = row.bar && to > 0 && from < 1;
   // La part faite, à l'échelle de toute la barre (même coupée par les bords).

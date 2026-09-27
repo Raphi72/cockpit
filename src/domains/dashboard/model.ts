@@ -36,8 +36,8 @@ const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? '
  * action), budget sans échéance.
  *
  * Les deadlines (dépassées ou proches) ont leur propre bloc, « Deadlines » (voir selectDeadlines). Un
- * projet dont la deadline est dépassée ou à 3 jours ou moins y est déjà en couleur : ses rappels
- * secondaires (budget, prochaine action) ne sont pas répétés ici.
+ * projet dont la deadline est dépassée, rouge ou ambre (à 3 jours ou moins pour 7) y est déjà en
+ * couleur : ses rappels secondaires (budget, prochaine action) ne sont pas répétés ici.
  */
 export function buildAlerts(input: {
   projects: ProjectListItem[];
@@ -45,8 +45,10 @@ export function buildAlerts(input: {
   today: string;
   /** Faux : aucun montant dans les textes (réglage « Afficher les montants sur le tableau de bord »). */
   showAmounts?: boolean;
+  /** Horizon des deadlines (réglage) : un projet en rouge ou en ambre n'a pas de rappel secondaire. */
+  deadlineDays?: number;
 }): Alert[] {
-  const { projects, overduePayments, today, showAmounts = true } = input;
+  const { projects, overduePayments, today, showAmounts = true, deadlineDays = DEADLINE_DAYS } = input;
   const alerts: Alert[] = [];
 
   for (const project of projects) {
@@ -109,7 +111,7 @@ export function buildAlerts(input: {
   // Un projet déjà signalé en rouge ou en ambre (ici ou dans « Deadlines ») n'a pas besoin d'un rappel secondaire en plus.
   const flagged = new Set<string | null>([
     ...alerts.filter((a) => a.tone !== 'muted' && a.projectId).map((a) => a.projectId),
-    ...projects.filter((p) => ['late', 'soon'].includes(deadlineTone(p, today) ?? '')).map((p) => p.id),
+    ...projects.filter((p) => ['late', 'soon'].includes(deadlineTone(p, today, deadlineDays) ?? '')).map((p) => p.id),
   ]);
   return alerts
     .filter((a) => a.tone !== 'muted' || !flagged.has(a.projectId))
@@ -120,7 +122,7 @@ export function buildAlerts(input: {
 
 /**
  * Une deadline entre dans le bloc « Deadlines » 7 jours avant, par défaut. Le réglage
- * `dashboard.deadlineDays` change ce nombre (voir SETTINGS.deadlineDays).
+ * `deadlines.days` change ce nombre (voir SETTINGS.deadlineDays).
  */
 export const DEADLINE_DAYS = DEADLINE_HORIZON;
 

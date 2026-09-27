@@ -1,6 +1,7 @@
 import { CalendarClock, CalendarMinus, Flag, ListPlus, type LucideIcon } from 'lucide-react';
 import { memo, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
 import { formatCompletedAt, relativeDateLabel, toISODate } from '@/core/dates';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
@@ -95,7 +96,8 @@ export const TaskRow = memo(function TaskRow({
   useLayoutEffect(() => {
     if (leaving) rowRef.current?.style.setProperty('--leave-height', `${rowRef.current.offsetHeight}px`);
   }, [leaving]);
-  const label = taskDateLabel(task, today);
+  const horizon = useDeadlineHorizon();
+  const label = taskDateLabel(task, today, horizon);
   const date = label?.kind === 'scheduled' && task.scheduledDate === shownDay ? null : label;
   const toggle = () => toggleTask(task);
 

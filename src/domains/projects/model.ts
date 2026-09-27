@@ -1,4 +1,5 @@
 import { daysBetween, isISODate } from '@/core/dates';
+import { DEADLINE_HORIZON, deadlineThresholds } from '@/core/deadline';
 import type { ClientChoice } from '@/domains/clients/model';
 import type { PaletteKey } from '@/ui/data/ColorDot';
 
@@ -120,16 +121,20 @@ export function projectProgress(project: Pick<ProjectListItem, 'status' | 'tasks
 
 export type DeadlineTone = 'late' | 'soon' | 'normal';
 
-/** En retard si la deadline est passée ; « bientôt » à 3 jours ou moins. Jamais pour un projet clos. */
+/**
+ * En retard si la deadline est passée ; « bientôt » quand elle est rouge ou ambre (3 jours ou moins
+ * pour l'horizon habituel de 7 jours, voir deadlineThresholds). Jamais pour un projet clos.
+ */
 export function deadlineTone(
   project: Pick<ProjectListItem, 'deadline' | 'status'>,
   today: string,
+  horizon = DEADLINE_HORIZON,
 ): DeadlineTone | null {
   if (!project.deadline) return null;
   if (CLOSED_STATUSES.includes(project.status)) return 'normal';
   const diff = daysBetween(today, project.deadline);
   if (diff < 0) return 'late';
-  if (diff <= 3) return 'soon';
+  if (diff <= deadlineThresholds(horizon).amber) return 'soon';
   return 'normal';
 }
 

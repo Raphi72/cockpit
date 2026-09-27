@@ -138,6 +138,13 @@ describe('affichage', () => {
     expect(taskDateLabel(task({ dueDate: '2026-09-20', status: 'done' }), TODAY)).toBeNull();
   });
 
+  it('suit l’horizon des deadlines réglé dans Paramètres, comme partout', () => {
+    const due = task({ dueDate: '2026-10-04' }); // dans 10 jours
+    expect(taskDateLabel(due, TODAY)).toMatchObject({ tone: 'later', label: '4 octobre' });
+    expect(taskDateLabel(due, TODAY, 14)).toMatchObject({ tone: 'week', label: 'Dans 10 jours' });
+    expect(taskDateLabel(task({ dueDate: '2026-09-25' }), TODAY, 14)).toMatchObject({ tone: 'today', label: 'Demain' });
+  });
+
   it('durées et titres de jour', () => {
     expect(formatDuration(30)).toBe('30 min');
     expect(formatDuration(90)).toBe('1 h 30');

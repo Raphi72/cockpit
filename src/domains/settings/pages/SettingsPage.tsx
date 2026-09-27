@@ -234,7 +234,8 @@ function DashboardSection() {
           />
           <span className="mt-1.5 block text-meta text-ink-3">
             Une tâche, un projet ou une échéance entre dans le bloc Deadlines ce nombre de jours avant sa deadline. Les
-            couleurs suivent : bleu en entrant, puis ambre, puis rouge tout près.
+            couleurs de l’urgence suivent partout (listes, fiches, calendrier, planning) : bleu, puis ambre, puis rouge
+            tout près.
           </span>
         </InfoRow>
       </div>

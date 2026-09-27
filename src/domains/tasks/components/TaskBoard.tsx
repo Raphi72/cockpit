@@ -10,6 +10,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useLayoutEffect, useRef, useState } from 'react';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
@@ -32,7 +33,7 @@ function Card({
   checking?: boolean;
 }) {
   const toggle = useToggleTask();
-  const date = taskDateLabel(task, today);
+  const date = taskDateLabel(task, today, useDeadlineHorizon());
   const done = task.status === 'done';
   return (
     <div

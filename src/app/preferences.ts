@@ -2,9 +2,10 @@ import { isTauri } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEffect } from 'react';
 import { db } from '@/core/db';
+import { setDeadlineHorizon } from '@/core/deadline-horizon';
 import { setWeekStartsOn } from '@/core/week-start';
 import { useSetting } from '@/domains/settings/hooks';
-import { SETTINGS, resolveTheme, resolveWeekStart, type ThemeChoice } from '@/domains/settings/model';
+import { SETTINGS, resolveDeadlineDays, resolveTheme, resolveWeekStart, type ThemeChoice } from '@/domains/settings/model';
 import { getSetting } from '@/domains/settings/repository';
 
 /**
@@ -24,12 +25,14 @@ function applyTheme(theme: ThemeChoice): void {
  */
 export async function loadPreferences(): Promise<void> {
   try {
-    const [theme, weekStartsOn] = await Promise.all([
+    const [theme, weekStartsOn, deadlineDays] = await Promise.all([
       getSetting(db, SETTINGS.theme.key),
       getSetting(db, SETTINGS.weekStartsOn.key),
+      getSetting(db, SETTINGS.deadlineDays.key),
     ]);
     applyTheme(resolveTheme(theme));
     setWeekStartsOn(resolveWeekStart(weekStartsOn));
+    setDeadlineHorizon(resolveDeadlineDays(deadlineDays));
   } catch {
     // Base illisible : les valeurs par défaut suffisent, l'app affichera l'erreur ailleurs.
   }
@@ -39,10 +42,14 @@ export async function loadPreferences(): Promise<void> {
 export function usePreferencesSync(): void {
   const { data: theme } = useSetting(SETTINGS.theme);
   const { data: weekStartsOn } = useSetting(SETTINGS.weekStartsOn);
+  const { data: deadlineDays } = useSetting(SETTINGS.deadlineDays);
   useEffect(() => {
     if (theme !== undefined) applyTheme(resolveTheme(theme));
   }, [theme]);
   useEffect(() => {
     if (weekStartsOn !== undefined) setWeekStartsOn(resolveWeekStart(weekStartsOn));
   }, [weekStartsOn]);
+  useEffect(() => {
+    if (deadlineDays !== undefined) setDeadlineHorizon(resolveDeadlineDays(deadlineDays));
+  }, [deadlineDays]);
 }

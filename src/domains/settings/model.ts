@@ -17,7 +17,7 @@ export const WEEK_START_CHOICES: { value: WeekStart; label: string }[] = [
   { value: 0, label: 'Dimanche' },
 ];
 
-/** Combien de jours avant sa deadline un élément entre dans le bloc « Deadlines » du dashboard. */
+/** Combien de jours avant sa deadline un élément compte comme proche (bloc Deadlines, couleurs d'urgence). */
 export const DEADLINE_DAYS_CHOICES = [3, 5, 7, 10, 14, 21, 30] as const;
 
 /** Réglages de l'app, gardés dans la table `settings` (une valeur JSON par clé), avec leur valeur par défaut. */
@@ -28,10 +28,11 @@ export const SETTINGS = {
    */
   dashboardShowAmounts: { key: 'dashboard.showAmounts', fallback: true } as SettingDef<boolean>,
   /**
-   * Bloc « Deadlines » du dashboard : une tâche, un projet ou une échéance y entre ce nombre de jours
-   * avant sa deadline. Les couleurs de l'urgence s'y répartissent sur ce nombre (deadlineThresholds).
+   * Horizon des deadlines : une tâche, un projet ou une échéance entre dans le bloc « Deadlines » du
+   * dashboard ce nombre de jours avant sa deadline, et les couleurs de l'urgence se répartissent sur
+   * ce nombre partout (deadlineThresholds ; copie dans core/deadline-horizon.ts).
    */
-  deadlineDays: { key: 'dashboard.deadlineDays', fallback: DEADLINE_HORIZON } as SettingDef<number>,
+  deadlineDays: { key: 'deadlines.days', fallback: DEADLINE_HORIZON } as SettingDef<number>,
   theme: { key: 'appearance.theme', fallback: 'system' } as SettingDef<ThemeChoice>,
   /** Calendrier (mois et semaine), planning et sélecteur de date. */
   weekStartsOn: { key: 'calendar.weekStartsOn', fallback: 1 } as SettingDef<WeekStart>,

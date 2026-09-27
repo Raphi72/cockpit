@@ -1,5 +1,6 @@
 import { Circle, Flag } from 'lucide-react';
 import type { CSSProperties } from 'react';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { agendaTooltip, isAgendaItemLate, type AgendaItem, type SpanSegment } from '../model';
 import { AgendaMarker, URGENT_TINT, agendaDeadlineTone } from './AgendaChip';
@@ -32,7 +33,7 @@ function SpanBar({
   const late = isAgendaItemLate(item, today);
   const isTask = item.source === 'task';
   // Une tâche du début à la deadline : le drapeau du bout prend la couleur de l'urgence (core/deadline.ts).
-  const tone = agendaDeadlineTone(item, today);
+  const tone = agendaDeadlineTone(item, today, useDeadlineHorizon());
   const tint = tone ? URGENT_TINT[tone] : undefined;
   // Une barre coupée par le bord de la rangée touche le bord : elle continue sur la rangée voisine.
   const inset = { left: span.continuesBefore ? 0 : 4, right: span.continuesAfter ? 0 : 4 };

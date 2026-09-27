@@ -16,11 +16,12 @@ import { useMemo, useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { addDaysISO, daysBetween } from '@/core/dates';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, useAgenda, type AgendaItem } from '@/domains/agenda';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
 import { useSetting } from '@/domains/settings/hooks';
-import { SETTINGS, resolveDeadlineDays } from '@/domains/settings/model';
+import { SETTINGS } from '@/domains/settings/model';
 import { useFinanceSummary } from '@/domains/finance/hooks';
 import { useOverduePayments } from '@/domains/finance/payments/hooks';
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
@@ -272,8 +273,8 @@ export function DashboardPage() {
   const openCreate = useCreateStore((state) => state.openCreate);
   const [pickerOpen, setPickerOpen] = useState(false);
   const openPlan = useWorkPlanDialog((state) => state.openPlan);
-  const { data: deadlineDaysSetting } = useSetting(SETTINGS.deadlineDays);
-  const deadlineDays = resolveDeadlineDays(deadlineDaysSetting);
+  // Horizon des deadlines (réglage), lu avant le premier rendu (app/preferences.ts).
+  const deadlineDays = useDeadlineHorizon();
   // Prochains jours : 7 jours à partir d'aujourd'hui, aujourd'hui compris.
   const agendaRange = useMemo(() => ({ from: today, to: addDaysISO(today, UPCOMING_AGENDA_DAYS) }), [today]);
   // Deadlines : elles suivent le jour affiché, jusqu'à J+N inclus (échéances saisies dans le calendrier).
@@ -297,11 +298,10 @@ export function DashboardPage() {
     p: openPlan,
   });
 
-  if (!projects || !openTasks || !finance || !agenda || !deadlineAgenda || showAmounts === undefined || deadlineDaysSetting === undefined)
-    return null;
+  if (!projects || !openTasks || !finance || !agenda || !deadlineAgenda || showAmounts === undefined) return null;
 
   // Les Propositions (devis pas encore signé) n'y sont pas : elles restent dans la page Projets.
-  const alerts = buildAlerts({ projects, overduePayments, today, showAmounts });
+  const alerts = buildAlerts({ projects, overduePayments, today, showAmounts, deadlineDays });
   // Le bloc Deadlines suit le jour affiché : ce qui doit être fini dans les N jours qui suivent ce jour-là.
   const deadlines = selectDeadlines({ projects, tasks: openTasks, agenda: deadlineAgenda, today: day, days: deadlineDays });
   // Les projets suivent le jour affiché : un projet « À venir » est « En cours » à partir de sa date de début.

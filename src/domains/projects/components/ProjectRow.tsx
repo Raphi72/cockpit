@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { memo } from 'react';
 import { formatCompletedAt, formatShortDate, toISODate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
+import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { ProgressBar } from '@/ui/data/ProgressBar';
@@ -12,6 +13,7 @@ import { CLOSED_STATUSES, projectProgress, type ProjectListItem } from '../model
  * Un projet terminé montre plutôt quand il l'a été.
  */
 export function DeadlineLabel({ project, today }: { project: ProjectListItem; today: string }) {
+  const horizon = useDeadlineHorizon();
   if (project.status === 'done' && project.completedAt) {
     const deadline = project.deadline ? ` · deadline : ${formatShortDate(project.deadline, today)}` : '';
     return (
@@ -25,7 +27,7 @@ export function DeadlineLabel({ project, today }: { project: ProjectListItem; to
   const closed = CLOSED_STATUSES.includes(project.status);
   const { text, tone } = closed
     ? { text: formatShortDate(project.deadline, today), tone: 'later' as const }
-    : deadlineStatus(project.deadline, today, { short: true });
+    : deadlineStatus(project.deadline, today, { short: true, horizon });
   return (
     <span className={`tnum text-meta ${DEADLINE_TONE_CLASS[tone]}`} title={`Deadline : ${formatShortDate(project.deadline, today)}`}>
       {text}

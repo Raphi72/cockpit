@@ -53,13 +53,14 @@ export function planCandidates(open: TaskItem[], pausedProjectIds: ReadonlySet<s
 
 /**
  * Ordre de préférence, par paliers : 0, en retard ou dû aujourd'hui ; 1, prévu aujourd'hui (ou
- * avant) ou dû dans les 3 jours ; 2, haute ou urgente, ou dû dans la semaine ; 3, le reste.
+ * avant), dû dans les 3 jours ou urgent ; 2, haute priorité ou dû dans la semaine ; 3, le reste.
  */
 export function planTier(task: TaskItem, today: string): 0 | 1 | 2 | 3 {
   const dueIn = task.dueDate ? daysBetween(today, task.dueDate) : null;
   if (isTaskLate(task, today) || dueIn === 0) return 0;
-  if ((task.scheduledDate !== null && task.scheduledDate <= today) || (dueIn !== null && dueIn <= 3)) return 1;
-  if (task.priority >= 2 || (dueIn !== null && dueIn <= 7)) return 2;
+  const startedOrSoon = (task.scheduledDate !== null && task.scheduledDate <= today) || (dueIn !== null && dueIn <= 3);
+  if (startedOrSoon || task.priority === 3) return 1;
+  if (task.priority === 2 || (dueIn !== null && dueIn <= 7)) return 2;
   return 3;
 }
 
@@ -86,8 +87,11 @@ export type PlanProposal = {
   tasks: TaskItem[];
   /** Total des estimations choisies. */
   minutes: number;
-  /** Mode durée : tâches laissées de côté faute d'estimation (on ne peut pas savoir si elles tiennent). */
-  unestimated: number;
+  /**
+   * Mode durée : tâches laissées de côté faute d'estimation (on ne peut pas savoir si elles
+   * tiennent), dans l'ordre de préférence : leur donner une durée les fait entrer dans le calcul.
+   */
+  unestimated: TaskItem[];
 };
 
 /**
@@ -109,7 +113,7 @@ export function proposePlan(
   );
   if (request.mode === 'count') {
     const tasks = ranked.slice(0, request.count);
-    return { tasks, minutes: tasks.reduce((sum, t) => sum + (t.estimateMin ?? 0), 0), unestimated: 0 };
+    return { tasks, minutes: tasks.reduce((sum, t) => sum + (t.estimateMin ?? 0), 0), unestimated: [] };
   }
   const tasks: TaskItem[] = [];
   let left = request.minutes;
@@ -122,7 +126,7 @@ export function proposePlan(
   return {
     tasks,
     minutes: request.minutes - left,
-    unestimated: ranked.filter((t) => t.estimateMin === null).length,
+    unestimated: ranked.filter((t) => t.estimateMin === null),
   };
 }
 
