@@ -1,6 +1,6 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **V1.1.2** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)), la V1.1 (8 étapes) et la V1.1.2 (4 étapes) sont faits. La V2 ne viendra que si l'usage le demande.
+Cockpit en est à la **V1.1.2** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)), la V1.1 (8 étapes) et la V1.1.2 (4 étapes) sont faits. La V2 est en conception (§9 de la conception).
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
 Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
@@ -71,18 +71,22 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
   - Une tâche choisie par le planning mais pas terminée revient, en fin de journée, là d'où elle venait (sa date d'avant).
   - Précisé en le faisant (conception, §7.3) : les retards et ce qui est dû aujourd'hui d'abord, puis ce qui est prévu, dû dans les 3 jours ou urgent, puis les tâches de priorité haute et les deadlines de la semaine ; en mode durée, les tâches sans estimation ne sont pas proposées (la fenêtre dit combien et permet de leur donner une durée sur place).
 
-## V2 : plus tard, seulement si l'usage le demande
+## V2 : tout dans Cockpit (en conception)
 
-- [ ] **Google Agenda dans le calendrier** : voir aussi ce qu'on a dans son agenda Google (cours, rendez-vous perso…), dans le calendrier et dans Prochains jours du dashboard. En lecture seule, en option, sans rien changer côté Google.
-  - Piste la plus simple : l'« adresse secrète au format iCal » de l'agenda Google (Paramètres de l'agenda › Intégrer l'agenda). Pas de compte ni de connexion à gérer dans Cockpit.
-  - L'adresse est un secret : gardée dans la base locale (table `settings`), jamais dans le dépôt ni dans les exports.
-  - Téléchargée par Rust (l'interface ne fait aucun appel réseau, CSP stricte), au lancement puis toutes les 15 minutes environ ; sans connexion, la dernière copie reste affichée.
-  - Ces événements restent à part : une couleur ou un filtre dédié, et ils ne se modifient pas dans Cockpit.
-- [ ] Cockpit dans la zone de notification et lancé au démarrage de Windows.
-- [ ] Raccourci global, même app fermée.
-- [ ] Événements récurrents.
-- [ ] Chiffre d'affaires par mois ou trimestre (pour l'URSSAF).
-- [ ] **Refonte visuelle, à faire ensemble** : mieux voir ce qu'on fait d'un coup d'œil, tout en restant sobre et professionnel. À travailler avec l'utilisateur, écran par écran, avec des maquettes validées avant de coder. Les principes du design system restent (peu d'informations à la fois, beaucoup d'espace, pas de cartes partout) : il s'agit de mieux hiérarchiser, pas de charger.
+Le compagnon de tous les jours : travail, cours, sport et journée organisée, sur le PC et sur le téléphone Android. Détail complet au §9 de la [conception](docs/CONCEPTION.md) ; les étapes, dans l'ordre de leurs dépendances :
+
+- [ ] **1. Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre (URSSAF), premières animations.
+- [ ] **2. Modes et espace Cours** : modes Travail et Cours, matières, emploi du temps, devoirs, examens, notes et moyennes.
+- [ ] **3. Organisateur de journée** : modules réutilisables (« Sport 3 h »), blocs glissés sur la journée, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
+- [ ] **4. Pages** (à la place de Notion) : éditeur en blocs, sous-pages, pages rattachées à un projet ou une matière, liens `[[…]]`, modèles, journal du jour, import Notion.
+- [ ] **5. Révisions** : fiches, flashcards avec répétition espacée, révisions à rebours avant un examen.
+- [ ] **6. Sport, habitudes et objectifs** : habitudes et séries, objectifs, carnet de séances, revue de la semaine.
+- [ ] **7. Le compagnon** : écran du matin, mode focus, mini-fenêtre « En ce moment », célébrations, nouvelles notifications.
+- [ ] **8. Google Agenda** : connexion Google, événements Google dans le calendrier et la journée (et, si retenu, les blocs envoyés dans Google).
+- [ ] **9. Synchronisation** par Google Drive : fichiers de modifications chiffrés, jamais la base elle-même.
+- [ ] **10. Application Android** : journée, capture, devoirs, habitudes, notifications et widget.
+
+Avec ces étapes, **refonte visuelle, à faire ensemble** : mieux voir ce qu'on fait d'un coup d'œil, tout en restant sobre et professionnel. À travailler avec l'utilisateur, écran par écran, avec des maquettes validées avant de coder. Les principes du design system restent (peu d'informations à la fois, beaucoup d'espace, pas de cartes partout) : il s'agit de mieux hiérarchiser, pas de charger.
 
 ## V2.5 : partage de projets
 

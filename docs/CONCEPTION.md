@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 le même jour (4 étapes, §7.2). La suite (V2) viendra seulement si l'usage le demande.
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 le même jour (4 étapes, §7.2). La **V2** est en conception au §9 (25/11/2026).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -53,6 +53,7 @@ Tout le reste (saisie, détail, historique) est secondaire et doit rester à une
 | Données | Sauvegarde auto quotidienne, sauvegarde manuelle, restauration | Export JSON / CSV | — |
 
 **Hors périmètre (confirmé)** : comptes utilisateurs, collaboration, cloud obligatoire, synchronisation bancaire, chat, abonnement.
+*V2 (§9)* : une synchronisation entre le PC et le téléphone arrive, **facultative**, par le Google Drive de l'utilisateur. Cockpit reste utilisable sans compte et hors ligne.
 
 ### 1.3 Propositions produit à valider
 
@@ -216,7 +217,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
   - événement, 15 minutes avant ;
   - résumé du matin (optionnel).
 - **Planification** : une vérification à l'ouverture, puis chaque minute tant que l'app tourne (même réduite). Les rendez-vous sont regardés à chaque vérification ; les autres règles, seulement lors d'une « tournée » : à l'ouverture, puis chaque matin à 8 h. Le résumé du matin n'est envoyé qu'à la tournée de 8 h. La table `notification_log` garantit qu'une même notification n'est jamais envoyée deux fois. Détail des choix au §7.3 (V1.1, étape 6).
-- **Limite** : quand l'app est fermée, aucune notification n'arrive. La V2 propose deux options pour y remédier : « rester dans la zone de notification » et « lancer au démarrage de Windows ».
+- **Limite** : quand l'app est fermée, aucune notification n'arrive. La V2 y remédie : Cockpit reste dans la zone de notification et se lance au démarrage de Windows (§9.3, « Toujours là »).
 
 ### 2.9 Bibliothèques retenues
 
@@ -845,7 +846,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
-| **V2** | Si besoin | Google Agenda dans le calendrier (lecture seule, adresse iCal secrète), zone de notification et démarrage auto, raccourci global, événements récurrents, CA par mois / trimestre (URSSAF) | Selon l'usage réel |
+| **V2** | En conception | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
 
 ### 7.2 Détail des jalons restants
 
@@ -1057,3 +1058,211 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 3. **Thème par défaut** : celui du système.
 4. **Nom** : Cockpit.
 5. **Densité** : la première maquette montrait trop d'informations d'un coup. Le dashboard passe à 4 chiffres clés et 4 blocs, avec des lignes allégées et plus d'espace (§5.2 et §6).
+
+---
+
+## 9. V2 : tout dans Cockpit
+
+> Statut : **en conception**, rédigée le 25/11/2026 à partir des envies de l'utilisateur. Les propositions P13 à P22 sont validées (25/11/2026) ; les choix faits sont au §9.6.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7).
+
+### 9.1 L'intention
+
+Cockpit devient le compagnon de tous les jours, celui qu'on ne peut plus quitter : il se lance avec Windows, il est aussi sur le téléphone, et il sert à tenir de nouvelles résolutions :
+
+- **se remettre à travailler sérieusement** (projets, clients, deep work) ;
+- **reprendre les devoirs** (cours, révisions, examens) ;
+- **faire du sport** régulièrement ;
+- **organiser chaque journée**, bloc par bloc.
+
+Notion, l'agenda papier et les applis d'habitudes ne doivent plus être utiles : tout est dans Cockpit.
+
+Aux cinq questions du §1.1 s'ajoutent trois questions, auxquelles l'app doit aussi répondre en quelques secondes :
+
+| # | Question | Où se trouve la réponse |
+|---|---|---|
+| 6 | Qu'est-ce que je fais **maintenant** ? | Journée › bloc en cours, mini-fenêtre, widget du téléphone |
+| 7 | Qu'est-ce que je dois rendre ou réviser ? | Cours › Devoirs et Révisions du jour |
+| 8 | Est-ce que je tiens mes résolutions ? | Habitudes, revue de la semaine |
+
+Les principes du design system ne changent pas : peu d'informations à la fois, beaucoup d'espace, pas de cartes partout. Plus de fonctionnalités ne veut pas dire des écrans plus chargés : chaque espace garde ses propres pages.
+
+### 9.2 Propositions produit (validées)
+
+**P13. Deux modes, Travail et Cours, et des espaces communs.**
+Un sélecteur en haut de la sidebar bascule entre **Travail** (Projets, Tâches, Planning, Finances, Clients) et **Cours** (Matières, Devoirs, Examens, Révisions). La **Journée**, les **Pages**, le **Calendrier** et les **Habitudes** sont communs aux deux. Le dashboard s'adapte au mode, mais la Journée montre toujours tout : on n'a qu'une seule journée. Le mode est mémorisé, et un raccourci le change.
+
+**P14. Un devoir est une tâche rattachée à une matière.**
+Comme une tâche peut appartenir à un projet, elle peut appartenir à une matière (`subject_id`). On garde ainsi les dates, priorités, sous-tâches, « Annuler », la recherche et le glisser-déposer déjà écrits. Les vues Devoirs ne sont que des tâches filtrées.
+
+**P15. L'emploi du temps et les séances de sport sont des événements récurrents.**
+Les événements récurrents (déjà prévus en V2) servent à la fois aux cours, au sport régulier et aux rendez-vous qui reviennent. Une règle de récurrence est stockée une fois ; les occurrences sont calculées, jamais recopiées (P8). Une occurrence peut être annulée ou déplacée seule (exception stockée).
+
+**P16. La journée se construit avec des blocs, faits à partir de modules.**
+Un **module** est un modèle réutilisable : nom, icône, couleur, durée par défaut, mode (Travail, Cours ou les deux). Exemples : « Sport 3 h », « Devoirs 1 h 30 », « Deep work 2 h ». Un **bloc** est un module posé sur un jour à une heure : c'est lui qui porte sa date (P8). Modifier un module ne change pas les blocs déjà posés.
+
+**P17. Une tâche placée dans un bloc prend la date de ce bloc.**
+Glisser une tâche ou un devoir dans un bloc la rattache au bloc (`block_id`) : sa date du jour vient du bloc et n'est pas recopiée dans `planned_on`. Déplacer le bloc déplace donc ses tâches. Une tâche sans durée estimée prend 30 minutes par défaut dans le bloc.
+
+**P18. Une semaine type s'applique, elle ne se synchronise pas.**
+On enregistre une semaine modèle (sport lundi, mercredi et vendredi, devoirs chaque soir…) puis on l'applique à une semaine : cela crée des blocs ordinaires, modifiables ensuite un par un. Changer la semaine type plus tard ne touche pas les semaines déjà remplies.
+
+**P19. Les pages remplacent Notion, mais restent rattachables.**
+Une page est un document libre en blocs (titres, listes, cases, images…). Elle peut vivre seule, ou être rattachée à un projet, un client, une matière ou un événement : elle apparaît alors dans sa fiche. Une case cochable peut devenir une vraie tâche en un raccourci.
+
+**P20. Une résolution est un objectif suivi par des habitudes.**
+Un **objectif** (« Reprendre le sport ») a une échéance facultative et des étapes. Une **habitude** (« Sport 3 fois par semaine ») a une fréquence et se coche. Elle se coche aussi toute seule quand un bloc du module lié est marqué fait. Les séries et les taux sont calculés, jamais stockés.
+
+**P21. Le compagnon parle peu, mais au bon moment.**
+Trois rendez-vous fixes : l'**écran du matin** à la première ouverture du jour, le **bilan du soir** (heure réglable) et la **revue de la semaine** le dimanche. En dehors de ces moments, l'app reste silencieuse, sauf les notifications choisies.
+
+**P22. Le téléphone et le PC ont chacun leur base, synchronisée par Google Drive.**
+Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'échangent leurs modifications par de petits fichiers chiffrés, déposés dans le dossier caché de l'app sur Google Drive (§9.5). La base active n'est jamais mise dans le Drive.
+
+### 9.3 Les fonctionnalités, espace par espace
+
+#### Journée (organisateur)
+- Une colonne pour la journée, de 6 h à 24 h (plage réglable), avec une ligne « maintenant ». Les cours, les événements et Google Agenda y sont affichés, sous les blocs.
+- **Bibliothèque de modules** à côté : on les crée, les modifie et les range ; chacun se glisse sur la journée.
+- **Glisser-déposer** au pas de 15 minutes ; étirer un bloc change sa durée ; un chevauchement avec un cours ou un rendez-vous est signalé, sans être interdit.
+- **Tâches dans un bloc** (P17), avec leur durée, et ce qui reste de temps dans le bloc.
+- **Remplir les trous** : l'app propose de caser ce qui est urgent dans les créneaux libres, avec les règles de « Je veux travailler… » (V1.1.2). Rien n'est posé sans validation.
+- **Semaines types** (P18).
+- **Bloc en cours** mis en avant, avec le temps restant ; notification au début et à la fin (réglable).
+- **Bilan du soir** : chaque bloc passé est marqué fait, raté ou décalé à demain, en un clic par bloc.
+- Vues **jour** et **semaine**.
+
+#### Cours
+- **Matières** : nom, couleur, prof, salle, coefficient.
+- **Emploi du temps** : cours récurrents (P15), avec semaines A/B si besoin et vacances (période sans cours).
+- **Devoirs** (P14) : à rendre, en retard, rendus.
+- **Contrôles et examens** : un événement de type « Examen », rattaché à une matière. À sa création, l'app propose des **révisions à rebours** (J-7, J-3, J-1), créées comme des blocs « Révision ».
+- **Notes** : note, sur combien, coefficient, date ; **moyenne** par matière et générale, calculées.
+- **Fiches et flashcards** : une fiche est une page (P19) ; une flashcard a un recto et un verso, par matière. **Répétition espacée** : chaque jour, l'app dit quelles cartes revoir, et la session se fait au clavier (Espace pour retourner, 1 à 4 pour noter).
+- Dashboard en mode Cours : les cours du jour, les devoirs à rendre, le prochain examen, les cartes à revoir.
+
+#### Pages
+- **Éditeur en blocs** : titres, paragraphes, listes, cases à cocher, citations, séparateurs, code, tableaux simples, images collées ou glissées. La commande `/` insère un bloc, et la mise en forme courante se fait au clavier (`**gras**`, `#` titre…).
+- **Arborescence** : une page peut contenir des sous-pages.
+- **Rattachement** (P19) et **liens entre pages** avec `[[…]]`, avec la liste des pages qui pointent vers celle qu'on lit.
+- **Modèles** : fiche de cours, compte rendu client, brief de projet, page vierge ; on peut enregistrer une page comme modèle.
+- **Journal du jour** : une page par jour, créée à la demande depuis la Journée.
+- **Recherche** : le texte des pages entre dans l'index FTS5 (nouveaux triggers).
+- **Import Notion** : import de l'export Markdown de Notion (pages, sous-pages, images).
+- **Export** : une page en Markdown.
+
+#### Sport, habitudes et objectifs
+- **Habitudes** (P20) : fréquence (chaque jour, X fois par semaine, certains jours), heure de rappel facultative, série en cours et grille du mois.
+- **Objectifs** : étapes, échéance facultative, habitudes liées, progression calculée.
+- **Carnet de séances** : un bloc de sport fait peut recevoir sa séance (exercices, séries, répétitions, charges ou durée, ressenti). Les exercices sont réutilisables, et chacun a sa courbe de progression.
+- **Revue de la semaine** : heures de travail, de cours et de sport (d'après les blocs faits), habitudes tenues, devoirs rendus, chiffre d'affaires encaissé ; un écran court, une phrase de bilan.
+
+#### Le compagnon (fluidité et envie)
+- **Animations douces** partout : changement de page, blocs qui glissent et se posent, tâche cochée qui se range (dans la continuité de la V1.1.2). Elles respectent le réglage Windows « Réduire les animations ».
+- **Écran du matin** (P21) : la journée en une phrase, le premier bloc, le devoir du jour, l'habitude à tenir. Une touche le ferme.
+- **Mode focus** : plein écran sur le bloc en cours, avec un minuteur (Pomodoro au choix), la tâche en cours et rien d'autre.
+- **Mini-fenêtre « En ce moment »** : petite fenêtre toujours au-dessus, avec le bloc en cours, le temps restant et la case de la tâche.
+- **Petites célébrations** : une journée bouclée, une série qui continue, un objectif atteint. Discrètes et désactivables.
+- **Sons** facultatifs (fin de bloc, fin de Pomodoro), désactivés par défaut.
+- **Boîte de réception** : tout ce qui est capturé vite (idée, tâche, devoir, note) atterrit là, et se trie plus tard en un geste.
+
+#### Toujours là
+- **Lancé au démarrage de Windows** (réglable) et **gardé dans la zone de notification** : fermer la fenêtre ne quitte pas l'app, donc les notifications arrivent toujours.
+- **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception.
+- **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir.
+
+#### Mobile (Android)
+- **Application Android** construite avec Tauri 2, avec le même code React et des écrans adaptés au téléphone : Journée, Capture rapide, Tâches et devoirs du jour, Habitudes, Pages (lecture et petite édition).
+- **Hors ligne** : le téléphone a sa propre base, synchronisée (P22).
+- **Notifications** sur le téléphone, calculées sur place à partir des données synchronisées.
+- **Widget** sur l'écran d'accueil : le bloc en cours et le suivant, et un bouton de capture.
+
+#### Google Agenda
+- **Lecture** : les événements Google apparaissent dans le calendrier, la Journée et les Prochains jours du dashboard, avec leur propre couleur ; ils ne se modifient pas dans Cockpit.
+- **Écriture** (option) : les blocs de la journée peuvent être envoyés dans un agenda Google dédié (« Cockpit »), pour les voir ailleurs.
+- La connexion Google est la même que pour la synchronisation (§9.5). Elle remplace la piste de l'adresse iCal secrète, qui ne permettait que la lecture.
+
+#### Restes de la V2 d'origine
+- **Chiffre d'affaires par mois et par trimestre** (pour l'URSSAF), dans Finances.
+
+### 9.4 Modèle de données (esquisse)
+
+Nouvelles tables, à préciser étape par étape (une migration par étape) :
+
+| Table | Rôle | Remarques |
+|---|---|---|
+| `block_templates` | Modules | nom, icône, couleur, durée par défaut, mode |
+| `day_blocks` | Blocs posés | `template_id` facultatif, date, début, fin, titre, couleur, statut (prévu, fait, raté) |
+| `week_templates`, `week_template_blocks` | Semaines types | jour de la semaine, heure, module |
+| `subjects` | Matières | nom, couleur, prof, salle, coefficient |
+| `grades` | Notes | matière, note, barème, coefficient, date |
+| `flashcards`, `flashcard_reviews` | Flashcards | matière, recto, verso ; échéance de révision calculée à partir des révisions |
+| `pages`, `page_links` | Pages | parent, titre, contenu (JSON de l'éditeur), texte brut pour la recherche, rattachement (entité + id) |
+| `attachments` | Images des pages | fichiers dans un dossier `attachments\` à côté de la base, référencés par id |
+| `habits`, `habit_logs` | Habitudes | fréquence, module lié ; une ligne par jour coché |
+| `goals`, `goal_steps` | Objectifs | échéance, étapes |
+| `exercises`, `workout_sets` | Carnet de séances | séries rattachées à un bloc fait |
+| `inbox_items` | Boîte de réception | texte, date de capture |
+| `sync_changes`, `sync_state` | Synchronisation | journal des modifications locales, dernier fichier lu par appareil |
+
+Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
+
+L'agenda (§3.5) gagne des sources : `block`, `class` (occurrences des cours), `exam` et `google`. Le calendrier, la Journée, le dashboard et les notifications continuent de lire ce même flux.
+
+Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoutent leurs triggers FTS5 dans leur migration.
+
+### 9.5 Architecture : synchronisation, mobile, éditeur
+
+**Synchronisation par Google Drive (P22)**
+- Chaque appareil a un identifiant. Chaque écriture (`db.batch`) enregistre aussi, dans `sync_changes`, ce qui a changé : table, id de la ligne, colonnes modifiées et horodatage.
+- **Suppressions** : une ligne supprimée laisse une trace (`deleted_at`), purgée quand tous les appareils l'ont vue. « Annuler » continue de marcher comme aujourd'hui.
+- **Envoi** : à intervalles réguliers (environ chaque minute quand l'app est ouverte, et à la fermeture), les modifications sont regroupées dans un fichier, **chiffré sur l'appareil**, puis déposé dans le dossier caché de l'app sur Google Drive (`appDataFolder`, invisible dans le Drive). Chaque appareil n'écrit que ses propres fichiers : aucun conflit de fichier.
+- **Réception** : l'appareil lit les nouveaux fichiers des autres et les applique dans une transaction.
+- **Conflits** : pour une même ligne, la modification la plus récente l'emporte, colonne par colonne. Pour une page modifiée sur les deux appareils, la plus récente l'emporte, et l'autre version est gardée dans l'historique de la page.
+- **Clé de chiffrement** : créée au premier appareil et transmise au téléphone une seule fois (code QR affiché sur le PC). Google ne voit que des fichiers illisibles.
+- **Côté Rust** : la connexion Google (OAuth), le jeton (dans le coffre d'identifiants de Windows ou d'Android, jamais dans la base ni les exports), les appels réseau et le chiffrement. L'interface ne fait toujours aucun appel réseau.
+- **À faire une fois** : créer un projet Google Cloud pour avoir le droit de se connecter (Drive, dossier de l'app, et Agenda).
+- Les sauvegardes quotidiennes restent, sur chaque appareil.
+
+**Mobile**
+- Tauri 2 compile pour Android depuis Windows (Android Studio et le SDK à installer une fois). Le pont SQLite (`rusqlite`) et les migrations sont les mêmes.
+- Les écrans du téléphone sont des pages à part (`src/mobile/`), qui utilisent les mêmes domaines (`model`, `repository`, `service`, `hooks`).
+- Les plugins natifs à vérifier au moment de l'étape : notifications, widget de l'écran d'accueil, ouverture au démarrage du téléphone.
+
+**Éditeur de pages**
+- Recommandation : **TipTap** (sur ProseMirror). Sans style imposé, il se plie au design system ; les blocs, la commande `/`, les liens `[[…]]` et le collage d'images sont des extensions. Le contenu est stocké en JSON, avec une copie en texte brut pour la recherche.
+- Alternative : BlockNote, plus proche de Notion dès le départ, mais il impose ses styles.
+
+**Toujours là**
+- Plugins Tauri : `autostart` (démarrage avec Windows), icône de la zone de notification (`tray`), `global-shortcut` (capture rapide), et une seconde fenêtre pour la mini-fenêtre et la capture.
+
+**Animations**
+- Une bibliothèque d'animation (Motion, ex-Framer Motion) pour les transitions et les ressorts, chargée seulement là où elle sert, pour garder un démarrage en moins d'une seconde (§2.6).
+
+### 9.6 Choix faits
+
+1. **Téléphone** : Android (25/11/2026). Pas d'iPhone, donc ni Mac ni compte Apple nécessaires.
+2. **Synchronisation** : par Google Drive, avec des fichiers de modifications chiffrés dans le dossier caché de l'app, jamais la base elle-même (25/11/2026).
+3. **Périmètre** : tout ce qui est au §9.3 fait partie de la V2 ; rien n'est remis à plus tard.
+4. **Propositions P13 à P22** : retenues (25/11/2026).
+
+Encore à trancher, au moment de l'étape concernée :
+- Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
+- Éditeur : TipTap (recommandé) ou BlockNote.
+
+### 9.7 Ordre de construction
+
+Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie sur les précédentes. Une branche `v2-…` par étape, validée une à une.
+
+1. **Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre, premières animations.
+2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes.
+3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
+4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion.
+5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens.
+6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine.
+7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications.
+8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda.
+9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord.
+10. **Application Android** : écrans du téléphone, synchro, notifications, widget.
+
+La V2.5 (partage de projets, voir CONTRIBUTING.md) vient après.
