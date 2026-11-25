@@ -12,6 +12,7 @@ import { SegmentedTabs } from '@/ui/primitives/SegmentedTabs';
 import { InitialBalances } from '../accounts/components/InitialBalances';
 import { useAccounts, useNeedsInitialBalances } from '../accounts/hooks';
 import { FinanceFigures } from '../components/FinanceFigures';
+import { RevenueView } from '../components/RevenueView';
 import { useFinanceSummary } from '../hooks';
 import { PaymentDialog } from '../payments/components/PaymentDialog';
 import { PaymentRow } from '../payments/components/PaymentRow';
@@ -251,6 +252,7 @@ export function FinancesPage() {
       {view === 'transactions' && (
         <TransactionsView search={search} onSearch={onSearch} today={today} onOpen={setEditingTransaction} />
       )}
+      {view === 'revenue' && <RevenueView year={search.year} onYear={(year) => onSearch({ year })} today={today} />}
 
       <PaymentDialog
         open={editingPayment !== null}
