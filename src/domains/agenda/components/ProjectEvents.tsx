@@ -27,7 +27,7 @@ export function ProjectEvents({ projectId, today }: { projectId: string; today: 
             <li key={event.id}>
               <button
                 type="button"
-                onClick={() => openEvent(event.id)}
+                onClick={() => openEvent(event.id, event.occurrence)}
                 className="-mx-2 flex w-[calc(100%+16px)] min-w-0 flex-col rounded-md px-2 py-1.5 text-left outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-soft"
               >
                 <span className="truncate">{event.title}</span>

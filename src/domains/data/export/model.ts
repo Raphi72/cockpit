@@ -40,6 +40,7 @@ export const EXPORT_TABLES = [
   { table: 'tasks', key: 'tasks' },
   { table: 'ideas', key: 'ideas' },
   { table: 'events', key: 'events' },
+  { table: 'event_exceptions', key: 'eventExceptions' },
   { table: 'payments', key: 'payments' },
   { table: 'transactions', key: 'transactions' },
   { table: 'inbox_items', key: 'inboxItems' },

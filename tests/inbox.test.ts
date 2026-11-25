@@ -258,7 +258,8 @@ describe('migration 0006', () => {
     await db.batch([
       sql`INSERT INTO tasks (id, title, sort_order, created_at, updated_at) VALUES ('x', 'Vieille tâche', 1, ${NOW}, ${NOW})`,
     ]);
-    raw.exec(readMigrations()[5]!);
+    // Les migrations suivantes aussi : la recherche lit le schéma à jour.
+    for (const migration of readMigrations().slice(5)) raw.exec(migration);
 
     expect(await listInboxItems(db)).toEqual([]);
     expect((await getTask(db, 'x'))?.title).toBe('Vieille tâche');

@@ -26,6 +26,8 @@ import {
   type EventTiming,
   type NewEventInput,
 } from '../model';
+import { moveRecurrenceStart, type Recurrence } from '../recurrence';
+import { RecurrenceField } from './RecurrenceField';
 
 function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDone: () => void }) {
   const createEvent = useCreateEvent();
@@ -36,13 +38,14 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
   const [title, setTitle] = useState(defaults.inboxItem?.text ?? '');
   const [kind, setKind] = useState<EventKind>('appointment');
   const [timing, setTiming] = useState<EventTiming>(() => initialTiming(defaults, today, new Date()));
+  const [recurrence, setRecurrence] = useState<Recurrence | null>(null);
   const [projectId, setProjectId] = useState<string | null>(defaults.projectId ?? null);
   const [location, setLocation] = useState('');
   const [notes, setNotes] = useState('');
   const [moreOptions, setMoreOptions] = useState(Boolean(defaults.projectId));
   const [submitted, setSubmitted] = useState(false);
 
-  const input: NewEventInput = { title, kind, timing, location: location || null, notes: notes || null, projectId };
+  const input: NewEventInput = { title, kind, timing, location: location || null, notes: notes || null, projectId, recurrence };
   const errors = validateNewEvent(input);
 
   const setAllDay = (allDay: boolean) =>
@@ -105,9 +108,11 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <DateField
               value={timing.date || null}
-              onChange={(date) =>
-                setTiming(date && isISODate(date) ? moveTimingDate(timing, date) : { ...timing, date: date ?? '' })
-              }
+              onChange={(date) => {
+                setTiming(date && isISODate(date) ? moveTimingDate(timing, date) : { ...timing, date: date ?? '' });
+                // En hebdomadaire, le jour de la semaine de la répétition suit la date.
+                if (date && isISODate(date)) setRecurrence(moveRecurrenceStart(recurrence, date));
+              }}
               clearable={false}
               aria-label="Date"
             />
@@ -143,6 +148,10 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
             </div>
           </FormRow>
         )}
+
+        <FormRow label="Répéter" error={submitted ? errors.recurrence : undefined}>
+          <RecurrenceField value={recurrence} start={timing.date} onChange={setRecurrence} />
+        </FormRow>
       </div>
 
       {moreOptions ? (

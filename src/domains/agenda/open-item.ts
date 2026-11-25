@@ -16,7 +16,7 @@ export function useOpenAgendaItem(): (item: AgendaItem) => void {
     (item: AgendaItem) => {
       switch (item.source) {
         case 'event':
-          openEvent(item.id);
+          openEvent(item.id, item.occurrence);
           break;
         case 'task':
           openTask(item.id);

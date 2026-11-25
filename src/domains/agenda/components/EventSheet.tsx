@@ -1,7 +1,8 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowUpRight, Trash2, X } from 'lucide-react';
+import { parseISO } from 'date-fns';
+import { ArrowUpRight, Repeat, Trash2, X } from 'lucide-react';
 import { Dialog as RadixDialog } from 'radix-ui';
-import { formatShortDate, toISODate } from '@/core/dates';
+import { formatLongDate, formatShortDate, toISODate } from '@/core/dates';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { handlePanelDeleteKey } from '@/ui/data/row-keys';
@@ -30,6 +31,15 @@ import {
   type EventPatch,
   type EventTiming,
 } from '../model';
+import {
+  formatRecurrence,
+  moveRecurrenceStart,
+  parseRecurrence,
+  recurrenceLabel,
+  validateRecurrence,
+  type Recurrence,
+} from '../recurrence';
+import { RecurrenceField } from './RecurrenceField';
 
 function EventKindMenu({ value, onChange }: { value: EventKind; onChange: (kind: EventKind) => void }) {
   return (
@@ -50,11 +60,42 @@ function EventKindMenu({ value, onChange }: { value: EventKind; onChange: (kind:
   );
 }
 
-function EventSheetContent({ event, onClose, remove }: { event: AgendaEvent; onClose: () => void; remove: () => void }) {
+type EventSheetContentProps = {
+  event: AgendaEvent;
+  /** Événement qui se répète : le jour de l'occurrence sur laquelle on a cliqué, s'il y en a une. */
+  occurrence: string | null;
+  onClose: () => void;
+  remove: () => void;
+};
+
+function EventSheetContent({ event, occurrence, onClose, remove }: EventSheetContentProps) {
   const update = useUpdateEvent();
   const today = useToday();
   const save = (patch: EventPatch) => update.mutate({ id: event.id, patch });
   const timing = timingOf(event);
+  const recurrence = parseRecurrence(event.recurrence);
+
+  /** La règle vaut pour toute la série ; une fin avant le début n'est jamais enregistrée. */
+  const saveRecurrence = (rule: Recurrence | null) => {
+    const error = validateRecurrence(rule, timing.date);
+    if (error) {
+      toast(error, { tone: 'danger' });
+      return;
+    }
+    save({ recurrence: rule ? formatRecurrence(rule) : null });
+  };
+
+  /** Le premier jour change : en hebdomadaire, le jour de la semaine de la répétition suit. */
+  const saveDate = (date: string) => {
+    const next = moveTimingDate(timing, date);
+    const rule = moveRecurrenceStart(recurrence, date);
+    const error = validateTiming(next) ?? validateRecurrence(rule, date);
+    if (error) {
+      toast(error, { tone: 'danger' });
+      return;
+    }
+    save({ ...timingColumns(next), ...(rule ? { recurrence: formatRecurrence(rule) } : {}) });
+  };
 
   /** Un moment incohérent (fin avant le début…) n'est jamais enregistré. */
   const saveTiming = (next: EventTiming): boolean => {
@@ -112,16 +153,24 @@ function EventSheetContent({ event, onClose, remove }: { event: AgendaEvent; onC
       </RadixDialog.Title>
       <RadixDialog.Description className="sr-only">Modifier l’événement {event.title}</RadixDialog.Description>
 
+      {/* Événement qui se répète : l'occurrence ouverte, sinon la règle en clair. Le reste vaut pour toute la série. */}
+      {recurrence && (
+        <p className="mt-1.5 flex items-center gap-2 text-ink-2">
+          <Repeat className="size-3.5 shrink-0 text-ink-3" strokeWidth={1.75} />
+          {occurrence ? formatLongDate(parseISO(occurrence)) : recurrenceLabel(recurrence, timing.date, today)}
+        </p>
+      )}
+
       <div className="mt-6">
         <PropertyRow label="Type">
           <EventKindMenu value={event.kind} onChange={(kind) => save({ kind })} />
         </PropertyRow>
-        <PropertyRow label="Date">
+        <PropertyRow label={recurrence ? 'Depuis le' : 'Date'}>
           <InlineDate
             value={timing.date}
-            onSave={(date) => date && saveTiming(moveTimingDate(timing, date))}
+            onSave={(date) => date && saveDate(date)}
             clearable={false}
-            aria-label="Date"
+            aria-label={recurrence ? 'Première fois' : 'Date'}
           />
         </PropertyRow>
         {timing.allDay ? (
@@ -161,6 +210,9 @@ function EventSheetContent({ event, onClose, remove }: { event: AgendaEvent; onC
             </Checkbox>
           </div>
         </PropertyRow>
+        <PropertyRow label="Répéter">
+          <RecurrenceField value={recurrence} start={timing.date} onChange={saveRecurrence} variant="inline" />
+        </PropertyRow>
         <PropertyRow label="Lieu">
           <InlineText
             value={event.location ?? ''}
@@ -191,6 +243,7 @@ function EventSheetContent({ event, onClose, remove }: { event: AgendaEvent; onC
 /** Panneau latéral d'un événement : s'ouvre au clic dans le calendrier, tout s'y modifie sur place. */
 export function EventSheet() {
   const eventId = useEventSheet((state) => state.eventId);
+  const occurrence = useEventSheet((state) => state.occurrence);
   const close = useEventSheet((state) => state.close);
   const { data: event } = useEvent(eventId);
   const deleteEvent = useDeleteEvent();
@@ -210,7 +263,7 @@ export function EventSheet() {
         >
           <WindowErrorBoundary onClose={close}>
             {event ? (
-              <EventSheetContent event={event} onClose={close} remove={remove} />
+              <EventSheetContent event={event} occurrence={occurrence} onClose={close} remove={remove} />
             ) : (
               <RadixDialog.Title className="sr-only">Événement</RadixDialog.Title>
             )}

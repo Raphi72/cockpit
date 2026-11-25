@@ -98,8 +98,10 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.entity = 'client'
 
        UNION ALL
-       SELECT 'event', e.id, e.title, e.project_id, p.name, pt.color, e.starts_at,
-              NULL, substr(COALESCE(e.ends_at, e.starts_at), 1, 10) < ?, h.id IS NOT NULL, h.score
+       -- Un événement qui se répète n'a ni une seule date ni de fin connue ici : sans date, jamais « passé ».
+       SELECT 'event', e.id, e.title, e.project_id, p.name, pt.color,
+              CASE WHEN e.recurrence IS NULL THEN e.starts_at END,
+              NULL, e.recurrence IS NULL AND substr(COALESCE(e.ends_at, e.starts_at), 1, 10) < ?, h.id IS NOT NULL, h.score
        FROM events e
        LEFT JOIN projects p ON p.id = e.project_id
        LEFT JOIN project_types pt ON pt.id = p.type_id

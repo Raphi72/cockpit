@@ -3,12 +3,15 @@ import { create } from 'zustand';
 /** Événement ouvert dans le panneau latéral (un seul à la fois, monté dans l'AppShell). */
 type EventSheetState = {
   eventId: string | null;
-  openEvent: (id: string) => void;
+  /** Événement qui se répète : le jour (prévu par la règle) de l'occurrence sur laquelle on a cliqué. */
+  occurrence: string | null;
+  openEvent: (id: string, occurrence?: string | null) => void;
   close: () => void;
 };
 
 export const useEventSheet = create<EventSheetState>()((set) => ({
   eventId: null,
-  openEvent: (id) => set({ eventId: id }),
-  close: () => set({ eventId: null }),
+  occurrence: null,
+  openEvent: (id, occurrence = null) => set({ eventId: id, occurrence }),
+  close: () => set({ eventId: null, occurrence: null }),
 }));

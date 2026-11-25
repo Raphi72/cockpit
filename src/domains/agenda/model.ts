@@ -16,6 +16,7 @@ import {
 } from '@/core/dates';
 import { formatMoney } from '@/core/money';
 import type { PaletteKey } from '@/ui/data/ColorDot';
+import { validateRecurrence, type Recurrence } from './recurrence';
 
 // ─── Événements saisis ──────────────────────────────────────────────────────
 
@@ -47,6 +48,13 @@ export type AgendaEvent = {
   projectName: string | null;
   projectColor: PaletteKey | null;
   createdAt: string;
+  /** Règle de répétition (RRULE), ou `null`. `startsAt` est alors la première occurrence. */
+  recurrence: string | null;
+  /**
+   * Dans une liste d'événements à venir : le jour prévu par la règle pour l'occurrence montrée
+   * (`startsAt` et `endsAt` sont alors les siens). Absent sur l'événement lui-même.
+   */
+  occurrence?: string | null;
 };
 
 export type EventPatch = Partial<{
@@ -58,6 +66,7 @@ export type EventPatch = Partial<{
   location: string | null;
   notes: string | null;
   projectId: string | null;
+  recurrence: string | null;
 }>;
 
 // ─── Moment d'un événement ──────────────────────────────────────────────────
@@ -194,13 +203,17 @@ export type NewEventInput = {
   location: string | null;
   notes: string | null;
   projectId: string | null;
+  /** Répétition (absente ou `null` : l'événement n'a lieu qu'une fois). */
+  recurrence?: Recurrence | null;
 };
 
-export function validateNewEvent(input: NewEventInput): Partial<Record<'title' | 'timing', string>> {
-  const errors: Partial<Record<'title' | 'timing', string>> = {};
+export function validateNewEvent(input: NewEventInput): Partial<Record<'title' | 'timing' | 'recurrence', string>> {
+  const errors: Partial<Record<'title' | 'timing' | 'recurrence', string>> = {};
   if (input.title.trim() === '') errors.title = 'Donne un titre à l’événement.';
   const timing = validateTiming(input.timing);
   if (timing) errors.timing = timing;
+  const recurrence = validateRecurrence(input.recurrence ?? null, input.timing.date);
+  if (recurrence) errors.recurrence = recurrence;
   return errors;
 }
 
@@ -255,6 +268,11 @@ export type AgendaItem = {
   projectId: string | null;
   color: PaletteKey | null;
   amountCents: number | null;
+  /**
+   * Occurrence d'un événement qui se répète : le jour prévu par sa règle (il la désigne, même si
+   * elle a été déplacée). Absent pour tout le reste. `start` et `end` sont ceux de l'occurrence.
+   */
+  occurrence?: string | null;
 };
 
 const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
@@ -321,6 +339,7 @@ function periodLabel(item: Pick<AgendaItem, 'start' | 'end' | 'allDay'>): string
 export function agendaTooltip(item: AgendaItem, withAmount = true): string {
   const kind = item.kind === 'task_due' && item.end ? 'Tâche, du début à la deadline' : agendaKindLabel(item.kind);
   const parts = [kind, periodLabel(item) ?? itemTimeRange(item), item.title, item.detail];
+  if (item.occurrence) parts.push('se répète');
   if (withAmount && item.amountCents !== null) parts.push(formatMoney(item.amountCents));
   return parts.filter(Boolean).join(' · ');
 }

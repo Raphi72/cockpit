@@ -1,35 +1,52 @@
 import { addDaysISO } from '@/core/dates';
 import type { Db, Statement } from '@/core/db';
-import { CONFIRMED_PROJECT, OPEN_PROJECT } from '@/domains/agenda/repository';
+import { CONFIRMED_PROJECT, OPEN_PROJECT, listRecurringOccurrences } from '@/domains/agenda/repository';
 import { EXPECTED_PAYMENT } from '@/domains/finance/payments/repository';
 import type { DeadlineSource, ExpectedPayment, PriorityTask, ProjectStart, TimedEvent } from './model';
 
-/** Événements à heure fixe qui commencent entre `from` et `to` ('YYYY-MM-DDTHH:MM', bornes comprises). */
-export function listTimedEventsBetween(db: Db, from: string, to: string): Promise<TimedEvent[]> {
-  return db.query<TimedEvent>(
+/**
+ * Événements à heure fixe qui commencent entre `from` et `to` ('YYYY-MM-DDTHH:MM', bornes comprises).
+ * Pour un événement qui se répète : ses occurrences, chacune à son heure.
+ */
+export async function listTimedEventsBetween(db: Db, from: string, to: string): Promise<TimedEvent[]> {
+  const single = await db.query<TimedEvent>(
     `SELECT id, title, starts_at, location FROM events
-     WHERE all_day = 0 AND starts_at >= ? AND starts_at <= ?
+     WHERE all_day = 0 AND recurrence IS NULL AND starts_at >= ? AND starts_at <= ?
      ORDER BY starts_at`,
     [from, to],
   );
+  const recurring = await listRecurringOccurrences(db, from.slice(0, 10), addDaysISO(to.slice(0, 10), 1), 'e.all_day = 0');
+  const occurrences = recurring
+    .filter((occurrence) => occurrence.startsAt >= from && occurrence.startsAt <= to)
+    .map(({ event, startsAt }) => ({ id: event.id, title: event.title, startsAt, location: event.location }));
+  return [...single, ...occurrences].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
 
 /**
  * Deadlines d'aujourd'hui à J+3 : projets ouverts et validés (pas les Propositions), et événements
- * « Échéance » (à leur premier jour, comme dans le bloc Deadlines du dashboard).
+ * « Échéance » (à leur premier jour, comme dans le bloc Deadlines du dashboard). Une échéance qui se
+ * répète compte à chacune de ses occurrences.
  */
-export function listDeadlinesSoon(db: Db, today: string): Promise<DeadlineSource[]> {
+export async function listDeadlinesSoon(db: Db, today: string): Promise<DeadlineSource[]> {
   const limit = addDaysISO(today, 3);
-  return db.query<DeadlineSource>(
+  const single = await db.query<DeadlineSource>(
     `SELECT 'project' AS source, p.id, p.name AS title, p.deadline AS date
      FROM projects p
      WHERE p.deadline >= ? AND p.deadline <= ? AND ${CONFIRMED_PROJECT}
      UNION ALL
      SELECT 'event', e.id, e.title, substr(e.starts_at, 1, 10)
      FROM events e
-     WHERE e.kind = 'deadline' AND substr(e.starts_at, 1, 10) >= ? AND substr(e.starts_at, 1, 10) <= ?
-     ORDER BY date, source DESC, title`,
+     WHERE e.kind = 'deadline' AND e.recurrence IS NULL
+       AND substr(e.starts_at, 1, 10) >= ? AND substr(e.starts_at, 1, 10) <= ?`,
     [today, limit, today, limit],
+  );
+  const recurring = await listRecurringOccurrences(db, today, addDaysISO(limit, 1), "e.kind = 'deadline'");
+  const occurrences = recurring
+    .map(({ event, startsAt }): DeadlineSource => ({ source: 'event', id: event.id, title: event.title, date: startsAt.slice(0, 10) }))
+    .filter((deadline) => deadline.date >= today && deadline.date <= limit);
+  // Par jour, les projets avant les échéances, puis par titre.
+  return [...single, ...occurrences].sort(
+    (a, b) => a.date.localeCompare(b.date) || b.source.localeCompare(a.source) || a.title.localeCompare(b.title),
   );
 }
 

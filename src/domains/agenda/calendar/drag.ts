@@ -19,7 +19,8 @@ export function useSlotDrop(day: string, firstHour: number, hourHeight: number) 
 /**
  * Un élément du calendrier qu'on peut prendre et déposer ailleurs. `id` doit être unique à l'écran :
  * un même élément peut apparaître dans plusieurs cases (barre coupée par la semaine…).
+ * L'occurrence d'un événement qui se répète ne se glisse pas : sa date vient de la règle.
  */
 export function useAgendaDrag(item: AgendaItem, id: string) {
-  return useDraggable({ id, data: { item } });
+  return useDraggable({ id, data: { item }, disabled: Boolean(item.occurrence) });
 }
