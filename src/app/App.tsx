@@ -1,6 +1,7 @@
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { humanizeError } from '@/core/db/errors';
+import { MotionProvider } from '@/ui/motion/MotionProvider';
 import { toast } from '@/ui/overlays/toast';
 import { router } from './router';
 
@@ -25,7 +26,9 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <MotionProvider>
+        <RouterProvider router={router} />
+      </MotionProvider>
     </QueryClientProvider>
   );
 }

@@ -1,3 +1,4 @@
+import { AnimatedRows } from '@/ui/motion/AnimatedRows';
 import { nestTasks, type TaskItem } from '../model';
 import { TaskRow } from './TaskRow';
 
@@ -14,7 +15,10 @@ type TaskListProps = {
   onUnplan?: (task: TaskItem) => void;
 };
 
-/** Liste de tâches (vues globales, fiche projet repliée…), sans glisser-déposer. */
+/**
+ * Liste de tâches (vues globales, fiche projet repliée…), sans glisser-déposer. Une tâche ajoutée
+ * ouvre sa ligne, une tâche supprimée ou sortie de la vue la replie : les suivantes glissent.
+ */
 export function TaskList({
   tasks,
   today,
@@ -26,10 +30,9 @@ export function TaskList({
 }: TaskListProps) {
   const rows = nested ? nestTasks(tasks) : tasks.map((task) => ({ task, depth: 0 as const }));
   return (
-    <>
-      {rows.map(({ task, depth }) => (
+    <AnimatedRows items={rows} getKey={(row) => row.task.id}>
+      {({ task, depth }) => (
         <TaskRow
-          key={task.id}
           task={task}
           today={today}
           depth={depth}
@@ -39,7 +42,7 @@ export function TaskList({
           shownDay={shownDay}
           onUnplan={onUnplan && (() => onUnplan(task))}
         />
-      ))}
-    </>
+      )}
+    </AnimatedRows>
   );
 }

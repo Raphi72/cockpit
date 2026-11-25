@@ -7,6 +7,7 @@ import { OPEN_STATUSES } from '@/domains/projects/model';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { EmptyState } from '@/ui/layout/EmptyState';
+import { AnimatedRows } from '@/ui/motion/AnimatedRows';
 import { Page } from '@/ui/layout/Page';
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuTrigger } from '@/ui/overlays/Menu';
 import { Input } from '@/ui/primitives/Input';
@@ -251,15 +252,17 @@ export function InboxPage() {
     wasCreating.current = createOpen;
     const pending = leaving.current;
     if (!pending || createOpen || !items) return;
-    const rows = Array.from(list.current?.querySelectorAll<HTMLElement>('[data-row]') ?? []);
-    const still = rows.find((row) => row.dataset.inboxId === pending.id);
+    // D'après la liste elle-même, pas l'écran : une ligne qui part y reste le temps de se replier.
+    const still = items.some((item) => item.id === pending.id);
     // Partie : la ligne suivante a pris sa place. Toujours là alors que la fenêtre de création vient de
     // se fermer (annulée, ou la liste n'est pas encore relue) : elle reprend le focus.
-    const target = still ? (closed ? still : undefined) : rows[Math.min(pending.index, rows.length - 1)];
+    const targetId = still ? (closed ? pending.id : undefined) : items[Math.min(pending.index, items.length - 1)]?.id;
     if (!still) leaving.current = null;
-    // Seulement si le focus s'est perdu : jamais pendant qu'on tape ailleurs.
-    const lost = document.activeElement === null || document.activeElement === document.body;
-    if (target && lost) target.focus();
+    const target = targetId ? list.current?.querySelector<HTMLElement>(`[data-inbox-id="${CSS.escape(targetId)}"]`) : null;
+    // Seulement si le focus s'est perdu (ou est resté sur la ligne qui part) : jamais pendant qu'on tape ailleurs.
+    const active = document.activeElement;
+    const lost = active === null || active === document.body || active.closest(`[data-inbox-id="${CSS.escape(pending.id)}"]`) !== null;
+    if (target && (lost || !still)) target.focus();
   }, [items, createOpen]);
 
   if (!items) return <Page title="Boîte de réception" />;
@@ -278,17 +281,18 @@ export function InboxPage() {
           </div>
         ) : (
           <div ref={list} className="mt-6">
-            {items.map((item, index) => (
-              <InboxRow
-                key={item.id}
-                item={item}
-                now={now}
-                today={today}
-                onLeaving={() => {
-                  leaving.current = { id: item.id, index };
-                }}
-              />
-            ))}
+            <AnimatedRows items={items} getKey={(item) => item.id}>
+              {(item, index) => (
+                <InboxRow
+                  item={item}
+                  now={now}
+                  today={today}
+                  onLeaving={() => {
+                    leaving.current = { id: item.id, index };
+                  }}
+                />
+              )}
+            </AnimatedRows>
           </div>
         )}
       </div>

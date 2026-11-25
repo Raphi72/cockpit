@@ -1,4 +1,4 @@
-import { Outlet } from '@tanstack/react-router';
+import { Outlet, useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { CreateEventDialog } from '@/domains/agenda/components/CreateEventDialog';
 import { EventSheet } from '@/domains/agenda/components/EventSheet';
@@ -16,6 +16,7 @@ import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
 import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
+import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
 import { useGlobalShortcuts } from '../shortcuts';
@@ -27,6 +28,8 @@ import { Topbar } from './Topbar';
 
 export function AppShell() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
+  // La page seule, sans ses filtres : changer de mois ou d'onglet ne rejoue pas le fondu.
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   useGlobalShortcuts();
   useNotificationScheduler();
   usePresence();
@@ -36,14 +39,17 @@ export function AppShell() {
 
   return (
     <div
-      className="grid h-full"
+      // La barre latérale se replie en glissant (coupé par « Réduire les animations », voir global.css).
+      className="grid h-full transition-[grid-template-columns] duration-[180ms] ease-soft"
       style={{ gridTemplateColumns: `${collapsed ? 56 : 232}px minmax(0, 1fr)` }}
     >
       <Sidebar />
       <div className="flex min-w-0 flex-col overflow-hidden">
         <Topbar />
         <main className="min-h-0 flex-1 overflow-auto">
-          <Outlet />
+          <PageTransition pageKey={pathname}>
+            <Outlet />
+          </PageTransition>
         </main>
       </div>
 
