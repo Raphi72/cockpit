@@ -25,6 +25,7 @@ import { useEventSheet } from '@/domains/agenda/event-sheet-store';
 import { useClientEditor } from '@/domains/clients/editor-store';
 import { useBackupNow } from '@/domains/data';
 import { usePaymentEditor } from '@/domains/finance/payments/editor-store';
+import { quitApp } from '@/domains/presence';
 import { useOpenPayments } from '@/domains/finance/payments/hooks';
 import { PaymentDate } from '@/domains/finance/payments/components/PaymentRow';
 import { paymentContext, type PaymentListItem } from '@/domains/finance/payments/model';
@@ -197,6 +198,9 @@ function usePaletteActions(close: () => void) {
         break;
       case 'backup':
         backupNow.mutate();
+        break;
+      case 'quit':
+        quitApp();
         break;
     }
   };

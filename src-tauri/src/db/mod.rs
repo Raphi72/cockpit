@@ -54,6 +54,13 @@ impl Database {
     }
 }
 
+/// Un réglage de la table `settings` (une valeur JSON par clé) ; rien s'il est absent ou illisible.
+pub fn read_setting<T: serde::de::DeserializeOwned>(conn: &Connection, key: &str) -> Option<T> {
+    conn.query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| row.get::<_, String>(0))
+        .ok()
+        .and_then(|json| serde_json::from_str::<T>(&json).ok())
+}
+
 pub fn open(path: &Path) -> rusqlite::Result<Connection> {
     let conn = Connection::open(path)?;
     configure(&conn)?;

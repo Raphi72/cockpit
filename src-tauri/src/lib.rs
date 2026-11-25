@@ -1,19 +1,31 @@
 //! Coquille native de Cockpit, volontairement fine : toute la logique métier est côté TypeScript.
 //! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite, exports,
-//! envoi des notifications et mémoire de la fenêtre.
+//! envoi des notifications, mémoire de la fenêtre et présence dans la zone de notification.
 
 mod backup;
 mod data;
 mod db;
 mod notify;
+mod presence;
 
 use backup::BackupDirs;
-use std::time::Duration;
+use presence::Presence;
 use tauri::Manager;
 use tauri_plugin_window_state::StateFlags;
 
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    // Une seule instance, et ce plugin d'abord : relancer Cockpit alors qu'il tourne déjà (dans la zone
+    // de notification) ramène sa fenêtre devant. Pas en développement : l'app de dev et l'app installée
+    // partagent le même identifiant et doivent pouvoir tourner ensemble.
+    if !cfg!(debug_assertions) {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if !args.iter().any(|arg| arg == presence::AUTOSTART_ARG) {
+                presence::show_main(app);
+            }
+        }));
+    }
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
@@ -24,6 +36,10 @@ pub fn run() {
                 .with_state_flags(StateFlags::all() - StateFlags::VISIBLE)
                 .build(),
         )
+        // Lancé par Windows, Cockpit reçoit `--autostart` et démarre caché.
+        .plugin(tauri_plugin_autostart::Builder::new().app_name("Cockpit").arg(presence::AUTOSTART_ARG).build())
+        .manage(Presence::from_args())
+        .on_window_event(presence::on_window_event)
         .setup(|app| {
             // En développement, une base séparée : les essais ne touchent jamais les vraies données.
             let (db_file, backup_folder) = if cfg!(debug_assertions) {
@@ -46,14 +62,11 @@ pub fn run() {
             }
             app.manage(db::Database::new(conn, db_path, dirs));
 
-            // La fenêtre est affichée par l'interface après son premier rendu.
+            presence::create_tray(app)?;
+            presence::start_heartbeat(app.handle());
+            // La fenêtre est affichée par l'interface après son premier rendu (`window_ready`).
             // Filet de sécurité : si ce rendu échoue, on l'affiche quand même.
-            if let Some(window) = app.get_webview_window("main") {
-                std::thread::spawn(move || {
-                    std::thread::sleep(Duration::from_secs(3));
-                    let _ = window.show();
-                });
-            }
+            presence::reveal_after_timeout(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -71,6 +84,11 @@ pub fn run() {
             data::open_backup_dir,
             data::export_save,
             notify::notify,
+            presence::window_ready,
+            presence::started_hidden,
+            presence::quit,
+            presence::autostart_get,
+            presence::autostart_set,
         ])
         .run(tauri::generate_context!())
         .expect("impossible de lancer Cockpit");

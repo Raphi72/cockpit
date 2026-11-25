@@ -8,6 +8,7 @@ import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/paym
 import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
 import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
 import { useNotificationScheduler } from '@/domains/notifications';
+import { usePresence } from '@/domains/presence';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
 import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
 import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
@@ -27,6 +28,7 @@ export function AppShell() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   useGlobalShortcuts();
   useNotificationScheduler();
+  usePresence();
   usePreferencesSync();
   useEffect(announceRestoreIfDone, []);
 

@@ -19,6 +19,7 @@ import {
 import { AccountsEditor } from '@/domains/finance/accounts/components/AccountsEditor';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
 import { NotificationSettings } from '@/domains/notifications';
+import { PresenceSettings } from '@/domains/presence';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
 import { Page } from '@/ui/layout/Page';
 import { Section } from '@/ui/layout/Section';
@@ -248,6 +249,7 @@ export function SettingsPage() {
     <Page title="Paramètres">
       <AppearanceSection />
       <DashboardSection />
+      <PresenceSettings />
       <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />

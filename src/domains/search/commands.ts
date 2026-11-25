@@ -7,6 +7,7 @@ import {
   HardDriveDownload,
   Keyboard,
   PanelLeft,
+  Power,
   SquareCheck,
   Timer,
   User,
@@ -23,7 +24,8 @@ export type PaletteAction =
   | { type: 'work-plan' }
   | { type: 'shortcuts' }
   | { type: 'sidebar' }
-  | { type: 'backup' };
+  | { type: 'backup' }
+  | { type: 'quit' };
 
 export type CommandGroup = 'create' | 'action' | 'go';
 
@@ -123,6 +125,15 @@ export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: b
       keywords: 'données copie base',
       icon: HardDriveDownload,
       action: { type: 'backup' },
+    });
+    // Fermer la fenêtre garde Cockpit dans la zone de notification : ceci le quitte pour de bon.
+    actions.push({
+      id: 'quit',
+      group: 'action',
+      label: 'Quitter Cockpit',
+      keywords: 'fermer arrêter sortir zone de notification',
+      icon: Power,
+      action: { type: 'quit' },
     });
   }
   return [...CREATE_COMMANDS, ...actions, ...GO_COMMANDS];

@@ -1,14 +1,14 @@
-import { isTauri } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke, isTauri } from '@tauri-apps/api/core';
 
 /**
  * La fenêtre est créée invisible (tauri.conf.json) et affichée après le premier rendu :
- * pas de flash blanc au démarrage.
+ * pas de flash blanc au démarrage. C'est le côté natif qui l'affiche (`window_ready`) : lancé avec
+ * Windows, Cockpit reste caché dans la zone de notification.
  */
 export function revealWindow(): void {
   if (!isTauri()) return;
   requestAnimationFrame(() => {
-    void getCurrentWindow().show();
+    void invoke('window_ready');
   });
 }
 

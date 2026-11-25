@@ -1,10 +1,11 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
 import { db } from '@/core/db';
 import { useSaveSetting, useSetting } from '@/domains/settings/hooks';
 import { toast } from '@/ui/overlays/toast';
 import { RULES_SETTING, resolveRules, type NotificationRule } from './model';
-import { startNotificationScheduler } from './scheduler';
+import { startNotificationScheduler, type Ticker } from './scheduler';
 
 /**
  * Notification Windows (commande Rust `notify`). Dans le navigateur de développement, qui n'en a pas,
@@ -18,9 +19,33 @@ export async function sendNotification({ title, body }: { title: string; body: s
   toast(`${title} · ${body}`);
 }
 
-/** Planificateur des notifications, lancé une fois pour toute l'app (AppShell). */
+/** Battement natif (src-tauri/src/presence.rs) : une fois par minute, même fenêtre cachée. */
+const nativeTicker: Ticker = (onTick) => {
+  const unlisten = listen('cockpit:minute', onTick);
+  return () => {
+    void unlisten.then((off) => off());
+  };
+};
+
+/**
+ * Planificateur des notifications, lancé une fois pour toute l'app (AppShell). Dans l'app, il suit
+ * le battement natif et sait si Cockpit a démarré caché ; dans le navigateur, une simple minuterie.
+ */
 export function useNotificationScheduler(): void {
-  useEffect(() => startNotificationScheduler(db, sendNotification), []);
+  useEffect(() => {
+    if (!isTauri()) return startNotificationScheduler(db, sendNotification);
+    let stop: (() => void) | null = null;
+    let cancelled = false;
+    void invoke<boolean>('started_hidden')
+      .catch(() => false)
+      .then((hidden) => {
+        if (!cancelled) stop = startNotificationScheduler(db, sendNotification, { ticker: nativeTicker, atLaunch: !hidden });
+      });
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, []);
 }
 
 /** Règles activées, et leur interrupteur. `rules` est absent tant que le réglage n'est pas lu. */

@@ -9,7 +9,7 @@ export function NotificationSettings() {
   const { rules, setRule } = useNotificationRules();
   if (!rules) return null;
   return (
-    <Section title="Notifications" meta="tant que Cockpit est ouvert, même réduit">
+    <Section title="Notifications" meta="tant que Cockpit tourne, même fenêtre fermée">
       <div className="flex flex-col gap-3">
         {NOTIFICATION_RULES.map(({ rule, label, hint }) => (
           <Checkbox key={rule} checked={rules[rule]} onChange={(checked) => setRule(rule, checked)}>
@@ -21,7 +21,7 @@ export function NotificationSettings() {
         ))}
       </div>
       <p className="mt-4 text-meta text-ink-3">
-        Les rappels du jour arrivent à l’ouverture de Cockpit, puis chaque matin à 8 h s’il est resté ouvert.
+        Les rappels du jour arrivent à l’ouverture de Cockpit, puis chaque matin à 8 h tant qu’il tourne.
       </p>
       <Button variant="ghost" onClick={sendTestNotification} className="mt-3 -ml-3">
         Envoyer une notification d’essai

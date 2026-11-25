@@ -93,7 +93,8 @@ export async function runNotifications(
   input: { moment: Moment; round: Round; now: string },
   send: SendNotification,
 ): Promise<number> {
-  if (input.round === 'launch') {
+  // À chaque tournée (ouverture, ou matin quand Cockpit reste lancé plusieurs jours).
+  if (input.round !== null) {
     await db.batch([pruneNotificationLogStatement(new Date(Date.parse(input.now) - LOG_KEEP_MS).toISOString())]);
   }
   const notices = await collectNotices(db, input.moment, input.round);
