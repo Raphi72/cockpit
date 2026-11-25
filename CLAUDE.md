@@ -6,7 +6,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 ## Par où commencer
 
 - **Référence complète** : [docs/CONCEPTION.md](docs/CONCEPTION.md). Le besoin, les décisions (§8), l'architecture, le schéma SQL et le design system y sont décrits.
-- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 6 sont faits (le **MVP**), puis la **V1.1** en 8 étapes et la **V1.1.2** en 4 étapes (§7.2), terminées. Les points encore à vérifier sont au §7.3. La **V2** est en conception au **§9** : modes Travail et Cours, organisateur de journée, pages, habitudes, Google Agenda, synchro par Google Drive, appli Android ; elle se fait en entier, dans l'ordre du §9.7.
+- **Où on en est et quoi faire ensuite** : §7 de ce document. Les jalons 0 à 6 sont faits (le **MVP**), puis la **V1.1** en 8 étapes et la **V1.1.2** en 4 étapes (§7.2), terminées. Les points encore à vérifier sont au §7.3. La **V2** est au **§9** : modes Travail et Cours, organisateur de journée, pages, habitudes, Google Agenda, synchro par Google Drive, appli Android ; elle se fait en entier, dans l'ordre du §9.7. Son **étape 1 (« Toujours là ») est faite** (branche `v2-toujours-la`) : zone de notification, démarrage avec Windows, capture rapide et boîte de réception, événements récurrents, chiffre d'affaires, premières animations. La suivante est l'étape 2 (modes et espace Cours).
 - **Maquette de référence du dashboard** : [docs/maquette-dashboard.html](docs/maquette-dashboard.html). La disposition finale en diffère (Prochains jours sous À surveiller) : voir « Choix faits au jalon 5 » au §7.3.
 
 ## L'utilisateur
@@ -28,7 +28,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 
 ## Stack et commandes
 
-Tauri 2 (Rust, coquille fine) · React 19 + TypeScript strict · SQLite via `rusqlite` · Tailwind 4 · TanStack Router / Query · Zustand · Radix UI · cmdk · dnd-kit.
+Tauri 2.12 (Rust, coquille fine ; plugins `autostart`, `single-instance`, `global-shortcut`, icône `tray`) · React 19 + TypeScript strict · SQLite via `rusqlite` · Tailwind 4 · TanStack Router / Query · Zustand · Radix UI · cmdk · dnd-kit · Motion.
 
 | Commande | Rôle |
 |---|---|
@@ -51,6 +51,9 @@ Rust et cargo sont dans `%USERPROFILE%\.cargo\bin` : dans PowerShell, ajouter `$
 - **Recherche** : l'index FTS5 `search_index` est tenu à jour par des triggers (migration 0002). Une nouvelle table cherchable doit y ajouter ses triggers, dans une nouvelle migration. En mode navigateur (sql.js, sans FTS5), la recherche passe par `LIKE`.
 - **Suppressions** : toujours avec « Annuler » dans le toast (`undo: true` sur l'action, déclenchée aussi par Ctrl+Z), jamais de confirmation définitive.
 - **Commandes natives** (`src-tauri/src/data.rs`) : les fenêtres de fichier s'ouvrent côté Rust, l'interface ne transmet jamais de chemin.
+- **Événements récurrents** (P15) : la règle (RRULE) est stockée une fois dans `events.recurrence`, les occurrences sont calculées (`agenda/recurrence.ts`), seules les exceptions sont stockées (`event_exceptions`). Tout ce qui lit des événements passe par ces occurrences (`listAgenda`, `listRecurringOccurrences`).
+- **Deux fenêtres** : la principale (`index.html`) et la capture rapide (`capture.html`, `src/capture.tsx`), volontairement sans routeur ni cache. Elles écrivent par le même pont SQLite ; la capture prévient la principale par un événement natif.
+- **Animations** : composants `m` de Motion et réglages de `src/ui/motion` (jamais le composant `motion` complet, `LazyMotion` est strict). Durées dans `presets.ts`, toujours via `transitionFor`, qui respecte « Réduire les animations ».
 - **Migrations** : fichiers `src-tauri/migrations/NNNN_*.sql`, à déclarer dans `src-tauri/src/db/migrations.rs`. Ne jamais modifier une migration publiée : en ajouter une nouvelle. Une sauvegarde est faite automatiquement avant chaque migration.
 
 ## Vérifier son travail
@@ -60,6 +63,9 @@ Rust et cargo sont dans `%USERPROFILE%\.cargo\bin` : dans PowerShell, ajouter `$
 - **Ne pas saisir de texte dans la vraie fenêtre Cockpit via l'automatisation Windows** : la fenêtre de Claude peut reprendre le focus et la saisie part ailleurs (c'est déjà arrivé). Des raccourcis seuls ou des captures d'écran suffisent.
 - Dans le navigateur de test, `Ctrl+N` et `Ctrl+1…6` sont réservés par le navigateur ; dans l'app, `N` et `Ctrl+1…6` fonctionnent.
 - Si l'interface affiche « Invalid hook call » après l'ajout d'une dépendance, recharger complètement la page (réoptimisation Vite).
+- **Cockpit reste dans la zone de notification** : fermer sa fenêtre ne le quitte pas. Pour libérer le port 1420 ou relancer, le quitter par le clic droit sur son icône (« Cockpit (développement) » pour l'app de dev).
+- **App de dev et app installée ensemble** : l'instance unique et le démarrage avec Windows n'existent que dans l'app installée ; le raccourci global de capture appartient à la première lancée.
+- **Essai de lancement sans saisie** : `src-tauri/target/debug/cockpit.exe` (avec Vite sur le port 1420), éventuellement avec `--autostart` pour un démarrage caché. On peut vérifier ses fenêtres et envoyer un raccourci seul ; jamais de texte.
 - Pendant un `npm run tauri dev`, modifier un fichier Rust recompile et relance l'app. `cargo test --lib` (dans `src-tauri`) teste les sauvegardes et la restauration.
 
 ## Git

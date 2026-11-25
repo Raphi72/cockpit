@@ -57,4 +57,4 @@ The repository never contains a database, backup or export (see `.gitignore`).
 
 ## Roadmap
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) (in French): what is done (up to V1.1.2), then V2 and V2.5.
+See [CONTRIBUTING.md](CONTRIBUTING.md) (in French): what is done (up to V1.1.2, then the first step of V2), the rest of V2 and V2.5.

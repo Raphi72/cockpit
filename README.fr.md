@@ -57,4 +57,4 @@ Le dépôt ne contient jamais de base, de sauvegarde ni d'export (voir `.gitigno
 
 ## Feuille de route
 
-Voir [CONTRIBUTING.md](CONTRIBUTING.md) : ce qui est fait (jusqu’à la V1.1.2), puis la V2 et la V2.5.
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) : ce qui est fait (jusqu’à la V1.1.2, puis la première étape de la V2), la suite de la V2 et la V2.5.

@@ -2,7 +2,7 @@
 
 > **Cockpit** est un nom de travail.
 > Ce document fixe le besoin, l'architecture, le modèle de données, l'arborescence, les pages et le design system **avant d'écrire du code**.
-> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 le même jour (4 étapes, §7.2). La **V2** est en conception au §9 (25/11/2026).
+> Statut : **validé** (voir §8). Jalons 0 à 6 terminés le 25/09/2026 : c'est le **MVP**. V1.1 terminée le 26/09/2026 (8 étapes, §7.2), puis V1.1.2 le même jour (4 étapes, §7.2). La **V2** (§9) est en cours : son étape 1, « Toujours là », est faite (25/11/2026).
 > Maquette du dashboard : [`maquette-dashboard.html`](maquette-dashboard.html).
 
 ---
@@ -194,6 +194,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 - Le dashboard repose sur quelques requêtes agrégées et indexées. Toutes les colonnes de filtre et de tri ont un index (§3.3).
 - Au-delà d'une centaine de lignes, les listes sont virtualisées et leurs lignes mémoïsées. L'état d'interface est dans Zustand, lu par sélecteurs : ouvrir la palette ne re-rend pas la page.
 - Il n'y a pas de bibliothèque lourde de graphiques ni de calendrier tiers. Le calendrier et la timeline sont faits maison, légers et stylés comme le reste.
+- Les animations (V2) ne pèsent pas sur le démarrage : le moteur de Motion est un morceau à part, chargé après le premier rendu. La petite fenêtre de capture rapide est créée cachée, une seconde et demie après le lancement.
 
 ### 2.7 Données, sauvegarde, sécurité
 
@@ -216,14 +217,17 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
   - début de projet ;
   - événement, 15 minutes avant ;
   - résumé du matin (optionnel).
-- **Planification** : une vérification à l'ouverture, puis chaque minute tant que l'app tourne (même réduite). Les rendez-vous sont regardés à chaque vérification ; les autres règles, seulement lors d'une « tournée » : à l'ouverture, puis chaque matin à 8 h. Le résumé du matin n'est envoyé qu'à la tournée de 8 h. La table `notification_log` garantit qu'une même notification n'est jamais envoyée deux fois. Détail des choix au §7.3 (V1.1, étape 6).
-- **Limite** : quand l'app est fermée, aucune notification n'arrive. La V2 y remédie : Cockpit reste dans la zone de notification et se lance au démarrage de Windows (§9.3, « Toujours là »).
+- **Planification** : une vérification à l'ouverture, puis chaque minute tant que l'app tourne (réduite, ou fenêtre fermée depuis la V2). Le rythme d'une minute vient du côté natif (`presence.rs`) : les minuteries de l'interface ralentissent quand la fenêtre est cachée. Les rendez-vous sont regardés à chaque vérification ; les autres règles, seulement lors d'une « tournée » : à l'ouverture, puis chaque matin à 8 h. Le résumé du matin n'est envoyé qu'à la tournée de 8 h. La table `notification_log` garantit qu'une même notification n'est jamais envoyée deux fois. Détail des choix au §7.3 (V1.1, étape 6).
+- **Événements récurrents** (V2) : chaque occurrence d'un rendez-vous est annoncée une fois ; une échéance qui se répète est rappelée à chaque fois.
+- **Toujours là** (V2, étape 1) : Cockpit reste dans la zone de notification quand on ferme sa fenêtre et se lance avec Windows, donc les notifications arrivent toujours. Lancé caché, il fait la tournée du matin (résumé compris) au lieu de celle d'ouverture. Quitté pour de bon (menu de l'icône), il n'envoie plus rien.
 
 ### 2.9 Bibliothèques retenues
 
 | Besoin | Choix | Raison |
 |---|---|---|
-| Coquille desktop | Tauri 2 | Légère, native, installeur Windows (NSIS) avec raccourcis |
+| Coquille desktop | Tauri 2 (2.12 depuis la V2) | Légère, native, installeur Windows (NSIS) avec raccourcis |
+| Toujours là (V2) | Plugins Tauri `autostart`, `single-instance`, `global-shortcut`, icône `tray` | Démarrage avec Windows, une seule instance, capture rapide, zone de notification |
+| Animations (V2) | Motion (`LazyMotion`) | Transitions et ressorts ; le moteur est chargé après le premier rendu |
 | UI | React 19 + TypeScript strict | — |
 | Build | Vite | Rechargement instantané en développement |
 | Styles | Tailwind CSS v4 + variables CSS | Tokens centralisés, aucun coût à l'exécution |
@@ -528,8 +532,11 @@ type AgendaItem = {
   color: PaletteKey;
   state?: 'late' | 'soon' | 'done';
   amountCents?: number;
+  occurrence?: string;               // V2 : jour prévu par la règle, pour un événement qui se répète
 };
 ```
+
+Depuis la V2 (P15), un événement qui se répète donne une ligne par occurrence de la plage : `start` et `end` sont ceux de l'occurrence, `occurrence` la désigne (même déplacée) et sa clé devient `${source}:${id}:${kind}:${occurrence}`. Les occurrences sont calculées à partir de la règle et des exceptions (`agenda/recurrence.ts`), jamais stockées.
 
 Une seule requête `UNION ALL` sur une plage de dates renvoie tous les éléments en un aller-retour. Le calendrier, les « Prochains jours » du dashboard et les notifications consomment ce même flux. Le planning lit directement les projets et leurs encaissements (il lui faut la période entière de chaque projet et sa progression) : les dates restent celles des tables, rien n'est recopié.
 
@@ -557,6 +564,7 @@ END;
 - La palette Ctrl+K combine cette recherche et des commandes (« Nouvelle tâche », « Aller au calendrier », « Marquer reçu… »).
 - L'index est rempli par la migration `0002_search.sql` et tenu à jour par des triggers : l'app n'y écrit jamais. Une nouvelle table cherchable doit y ajouter ses triggers (dans une nouvelle migration).
 - Un virement n'est indexé qu'une fois (sa ligne de sortie).
+- Depuis, les idées de projet (`idea`, migration `0003`) et les captures de la boîte de réception (`inbox`, migration `0006`) y sont aussi, avec leurs triggers. Un événement qui se répète y est sans date.
 - En mode navigateur de développement, sql.js n'a pas FTS5 : l'index y est une table ordinaire et la recherche passe par `LIKE` (sans ignorer les accents). Voir `core/db/fts-fallback.ts`.
 
 ---
@@ -574,17 +582,24 @@ gestion_projets/
 │  │  │  ├─ migrations.rs             # application des migrations (PRAGMA user_version)
 │  │  │  └─ convert.rs                # conversion valeurs SQLite <-> JSON
 │  │  ├─ backup.rs                    # VACUUM INTO, rotation, vérification et restauration
-│  │  └─ data.rs                      # commandes de Paramètres › Données (fenêtres de fichier natives)
+│  │  ├─ data.rs                      # commandes de Paramètres › Données (fenêtres de fichier natives)
+│  │  ├─ notify.rs                    # envoi des notifications Windows
+│  │  ├─ presence.rs                  # V2 : zone de notification, fermeture, démarrage avec Windows, battement
+│  │  └─ capture.rs                   # V2 : raccourci global et petite fenêtre de capture rapide
 │  ├─ migrations/
 │  │  ├─ 0001_init.sql
-│  │  └─ 0002_search.sql              # index FTS5 et ses triggers
-│  ├─ capabilities/default.json       # permissions Tauri minimales
+│  │  ├─ 0002_search.sql              # index FTS5 et ses triggers
+│  │  ├─ 0003 … 0005                  # idées, sous-tâches, programme du jour
+│  │  ├─ 0006_inbox.sql               # V2 : boîte de réception
+│  │  └─ 0007_recurrence.sql          # V2 : événements récurrents et leurs exceptions
+│  ├─ capabilities/                   # permissions Tauri minimales (fenêtre principale, capture)
 │  ├─ icons/
 │  ├─ Cargo.toml
 │  └─ tauri.conf.json
 │
 ├─ src/
 │  ├─ main.tsx
+│  ├─ capture.tsx                     # V2 : entrée de la petite fenêtre de capture (capture.html)
 │  ├─ app/
 │  │  ├─ App.tsx                      # providers : QueryClient, Router, thème
 │  │  ├─ router.tsx                   # routes, chargées à la demande
@@ -617,8 +632,11 @@ gestion_projets/
 │  │  │  ├─ transactions/
 │  │  │  └─ pages/FinancesPage.tsx
 │  │  ├─ agenda/                      # AgendaItem (agrégation) + événements
+│  │  │  ├─ recurrence.ts             # V2 : règle RRULE, occurrences, exceptions (règles pures)
 │  │  │  ├─ calendar/                 # MonthView, WeekView, DayView
 │  │  │  └─ timeline/                 # PlanningPage (Gantt simplifié)
+│  │  ├─ inbox/                       # V2 : boîte de réception, capture rapide et son réglage
+│  │  ├─ presence/                    # V2 : « Toujours là » côté interface (réglages, première explication)
 │  │  ├─ dashboard/                   # requêtes agrégées + sections du cockpit
 │  │  ├─ search/                      # FTS5 + CommandPalette
 │  │  ├─ notifications/               # règles, planificateur, envoi natif
@@ -627,7 +645,8 @@ gestion_projets/
 │  │
 │  ├─ ui/                             # design system, aucune logique métier
 │  │  ├─ primitives/                  # Button, IconButton, Input, Textarea, Select, Checkbox, Kbd, Tooltip
-│  │  ├─ overlays/                    # Dialog, Sheet, Popover, Menu, Toast
+│  │  ├─ overlays/                    # Dialog, Sheet, Popover, Menu, Toast, ChoiceDialog
+│  │  ├─ motion/                      # V2 : animations (chargement différé, durées, lignes et pages animées)
 │  │  ├─ data/                        # ListRow, VirtualList, ProgressBar, StatusDot, PriorityIcon, Amount, RelativeDate
 │  │  ├─ pickers/                     # DatePicker, AmountInput, Combobox
 │  │  └─ layout/                      # PageHeader, Section, EmptyState, SplitView
@@ -640,6 +659,7 @@ gestion_projets/
 ├─ tests/                             # Vitest : règles métier + repositories sur SQLite en mémoire
 ├─ docs/
 ├─ index.html
+├─ capture.html                       # V2 : seconde page, pour la fenêtre de capture rapide
 ├─ package.json
 ├─ tsconfig.json
 └─ vite.config.ts
@@ -653,7 +673,7 @@ gestion_projets/
 
 **Sidebar** (232 px, réductible à 56 px avec Ctrl+B) :
 
-- Aujourd'hui (dashboard), Projets, Tâches, Calendrier, Planning, Finances ;
+- Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ;
 - une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ;
 - en bas, Clients et Paramètres.
 
@@ -667,6 +687,8 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | `C` | Menu Créer, puis `T` tâche · `E` événement · `P` projet · `L` client · `R` encaissement · `D` transaction |
 | `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet |
 | `Ctrl 1` … `Ctrl 6` | Aller aux pages principales |
+| `Ctrl Maj Espace` | V2 : capture rapide, depuis n'importe quelle application (réglable) |
+| `T` · `I` · `E` | V2, boîte de réception : faire de la capture une tâche, une idée de projet ou un événement |
 | `Ctrl B` | Réduire / déplier la sidebar |
 | `↑ ↓` · `Entrée` · `Espace` | Parcourir une liste · ouvrir · cocher la tâche |
 | `← →` · `T` · `M` `S` `J` | Calendrier : période précédente ou suivante, aujourd'hui, vue mois, semaine ou jour |
@@ -775,7 +797,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 3. **Peu d'informations à la fois, beaucoup d'espace.** Chaque écran montre peu de blocs, et chaque ligne n'affiche que l'essentiel ; le détail est à un clic ou au survol. Une même information n'apparaît pas deux fois sur un écran. Le texte courant fait 14 px, les lignes 44 px, et les blocs sont séparés par 56 à 64 px. Les seuls grands chiffres sont les montants clés du dashboard.
 4. **Tout est éditable sur place.** Un clic sur un statut ouvre un menu ; il n'y a pas de formulaire « Modifier » en plein écran.
 5. **Le clavier fonctionne partout.** Chaque action a un raccourci, affiché dans les infobulles et les menus.
-6. **Le mouvement reste minimal.** Seuls les éléments qui apparaissent sont animés (120 à 160 ms), et il n'y a aucune transition de page.
+6. **Le mouvement accompagne, il ne fait pas attendre.** Jusqu'à la V1.1.2, seuls les éléments qui apparaissaient étaient animés (120 à 160 ms), sans transition de page. La V2 (§9.3) rend l'app plus fluide : la page qui arrive apparaît en fondu, les lignes d'une liste s'ouvrent et se replient, les messages se posent. Tout reste court (0,2 s au plus), rien ne se déplace sous le pointeur, et « Réduire les animations » de Windows coupe tout.
 
 ### 6.2 Tokens
 
@@ -846,7 +868,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
-| **V2** | En conception | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
+| **V2** | En cours : étape 1 sur 10 faite | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
 
 ### 7.2 Détail des jalons restants
 
@@ -899,7 +921,27 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 
 - **Sauvegarde et restauration** : couvertes par des tests Rust et vérifiées dans le navigateur (réponses natives simulées), mais pas encore dans la vraie fenêtre : les fenêtres de fichier natives sont à essayer à la main. (La fenêtre « Enregistrer sous » des exports, construite de la même façon, a été vérifiée dans la vraie fenêtre.)
 - **Dossier des sauvegardes** : en changer ne déplace pas les sauvegardes déjà faites.
-- **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit ») et quand elle reste réduite longtemps (WebView2 peut espacer ses minuteries).
+- **Notifications** : vérifiées dans la fenêtre de développement (notification Windows réelle). À confirmer dans l'app installée (nom et icône « Cockpit »). Depuis la V2, le rythme d'une minute vient du côté natif : il ne dépend plus des minuteries de WebView2, qui ralentissent quand la fenêtre est cachée.
+- **V2, étape 1, dans la fenêtre de développement** (essais à la main, sans automatisation de la saisie) : fermer avec la croix (la fenêtre se cache, l'icône reste, une notification l'explique la première fois), clic et menu de l'icône, « Quitter », capture rapide (taper, Entrée, Ctrl+Entrée, Échap, brouillon gardé), changement de raccourci dans Paramètres. Déjà vérifié par un lancement réel de l'app de dev : fenêtre visible en moins d'une seconde, démarrage caché avec `--autostart` (fenêtre cachée, clavier laissé à l'application en cours), raccourci global (la petite fenêtre s'ouvre au premier quart de l'écran avec le clavier, se referme au second appui).
+- **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
+- **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
+- **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+
+**Choix faits en V2, étape 1 (« Toujours là »)**, à confirmer à l'usage :
+- **Boîte de réception** (migration `0006`, domaine `inbox`) : une page sous « Aujourd'hui », sans raccourci `Ctrl+chiffre` (les six pages gardent les leurs), avec un compteur dans la barre latérale (un point quand elle est réduite). Les captures les plus récentes d'abord, sur une ligne. Sur la ligne qui a le focus : `T` et `E` ouvrent « Nouvelle tâche » et « Nouvel événement » pré-remplis (on choisit le projet ou la date avant de valider), `I` range la capture en idée d'un projet, `Entrée` la reformule, `Suppr` la supprime. La capture quitte la boîte dans le même lot que la création ; « Annuler » la remet à sa place. Le focus passe à la ligne suivante.
+- **Zone de notification** (`presence.rs`) : fermer la fenêtre la cache (réglage `presence.keepInTray`, activé par défaut, lu côté natif à la fermeture) ; décoché, fermer quitte. L'icône est toujours là tant que Cockpit tourne : un clic rouvre la fenêtre, le clic droit propose « Ouvrir Cockpit », « Capture rapide » et « Quitter ». La palette a aussi « Quitter Cockpit ». En développement, l'infobulle de l'icône dit « Cockpit (développement) ».
+- **Démarrage avec Windows** : activé d'office une seule fois, au premier lancement de l'app installée (réglage `presence.autostartDecided`), puis réglable dans Paramètres › Démarrage et fermeture. La case montre l'état réel côté Windows (il peut aussi être coupé depuis le Gestionnaire des tâches), pas une valeur recopiée. Jamais inscrit depuis un build de développement : il pointerait vers un exécutable qui ne marche pas sans son serveur.
+- **Lancé caché** (`--autostart`) : la tournée des rappels n'est pas celle d'« ouverture » mais une vérification ordinaire, qui devient la tournée du matin dès 8 h, résumé compris (avant midi) : le tableau de bord n'est pas à l'écran. Le journal des notifications est purgé à chaque tournée, et la sauvegarde du jour vérifiée chaque heure, puisque Cockpit peut rester lancé plusieurs jours.
+- **Instance unique** : seulement dans l'app installée. L'app de développement et l'app installée ont le même identifiant et doivent pouvoir tourner ensemble.
+- **Fenêtres créées cachées** : elles ne prennent pas le focus à leur création (sinon la frappe en cours dans une autre application se perdait) ; elles le reçoivent en s'affichant.
+- **Capture rapide** (`capture.rs`, `capture.html`) : le raccourci ouvre une fenêtre d'une ligne, sans bordure, toujours au-dessus, au premier quart de l'écran où se trouve le pointeur ; un second appui la referme. `Entrée` note et referme, `Ctrl+Entrée` note et garde la fenêtre, `Échap` abandonne ; cliquer ailleurs la cache en gardant le brouillon. Raccourcis proposés : `Ctrl+Maj+Espace`, `Alt+Maj+C`, `Win+Alt+C`, ou aucun (réglage `capture.shortcut`). Si Windows refuse un raccourci déjà pris, rien ne change et Paramètres le dit. Quand l'app de développement et l'app installée tournent ensemble, le raccourci appartient à la première lancée.
+- **Événements récurrents** (migration `0007`, `agenda/recurrence.ts`) : le RRULE est écrit à la main pour ce que l'interface saisit (jour, semaine, mois, année, intervalle, jours de la semaine, fin). Une règle incomprise ne répète rien. Les jours sont calculés sans fuseau horaire. « Chaque mois » le 31 saute les mois plus courts et le 29 février ne revient que les années bissextiles, comme le veut la norme. « Toutes les 2 semaines » compte en semaines du lundi au dimanche, quel que soit le réglage du premier jour de la semaine. Le jour de la semaine du premier événement reste toujours coché ; il suit un changement de date.
+- **Occurrences** : `listAgenda` renvoie une ligne par occurrence. Le calendrier, « Prochains jours », le bloc Deadlines et les notifications suivent sans autre changement ; chaque occurrence a sa notification. La fiche projet montre l'événement une fois, à sa prochaine occurrence. Dans `Ctrl+K`, un événement récurrent n'a pas de date et n'est jamais « passé ».
+- **Une fois ou toute la série** : dans le panneau ouvert sur une occurrence, « Date » et « Horaire » sont ceux de cette occurrence ; les changer demande « Cette fois » ou « Toute la série ». « Cette fois » ne porte que sur la date et l'heure : le titre, le type, le lieu, les notes, « Journée entière » et la répétition valent pour l'événement entier. Changer le jour pour toute la série remplace ce jour de la semaine par le nouveau ; une série non hebdomadaire se décale d'autant. Une occurrence modifiée « cette fois » garde son moment si l'heure de la série change ensuite. Glisser une occurrence dans le calendrier ne déplace qu'elle. Supprimer « celle-ci et les suivantes » arrête la série la veille ; depuis la première occurrence, cela supprime l'événement. `Ctrl+Z` n'agit pas tant que le panneau est ouvert (règle commune aux fenêtres) : le bouton « Annuler » du toast reste cliquable.
+- **Chiffre d'affaires** : onglet de Finances, une année à la fois, trimestres et mois. Tous les encaissements reçus, à leur date de réception, quel que soit le type de projet ou le compte : la même règle que « Encaissé ce mois ». Un mois à venir affiche un tiret. Si certains types de projet doivent un jour être exclus de la déclaration, ce sera un réglage à ajouter.
+- **Animations** (Motion, `ui/motion`) : fondu au changement de page (pas de déplacement : les pages qui se mesurent, comme le calendrier, restent justes), lignes qui s'ouvrent et se replient dans les listes de tâches sans glisser-déposer et dans la boîte de réception, toasts, repli de la barre latérale. Une liste qui change de plus de 3 lignes d'un coup s'affiche sans animation. Le principe 6 du design system (§6.1) est revu en conséquence. Restent pour plus tard : l'arbre des tâches et le kanban (glisser-déposer), les fenêtres et les panneaux.
+- **Poids** : le code chargé au démarrage grossit d'environ 47 kB (15 kB compressés) ; le moteur d'animation (49 kB) est chargé après le premier rendu.
+
 
 **Choix faits en V1.1.2, étape 4 (« Je veux travailler… »)**, à confirmer à l'usage :
 - **Où** : « Je veux travailler… » à côté du titre du bloc Aujourd'hui du dashboard (touche `P`), en haut des pages Tâches et Planning (`P` aussi sur le planning), et dans la palette Ctrl+K. Une seule fenêtre (`WorkPlanDialog`), qui compose le programme d'aujourd'hui.
@@ -1063,8 +1105,8 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 
 ## 9. V2 : tout dans Cockpit
 
-> Statut : **en conception**, rédigée le 25/11/2026 à partir des envies de l'utilisateur. Les propositions P13 à P22 sont validées (25/11/2026) ; les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7).
+> Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; ses choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1164,11 +1206,11 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - **Mini-fenêtre « En ce moment »** : petite fenêtre toujours au-dessus, avec le bloc en cours, le temps restant et la case de la tâche.
 - **Petites célébrations** : une journée bouclée, une série qui continue, un objectif atteint. Discrètes et désactivables.
 - **Sons** facultatifs (fin de bloc, fin de Pomodoro), désactivés par défaut.
-- **Boîte de réception** : tout ce qui est capturé vite (idée, tâche, devoir, note) atterrit là, et se trie plus tard en un geste.
+- **Boîte de réception** : tout ce qui est capturé vite (idée, tâche, devoir, note) atterrit là, et se trie plus tard en un geste. *(Fait, étape 1 : en tâche, en idée de projet ou en événement ; les devoirs et les notes viendront avec leurs espaces.)*
 
 #### Toujours là
-- **Lancé au démarrage de Windows** (réglable) et **gardé dans la zone de notification** : fermer la fenêtre ne quitte pas l'app, donc les notifications arrivent toujours.
-- **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception.
+- **Lancé au démarrage de Windows** (réglable) et **gardé dans la zone de notification** : fermer la fenêtre ne quitte pas l'app, donc les notifications arrivent toujours. *(Fait, étape 1.)*
+- **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception. *(Fait, étape 1 : `Ctrl+Maj+Espace` par défaut.)*
 - **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir.
 
 #### Mobile (Android)
@@ -1183,7 +1225,7 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - La connexion Google est la même que pour la synchronisation (§9.5). Elle remplace la piste de l'adresse iCal secrète, qui ne permettait que la lecture.
 
 #### Restes de la V2 d'origine
-- **Chiffre d'affaires par mois et par trimestre** (pour l'URSSAF), dans Finances.
+- **Chiffre d'affaires par mois et par trimestre** (pour l'URSSAF), dans Finances. *(Fait, étape 1 : onglet « Chiffre d'affaires ».)*
 
 ### 9.4 Modèle de données (esquisse)
 
@@ -1202,12 +1244,33 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 | `habits`, `habit_logs` | Habitudes | fréquence, module lié ; une ligne par jour coché |
 | `goals`, `goal_steps` | Objectifs | échéance, étapes |
 | `exercises`, `workout_sets` | Carnet de séances | séries rattachées à un bloc fait |
-| `inbox_items` | Boîte de réception | texte, date de capture |
+| `inbox_items` | Boîte de réception | texte, date de capture. **Fait** (migration `0006`) |
 | `sync_changes`, `sync_state` | Synchronisation | journal des modifications locales, dernier fichier lu par appareil |
 
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
 
-L'agenda (§3.5) gagne des sources : `block`, `class` (occurrences des cours), `exam` et `google`. Le calendrier, la Journée, le dashboard et les notifications continuent de lire ce même flux.
+**Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
+
+```sql
+ALTER TABLE events ADD COLUMN recurrence TEXT;   -- RRULE (RFC 5545), NULL : pas de répétition
+
+CREATE TABLE event_exceptions (
+  id          TEXT PRIMARY KEY,
+  event_id    TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  occurrence  TEXT NOT NULL,   -- jour prévu par la règle ('YYYY-MM-DD') : il désigne l'occurrence
+  kind        TEXT NOT NULL CHECK (kind IN ('cancelled', 'moved')),
+  starts_at   TEXT,            -- déplacée : son nouveau moment, au format de events.starts_at
+  ends_at     TEXT,
+  created_at  TEXT NOT NULL,
+  UNIQUE (event_id, occurrence),
+  CHECK ((kind = 'moved') = (starts_at IS NOT NULL)),
+  CHECK (kind = 'moved' OR ends_at IS NULL)
+);
+```
+
+`events.starts_at` est la première occurrence. Les occurrences sont calculées par `agenda/recurrence.ts` (P15) : rien n'est recopié, et une exception ne stocke que ce qui s'écarte de la règle. Une exception dont le jour n'est plus dans la règle (règle modifiée depuis) est ignorée.
+
+L'agenda (§3.5) gagne des sources : `block`, `class` (occurrences des cours), `exam` et `google`. Le calendrier, la Journée, le dashboard et les notifications continuent de lire ce même flux. Depuis l'étape 1, un événement qui se répète y donne une ligne par occurrence (champ `occurrence`, clé propre à chacune).
 
 Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoutent leurs triggers FTS5 dans leur migration.
 
@@ -1233,11 +1296,15 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 - Recommandation : **TipTap** (sur ProseMirror). Sans style imposé, il se plie au design system ; les blocs, la commande `/`, les liens `[[…]]` et le collage d'images sont des extensions. Le contenu est stocké en JSON, avec une copie en texte brut pour la recherche.
 - Alternative : BlockNote, plus proche de Notion dès le départ, mais il impose ses styles.
 
-**Toujours là**
-- Plugins Tauri : `autostart` (démarrage avec Windows), icône de la zone de notification (`tray`), `global-shortcut` (capture rapide), et une seconde fenêtre pour la mini-fenêtre et la capture.
+**Toujours là** *(fait, étape 1)*
+- Plugins Tauri : `autostart` (démarrage avec Windows), icône de la zone de notification (`tray`), `global-shortcut` (capture rapide), et une seconde fenêtre pour la mini-fenêtre et la capture. S'y ajoute `single-instance` : sans lui, relancer Cockpit alors qu'il attend dans la zone de notification ouvrirait une seconde app.
+- Ces plugins demandent **Tauri 2.12** (Rust et paquets npm), au lieu de 2.11.
+- Côté natif : `presence.rs` (icône, fermeture, démarrage, battement d'une minute) et `capture.rs` (raccourci, petite fenêtre). Les règles restent côté TypeScript.
+- La capture est une seconde page (`capture.html`, entrée Vite à part), sans routeur ni cache de requêtes : elle écrit par le même pont SQLite, et la fenêtre principale est prévenue par un événement.
 
-**Animations**
+**Animations** *(premières faites, étape 1)*
 - Une bibliothèque d'animation (Motion, ex-Framer Motion) pour les transitions et les ressorts, chargée seulement là où elle sert, pour garder un démarrage en moins d'une seconde (§2.6).
+- En pratique : `LazyMotion`. Les composants légers (`m`) sont dans le code de départ ; le moteur d'animation est un morceau à part, chargé après le premier rendu. Durées et courbes sont dans `ui/motion/presets.ts`.
 
 ### 9.6 Choix faits
 
@@ -1247,6 +1314,14 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 4. **Propositions P13 à P22** : retenues (25/11/2026).
 5. **Sélecteur de mode** (P13, étape 2) : un interrupteur à deux icônes, sans texte, en haut à gauche de la barre latérale, sur le modèle du sélecteur Chat / Code de l'application Claude Desktop. Le mode actif est mis en évidence (demandé le 25/11/2026).
 
+6. **Étape 1, « Toujours là »** (25/11/2026) :
+   - le démarrage avec Windows est activé d'office, et Cockpit démarre alors caché dans la zone de notification ;
+   - le raccourci global de capture est `Ctrl+Maj+Espace`, modifiable dans Paramètres (jamais `Ctrl+Alt`, qui est AltGr en AZERTY) ;
+   - la boîte de réception est une page de la barre latérale, sous « Aujourd'hui », avec un compteur ;
+   - la répétition se saisit par un menu de choix tout faits, des pastilles de jours en hebdomadaire et une fin facultative ;
+   - sur une occurrence : modifier ou déplacer « cette fois » ou « toute la série » ; supprimer « cette fois », « celle-ci et les suivantes » ou « toute la série » ;
+   - le chiffre d'affaires compte tous les encaissements reçus, à leur date de réception.
+
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
 - Éditeur : TipTap (recommandé) ou BlockNote.
@@ -1255,7 +1330,7 @@ Encore à trancher, au moment de l'étape concernée :
 
 Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie sur les précédentes. Une branche `v2-…` par étape, validée une à une.
 
-1. **Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre, premières animations.
+1. **Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre, premières animations. **Fait le 25/11/2026** (branche `v2-toujours-la`, 8 sous-étapes ; détail au §7.3).
 2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes.
 3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
 4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion.

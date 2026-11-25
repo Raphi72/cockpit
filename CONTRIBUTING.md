@@ -1,9 +1,9 @@
 # Contribuer à Cockpit
 
-Cockpit en est à la **V1.1.2** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)), la V1.1 (8 étapes) et la V1.1.2 (4 étapes) sont faits. La V2 est en conception (§9 de la conception).
+Cockpit en est à la **V1.1.2** : le MVP (jalons 0 à 6 de la [conception](docs/CONCEPTION.md)), la V1.1 (8 étapes) et la V1.1.2 (4 étapes) sont faits. La **V2** est en cours (§9 de la conception) : sa première étape est faite.
 Le détail de chaque point (règles, choix déjà faits) est au §7 de la conception ; cette page n'en garde que la liste.
 
-Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…` ou `v1.1-…`, fusionnée dans `main` en avance rapide.
+Avant de coder : lire [CLAUDE.md](CLAUDE.md) (règles d'architecture, données personnelles, vérifications) et travailler sur une branche `jalon-N-…`, `v1.1-…` ou `v2-…`, fusionnée dans `main` en avance rapide.
 
 ## V1.1 (terminée)
 
@@ -71,11 +71,20 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
   - Une tâche choisie par le planning mais pas terminée revient, en fin de journée, là d'où elle venait (sa date d'avant).
   - Précisé en le faisant (conception, §7.3) : les retards et ce qui est dû aujourd'hui d'abord, puis ce qui est prévu, dû dans les 3 jours ou urgent, puis les tâches de priorité haute et les deadlines de la semaine ; en mode durée, les tâches sans estimation ne sont pas proposées (la fenêtre dit combien et permet de leur donner une durée sur place).
 
-## V2 : tout dans Cockpit (en conception)
+## V2 : tout dans Cockpit (en cours)
 
 Le compagnon de tous les jours : travail, cours, sport et journée organisée, sur le PC et sur le téléphone Android. Détail complet au §9 de la [conception](docs/CONCEPTION.md) ; les étapes, dans l'ordre de leurs dépendances :
 
-- [ ] **1. Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre (URSSAF), premières animations.
+- [x] **1. Toujours là** (branche `v2-toujours-la`) : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre (URSSAF), premières animations.
+  - [x] **Boîte de réception** : une page sous « Aujourd'hui » ; chaque capture devient une tâche (`T`), une idée de projet (`I`) ou un événement (`E`), avec « Annuler ».
+  - [x] **Zone de notification et démarrage avec Windows** : fermer la fenêtre garde Cockpit ouvert, l'icône la rouvre ou le quitte ; lancé avec Windows, il démarre caché. Réglable dans Paramètres.
+  - [x] **Capture rapide** : `Ctrl+Maj+Espace` (réglable) ouvre une petite fenêtre, même Cockpit caché ; Entrée, et c'est dans la boîte de réception.
+  - [x] **Événements récurrents** : chaque jour, semaine (jours au choix), deux semaines, mois ou année, avec une fin facultative ; visibles dans le calendrier, le dashboard, la fiche projet et les notifications.
+  - [x] **Une fois ou toute la série** : modifier, glisser ou supprimer une occurrence seule, ou la série (« cette fois », « celle-ci et les suivantes », « toute la série »).
+  - [x] **Chiffre d'affaires** : onglet de Finances, par trimestre et par mois (encaissements reçus, à leur date de réception).
+  - [x] **Premières animations** (Motion) : changement de page, lignes des listes, toasts, barre latérale ; coupées par « Réduire les animations » de Windows.
+
+  Restent à essayer à la main (§7.3) : la zone de notification et la capture dans la fenêtre de développement ; le démarrage avec Windows, l'instance unique et le temps de démarrage dans l'app installée.
 - [ ] **2. Modes et espace Cours** : modes Travail et Cours, matières, emploi du temps, devoirs, examens, notes et moyennes.
 - [ ] **3. Organisateur de journée** : modules réutilisables (« Sport 3 h »), blocs glissés sur la journée, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
 - [ ] **4. Pages** (à la place de Notion) : éditeur en blocs, sous-pages, pages rattachées à un projet ou une matière, liens `[[…]]`, modèles, journal du jour, import Notion.
