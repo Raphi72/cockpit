@@ -1245,6 +1245,7 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 2. **Synchronisation** : par Google Drive, avec des fichiers de modifications chiffrés dans le dossier caché de l'app, jamais la base elle-même (25/11/2026).
 3. **Périmètre** : tout ce qui est au §9.3 fait partie de la V2 ; rien n'est remis à plus tard.
 4. **Propositions P13 à P22** : retenues (25/11/2026).
+5. **Sélecteur de mode** (P13, étape 2) : un interrupteur à deux icônes, sans texte, en haut à gauche de la barre latérale, sur le modèle du sélecteur Chat / Code de l'application Claude Desktop. Le mode actif est mis en évidence (demandé le 25/11/2026).
 
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
