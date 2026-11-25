@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { parseISO } from 'date-fns';
+import { batchContext } from '@/core/batch';
 import { db, type Statement } from '@/core/db';
 import { addDaysISO, formatLongDate, nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
@@ -16,16 +17,25 @@ import {
   type EventPatch,
   type NewEventInput,
 } from './model';
+import { occurrenceMoment } from './recurrence';
 import {
-  deleteEventStatement,
   getEvent,
+  getException,
   insertEventStatement,
   listAgenda,
+  listExceptions,
   listProjectEvents,
-  restoreEventStatement,
   updateEventStatement,
 } from './repository';
-import { buildRetimeEventBatch, buildShiftBatch } from './service';
+import {
+  buildCancelOccurrenceBatch,
+  buildDeleteEventBatch,
+  buildEndSeriesBatch,
+  buildMoveOccurrenceBatch,
+  buildRetimeEventBatch,
+  buildShiftBatch,
+  type MoveBatch,
+} from './service';
 
 // ─── Lectures ───────────────────────────────────────────────────────────────
 
@@ -55,6 +65,15 @@ export function useEvent(id: string | null) {
     queryKey: queryKeys.agenda.event(id ?? ''),
     queryFn: async () => (id ? ((await getEvent(db, id)) ?? null) : null),
     enabled: id !== null,
+  });
+}
+
+/** Exceptions d'un événement qui se répète (occurrences annulées ou déplacées), pour son panneau. */
+export function useEventExceptions(eventId: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.agenda.all, 'exceptions', eventId ?? ''],
+    queryFn: async () => (eventId ? ((await listExceptions(db, [eventId])).get(eventId) ?? []) : []),
+    enabled: eventId !== null,
   });
 }
 
@@ -120,6 +139,17 @@ export function useMoveAgendaItem() {
   return useMutation({
     mutationFn: async ({ item, days, time }: MoveInput): Promise<MoveResult> => {
       const now = nowTimestamp();
+      // Une occurrence d'un événement qui se répète : elle seule bouge, la série reste où elle est.
+      if (item.occurrence) {
+        const event = await getEvent(db, item.id);
+        const moved = movedAgendaItem(item, days, isRetimed(item, { day: '', time }) ? time : null);
+        if (!event || (moved.start === item.start && moved.end === item.end)) return { status: 'unchanged' };
+        const previous = await getException(db, item.id, item.occurrence);
+        const moment = { startsAt: moved.start, endsAt: moved.end };
+        const batch = buildMoveOccurrenceBatch(event, item.occurrence, moment, previous, batchContext());
+        await db.batch(batch.statements);
+        return { status: 'moved', undo: batch.undo };
+      }
       if (isRetimed(item, { day: '', time })) {
         const event = await getEvent(db, item.id);
         if (!event || (days === 0 && event.startsAt.slice(11, 16) === time)) return { status: 'unchanged' };
@@ -152,7 +182,7 @@ export function useMoveAgendaItem() {
       }
       if (result.status !== 'moved') return;
       const when = formatLongDate(parseISO(dropDay)).toLowerCase() + (isRetimed(item, { day: '', time }) ? ` à ${time}` : '');
-      toast(`Déplacé au ${when}.`, {
+      toast(item.occurrence ? `Déplacé au ${when}, cette fois seulement.` : `Déplacé au ${when}.`, {
         action: {
           label: 'Annuler',
           undo: true,
@@ -164,22 +194,104 @@ export function useMoveAgendaItem() {
   });
 }
 
-/** Suppression avec « Annuler » : l'événement est réinséré à l'identique. */
+/** Toast d'une écriture annulable : « Annuler » rejoue le lot inverse. */
+function announceUndoable(queryClient: QueryClient, message: string, undo: Statement[]) {
+  invalidateAgenda(queryClient);
+  toast(message, {
+    action: {
+      label: 'Annuler',
+      undo: true,
+      onClick: () => void db.batch(undo).then(() => invalidateAgenda(queryClient)),
+    },
+  });
+}
+
+/**
+ * Suppression avec « Annuler » : l'événement est réinséré à l'identique. S'il se répète, toute sa
+ * série part avec lui, et revient avec ses exceptions.
+ */
 export function useDeleteEvent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (event: AgendaEvent) => db.batch([deleteEventStatement(event.id)]),
-    onSuccess: (_result, event) => {
-      invalidateAgenda(queryClient);
-      toast('Événement supprimé.', {
-        action: {
-          label: 'Annuler',
-          undo: true,
-          onClick: () => {
-            void db.batch([restoreEventStatement(event, nowTimestamp())]).then(() => invalidateAgenda(queryClient));
-          },
-        },
-      });
+    mutationFn: async (event: AgendaEvent): Promise<MoveBatch> => {
+      const exceptions = (await listExceptions(db, [event.id])).get(event.id) ?? [];
+      const batch = buildDeleteEventBatch(event, exceptions, batchContext());
+      await db.batch(batch.statements);
+      return batch;
+    },
+    onSuccess: (batch, event) => {
+      const message = event.recurrence ? 'Événement supprimé, avec toutes ses répétitions.' : 'Événement supprimé.';
+      announceUndoable(queryClient, message, batch.undo);
+    },
+  });
+}
+
+type OccurrenceTarget = { event: AgendaEvent; occurrence: string };
+
+/** Modifier « cette fois » dans le panneau : seule cette occurrence change de moment. */
+export function useMoveOccurrence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ event, occurrence, ...moment }: OccurrenceTarget & { startsAt: string; endsAt: string | null }) => {
+      const previous = await getException(db, event.id, occurrence);
+      const batch = buildMoveOccurrenceBatch(event, occurrence, moment, previous, batchContext());
+      await db.batch(batch.statements);
+      return batch;
+    },
+    onSuccess: (batch) => announceUndoable(queryClient, 'Modifié pour cette fois seulement.', batch.undo),
+  });
+}
+
+/** L'occurrence retrouve la place prévue par la règle. */
+export function useResetOccurrence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ event, occurrence }: OccurrenceTarget) => {
+      const previous = await getException(db, event.id, occurrence);
+      const planned = occurrenceMoment(event, [], occurrence);
+      const moment = { startsAt: planned.startsAt, endsAt: planned.endsAt };
+      const batch = buildMoveOccurrenceBatch(event, occurrence, moment, previous, batchContext());
+      await db.batch(batch.statements);
+      return batch;
+    },
+    onSuccess: (batch) => announceUndoable(queryClient, 'Remis à sa place prévue.', batch.undo),
+  });
+}
+
+/** Supprimer « cette fois » : l'occurrence est annulée, la série continue. */
+export function useCancelOccurrence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ event, occurrence }: OccurrenceTarget) => {
+      const previous = await getException(db, event.id, occurrence);
+      const batch = buildCancelOccurrenceBatch(event.id, occurrence, previous, batchContext());
+      await db.batch(batch.statements);
+      return batch;
+    },
+    onSuccess: (batch) => announceUndoable(queryClient, 'Supprimé pour cette fois.', batch.undo),
+  });
+}
+
+/**
+ * Supprimer « celle-ci et les suivantes » : la série s'arrête la veille. Depuis la toute première
+ * occurrence, il ne resterait rien : c'est l'événement entier qui est supprimé.
+ */
+export function useEndSeries() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ event, occurrence }: OccurrenceTarget): Promise<{ batch: MoveBatch; whole: boolean }> => {
+      const ctx = batchContext();
+      const ending = buildEndSeriesBatch(event, occurrence, ctx.now);
+      const exceptions = ending ? [] : ((await listExceptions(db, [event.id])).get(event.id) ?? []);
+      const batch = ending ?? buildDeleteEventBatch(event, exceptions, ctx);
+      await db.batch(batch.statements);
+      return { batch, whole: ending === null };
+    },
+    onSuccess: ({ batch, whole }) => {
+      const message = whole
+        ? 'Événement supprimé, avec toutes ses répétitions.'
+        : 'Supprimé à partir de cette fois : la série s’arrête la veille.';
+      announceUndoable(queryClient, message, batch.undo);
     },
   });
 }

@@ -211,6 +211,25 @@ export function expandSeries(series: Series, exceptions: EventException[], from:
   return occurrences.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
 
+/**
+ * Le moment d'une occurrence, désignée par son jour prévu : celui de la série, décalé à ce jour, ou,
+ * si elle a été déplacée, son nouveau moment.
+ */
+export function occurrenceMoment(
+  series: Series,
+  exceptions: EventException[],
+  day: string,
+): { startsAt: string; endsAt: string | null; moved: boolean } {
+  const exception = exceptions.find((x) => x.occurrence === day && x.kind === 'moved' && x.startsAt !== null);
+  if (exception) return { startsAt: exception.startsAt!, endsAt: exception.endsAt, moved: true };
+  const delta = daysBetween(series.startsAt.slice(0, 10), day);
+  return {
+    startsAt: shiftStamp(series.startsAt, delta),
+    endsAt: series.endsAt ? shiftStamp(series.endsAt, delta) : null,
+    moved: false,
+  };
+}
+
 /** Fenêtres de recherche de la prochaine occurrence, en jours : large d'abord pour le cas courant, puis jusqu'à 8 ans (29 février). */
 const SEARCH_WINDOWS = [35, 400, 3000];
 
@@ -282,6 +301,25 @@ export function toggleWeekday(rule: Recurrence, weekday: number, start: string):
 export function moveRecurrenceStart(rule: Recurrence | null, start: string): Recurrence | null {
   if (!rule || rule.freq !== 'weekly') return rule;
   return normalizeRecurrence({ ...rule, weekdays: rule.weekdays.length <= 1 ? [] : rule.weekdays }, start);
+}
+
+/**
+ * Déplacer une occurrence « pour toute la série », du jour `from` (prévu par la règle) au jour `to`.
+ * En hebdomadaire, ce jour de la semaine est remplacé par le nouveau (tous les lundis deviennent des
+ * mardis) et le premier jour ne bouge que si c'était le sien. Sinon, toute la série se décale d'autant.
+ */
+export function shiftSeriesDay(rule: Recurrence, start: string, from: string, to: string): { start: string; rule: Recurrence } {
+  const delta = daysBetween(from, to);
+  if (rule.freq !== 'weekly') return { start: addDaysISO(start, delta), rule };
+  const replaced = weekdayOf(from);
+  const weekdays = normalizeRecurrence(rule, start).weekdays.map((day) => (day === replaced ? weekdayOf(to) : day));
+  const nextStart = weekdayOf(start) === replaced ? addDaysISO(start, delta) : start;
+  return { start: nextStart, rule: normalizeRecurrence({ ...rule, weekdays }, nextStart) };
+}
+
+/** La série s'arrête la veille de `day` : cette occurrence et les suivantes disparaissent. */
+export function endSeriesBefore(rule: Recurrence, day: string): Recurrence {
+  return { ...rule, until: addDaysISO(day, -1) };
 }
 
 /** Message d'erreur, ou `null` si la règle est cohérente avec le premier jour. */

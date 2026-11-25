@@ -16,7 +16,14 @@ import {
 } from '@/core/dates';
 import { formatMoney } from '@/core/money';
 import type { PaletteKey } from '@/ui/data/ColorDot';
-import { validateRecurrence, type Recurrence } from './recurrence';
+import {
+  formatRecurrence,
+  isOccurrenceDay,
+  parseRecurrence,
+  shiftSeriesDay,
+  validateRecurrence,
+  type Recurrence,
+} from './recurrence';
 
 // ─── Événements saisis ──────────────────────────────────────────────────────
 
@@ -215,6 +222,44 @@ export function validateNewEvent(input: NewEventInput): Partial<Record<'title' |
   const recurrence = validateRecurrence(input.recurrence ?? null, input.timing.date);
   if (recurrence) errors.recurrence = recurrence;
   return errors;
+}
+
+// ─── Une fois, ou toute la série ────────────────────────────────────────────
+
+/** Un changement fait sur une occurrence s'applique à elle seule, ou à tout l'événement qui se répète. */
+export type SeriesScope = 'once' | 'series';
+
+/**
+ * Changement de date ou d'heure fait sur une occurrence (`current` → `next`), appliqué à toute la
+ * série : ce qu'il faut enregistrer sur l'événement, et le jour qui désigne désormais l'occurrence
+ * ouverte (`null` si elle n'existe plus). Renvoie le message d'erreur si le résultat est incohérent.
+ */
+export function seriesChangeFromOccurrence(
+  event: Pick<AgendaEvent, 'allDay' | 'startsAt' | 'endsAt' | 'recurrence'>,
+  occurrence: string,
+  current: EventTiming,
+  next: EventTiming,
+): { patch: EventPatch; occurrence: string | null } | { error: string } {
+  const rule = parseRecurrence(event.recurrence);
+  if (!rule) return { error: 'Cet événement ne se répète pas.' };
+  const series = timingOf(event);
+  const moved = next.date !== current.date;
+  const shifted = moved ? shiftSeriesDay(rule, series.date, occurrence, next.date) : { start: series.date, rule };
+  // Le premier jour de la série suit ; les heures, et la durée en jours, sont celles qu'on vient de saisir.
+  const span = next.allDay && next.endDate ? daysBetween(next.date, next.endDate) : 0;
+  const timing: EventTiming = {
+    ...moveTimingDate(series, shifted.start),
+    startTime: next.startTime,
+    endTime: next.endTime,
+    endDate: series.allDay && span > 0 ? addDaysISO(shifted.start, span) : null,
+  };
+  const error = validateTiming(timing) ?? validateRecurrence(shifted.rule, shifted.start);
+  if (error) return { error };
+  const day = moved ? addDaysISO(occurrence, daysBetween(current.date, next.date)) : occurrence;
+  return {
+    patch: { ...timingColumns(timing), recurrence: formatRecurrence(shifted.rule) },
+    occurrence: isOccurrenceDay(shifted.start, shifted.rule, day) ? day : null,
+  };
 }
 
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────

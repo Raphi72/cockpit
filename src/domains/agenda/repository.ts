@@ -37,6 +37,29 @@ export async function listExceptions(db: Db, eventIds: string[]): Promise<Map<st
   return byEvent;
 }
 
+export function getException(db: Db, eventId: string, occurrence: string): Promise<EventException | undefined> {
+  return db.queryOne<EventException>(
+    'SELECT event_id, occurrence, kind, starts_at, ends_at FROM event_exceptions WHERE event_id = ? AND occurrence = ?',
+    [eventId, occurrence],
+  );
+}
+
+/** Pose l'exception d'une occurrence (annulée ou déplacée), ou remplace celle qu'elle avait déjà. */
+export function upsertExceptionStatement(id: string, exception: EventException, now: string): Statement {
+  return {
+    sql: `INSERT INTO event_exceptions (id, event_id, occurrence, kind, starts_at, ends_at, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT (event_id, occurrence) DO UPDATE
+          SET kind = excluded.kind, starts_at = excluded.starts_at, ends_at = excluded.ends_at`,
+    params: [id, exception.eventId, exception.occurrence, exception.kind, exception.startsAt, exception.endsAt, now],
+  };
+}
+
+/** L'occurrence suit de nouveau la règle. */
+export function deleteExceptionStatement(eventId: string, occurrence: string): Statement {
+  return { sql: 'DELETE FROM event_exceptions WHERE event_id = ? AND occurrence = ?', params: [eventId, occurrence] };
+}
+
 /** Premier jour d'une tâche dans l'agenda : son début s'il précède la deadline, sinon la deadline (ou le début seul). */
 const TASK_FIRST_DAY = `CASE WHEN t.scheduled_date < t.due_date THEN t.scheduled_date ELSE COALESCE(t.due_date, t.scheduled_date) END`;
 
