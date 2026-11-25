@@ -1,2 +1,3 @@
 export type { InboxItem } from './model';
-export { useInboxCount } from './hooks';
+export { CaptureSettings } from './components/CaptureSettings';
+export { useInboxCount, useInboxSync } from './hooks';

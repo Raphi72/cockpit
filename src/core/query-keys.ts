@@ -6,6 +6,8 @@ export const queryKeys = {
   appInfo: ['app-info'] as const,
   /** Démarrage avec Windows : l'état réel, lu auprès de Windows. */
   autostart: ['autostart'] as const,
+  /** Raccourci global de capture rapide : ce que Windows en fait vraiment. */
+  captureShortcut: ['capture-shortcut'] as const,
   /** Un réglage de la table `settings`. */
   settings: (key: string) => ['settings', key] as const,
   projectTypes: ['project-types'] as const,

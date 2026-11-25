@@ -18,5 +18,12 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_'],
   build: {
     target: 'es2022',
+    // Deux pages : l'app, et la petite fenêtre de capture rapide (ouverte par le raccourci global).
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        capture: fileURLToPath(new URL('./capture.html', import.meta.url)),
+      },
+    },
   },
 });

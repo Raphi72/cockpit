@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "capture",
+  "description": "Fenêtre de capture rapide : seulement écouter les événements (ouverture).",
+  "windows": ["capture"],
+  "permissions": ["core:event:default"]
+}

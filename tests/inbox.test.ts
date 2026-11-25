@@ -3,7 +3,15 @@ import { sql } from '@/core/db/client';
 import type { NewEventInput } from '@/domains/agenda/model';
 import { getEvent } from '@/domains/agenda/repository';
 import { listProjectIdeas } from '@/domains/ideas/repository';
-import { capturedLabel, cleanInboxText, inboxCountLabel } from '@/domains/inbox/model';
+import {
+  CAPTURE_SHORTCUT,
+  CAPTURE_SHORTCUTS,
+  NO_CAPTURE_SHORTCUT,
+  capturedLabel,
+  cleanInboxText,
+  inboxCountLabel,
+  resolveCaptureShortcut,
+} from '@/domains/inbox/model';
 import {
   deleteInboxItemStatement,
   getInboxItem,
@@ -82,6 +90,16 @@ describe('règles de la boîte de réception', () => {
     expect(inboxCountLabel(0)).toBeNull();
     expect(inboxCountLabel(1)).toBe('1 à trier');
     expect(inboxCountLabel(3)).toBe('3 à trier');
+  });
+
+  it('garde un raccourci de capture connu, sinon celui par défaut', () => {
+    expect(CAPTURE_SHORTCUT.fallback).toBe('Ctrl+Shift+Space');
+    expect(resolveCaptureShortcut('Alt+Shift+C')).toBe('Alt+Shift+C');
+    expect(resolveCaptureShortcut(NO_CAPTURE_SHORTCUT)).toBe('none');
+    // Jamais Ctrl+Alt (AltGr en AZERTY), ni une valeur modifiée à la main.
+    expect(resolveCaptureShortcut('Ctrl+Alt+Space')).toBe('Ctrl+Shift+Space');
+    expect(resolveCaptureShortcut(null)).toBe('Ctrl+Shift+Space');
+    expect(CAPTURE_SHORTCUTS.every((choice) => !choice.value.includes('Ctrl+Alt'))).toBe(true);
   });
 });
 

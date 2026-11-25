@@ -18,6 +18,7 @@ import {
 } from '@/domains/data';
 import { AccountsEditor } from '@/domains/finance/accounts/components/AccountsEditor';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
+import { CaptureSettings } from '@/domains/inbox';
 import { NotificationSettings } from '@/domains/notifications';
 import { PresenceSettings } from '@/domains/presence';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
@@ -250,6 +251,7 @@ export function SettingsPage() {
       <AppearanceSection />
       <DashboardSection />
       <PresenceSettings />
+      <CaptureSettings />
       <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />

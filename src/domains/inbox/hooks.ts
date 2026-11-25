@@ -1,13 +1,25 @@
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { batchContext } from '@/core/batch';
 import { db } from '@/core/db';
+import { UserError } from '@/core/db/errors';
 import { nowTimestamp } from '@/core/dates';
 import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import type { NewEventInput } from '@/domains/agenda/model';
+import { useSetting } from '@/domains/settings/hooks';
+import { setSettingStatement } from '@/domains/settings/repository';
 import type { NewTaskInput } from '@/domains/tasks/model';
 import { toast } from '@/ui/overlays/toast';
-import type { InboxItem } from './model';
+import {
+  CAPTURE_SHORTCUT,
+  resolveCaptureShortcut,
+  type CaptureShortcutChoice,
+  type InboxItem,
+  type NativeCaptureShortcut,
+} from './model';
 import {
   deleteInboxItemStatement,
   insertInboxItemStatement,
@@ -152,6 +164,58 @@ export function useInboxToEvent() {
     },
     onSuccess: (eventId, { item }) => {
       announceTriage(queryClient, 'Événement ajouté.', item, { kind: 'event', id: eventId });
+    },
+  });
+}
+
+// ─── Capture rapide ─────────────────────────────────────────────────────────
+
+/**
+ * La capture rapide écrit depuis sa propre petite fenêtre : la fenêtre principale est prévenue
+ * (événement natif) et relit la boîte. Lancé une fois pour toute l'app (AppShell).
+ */
+export function useInboxSync(): void {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!isTauri()) return;
+    const unlisten = listen('cockpit:inbox-changed', () => invalidateInbox(queryClient));
+    return () => {
+      void unlisten.then((off) => off());
+    };
+  }, [queryClient]);
+}
+
+async function readNativeShortcut(): Promise<NativeCaptureShortcut> {
+  if (!isTauri()) return { available: false, active: false };
+  const { active } = await invoke<{ active: boolean }>('capture_shortcut_get');
+  return { available: true, active };
+}
+
+/** Le raccourci choisi (réglage), et ce que Windows en fait vraiment. */
+export function useCaptureShortcut() {
+  const { data } = useSetting(CAPTURE_SHORTCUT);
+  const { data: native } = useQuery({ queryKey: queryKeys.captureShortcut, queryFn: readNativeShortcut });
+  return { shortcut: data === undefined ? undefined : resolveCaptureShortcut(data), native };
+}
+
+/**
+ * Change le raccourci : Windows d'abord, le réglage ensuite. S'il est déjà pris par une autre
+ * application, rien ne change et le message le dit.
+ */
+export function useSetCaptureShortcut() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (accelerator: CaptureShortcutChoice) => {
+      if (isTauri()) {
+        await invoke('capture_shortcut_set', { accelerator }).catch((error: unknown) => {
+          throw new UserError(String(error));
+        });
+      }
+      await db.batch([setSettingStatement(CAPTURE_SHORTCUT.key, accelerator)]);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings(CAPTURE_SHORTCUT.key) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.captureShortcut });
     },
   });
 }

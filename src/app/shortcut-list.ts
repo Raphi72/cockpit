@@ -21,6 +21,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     entries: [
       { keys: ['Ctrl K'], label: 'Rechercher ou lancer une commande' },
       { keys: ['N', 'Ctrl N'], label: 'Nouvelle tâche' },
+      { keys: ['Ctrl Maj Espace'], label: 'Capture rapide, même hors de Cockpit (réglable)' },
       { keys: ['C'], label: 'Nouveau…, puis T, E, P, L, R ou D' },
       { keys: ['Ctrl 1 … 6'], label: 'Aller aux pages principales' },
       { keys: ['Ctrl B'], label: 'Réduire ou déplier la barre latérale' },

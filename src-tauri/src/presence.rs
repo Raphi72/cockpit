@@ -5,6 +5,7 @@
 //! l'inscription au démarrage de Windows et le battement d'une minute qui réveille l'interface.
 
 use crate::backup;
+use crate::capture;
 use crate::db::{self, Database};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -14,7 +15,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{App, AppHandle, Emitter, Manager, State, Window, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 
-const MAIN_WINDOW: &str = "main";
+pub const MAIN_WINDOW: &str = "main";
 
 /// Argument ajouté à la commande inscrite au démarrage de Windows : Cockpit démarre alors caché.
 pub const AUTOSTART_ARG: &str = "--autostart";
@@ -55,12 +56,16 @@ impl Presence {
 
     /// Premier affichage de la fenêtre, une seule fois : jamais si Cockpit a démarré caché, ni après
     /// un rechargement de l'interface (la fenêtre peut alors être dans la zone de notification).
+    ///
+    /// La fenêtre est créée sans le focus (tauri.conf.json) : cachée, elle ne doit pas prendre le
+    /// clavier à l'application en cours. C'est ici qu'elle le reçoit, en s'affichant.
     fn reveal(&self, app: &AppHandle) {
         if self.start_hidden || self.revealed.swap(true, Ordering::SeqCst) {
             return;
         }
         if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
             let _ = window.show();
+            let _ = window.set_focus();
         }
     }
 }
@@ -105,11 +110,12 @@ pub fn quit(app: AppHandle) {
 
 // ─── Zone de notification ───────────────────────────────────────────────────
 
-/// L'icône près de l'horloge : un clic rouvre la fenêtre, le clic droit propose « Quitter ».
+/// L'icône près de l'horloge : un clic rouvre la fenêtre, le clic droit propose la capture rapide et « Quitter ».
 pub fn create_tray(app: &App) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Ouvrir Cockpit", true, None::<&str>)?;
+    let note = MenuItem::with_id(app, "capture", "Capture rapide", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &note, &PredefinedMenuItem::separator(app)?, &quit])?;
 
     let mut tray = TrayIconBuilder::with_id("cockpit")
         // Pour distinguer l'app de développement de l'app installée, qui peuvent tourner ensemble.
@@ -118,6 +124,7 @@ pub fn create_tray(app: &App) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => show_main(app),
+            "capture" => capture::open(app),
             "quit" => app.exit(0),
             _ => {}
         })
