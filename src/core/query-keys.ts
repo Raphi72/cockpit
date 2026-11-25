@@ -30,6 +30,11 @@ export const queryKeys = {
     all: ['ideas'] as const,
     project: (projectId: string) => ['ideas', 'project', projectId] as const,
   },
+  /** Boîte de réception : les captures à trier. */
+  inbox: {
+    all: ['inbox'] as const,
+    list: ['inbox', 'list'] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

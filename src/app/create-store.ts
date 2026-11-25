@@ -11,6 +11,11 @@ export type CreateDefaults = {
   eventStart?: string;
   /** Clic dans la ligne « journée » d'un jour. */
   eventAllDay?: boolean;
+  /**
+   * Capture de la boîte de réception en train d'être triée (tâche ou événement) : son texte sert de
+   * titre, et elle quitte la boîte quand la création aboutit.
+   */
+  inboxItem?: { id: string; text: string; createdAt: string };
 };
 
 type CreateState = {

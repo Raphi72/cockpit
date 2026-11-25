@@ -22,6 +22,11 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/', validateSearch: validateDashboardSearch, component: DashboardPage }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: '/inbox',
+    component: lazyRouteComponent(() => import('@/domains/inbox/pages/InboxPage'), 'InboxPage'),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: '/projects',
     validateSearch: validateProjectsSearch,
     component: lazyRouteComponent(() => import('@/domains/projects/pages/ProjectsPage'), 'ProjectsPage'),

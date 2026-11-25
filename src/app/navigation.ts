@@ -2,6 +2,7 @@ import {
   CalendarDays,
   ChartGantt,
   FolderClosed,
+  Inbox,
   LayoutDashboard,
   SlidersHorizontal,
   SquareCheck,
@@ -12,6 +13,7 @@ import {
 
 export type AppPath =
   | '/'
+  | '/inbox'
   | '/projects'
   | '/tasks'
   | '/calendar'
@@ -30,6 +32,8 @@ export type NavItem = {
 
 export const mainNav: NavItem[] = [
   { to: '/', label: "Aujourd'hui", icon: LayoutDashboard, shortcut: '1' },
+  // Sans chiffre : Ctrl+1…6 gardent leurs pages. Son compteur est posé par la barre latérale.
+  { to: '/inbox', label: 'Boîte de réception', icon: Inbox },
   { to: '/projects', label: 'Projets', icon: FolderClosed, shortcut: '2' },
   { to: '/tasks', label: 'Tâches', icon: SquareCheck, shortcut: '3' },
   { to: '/calendar', label: 'Calendrier', icon: CalendarDays, shortcut: '4' },

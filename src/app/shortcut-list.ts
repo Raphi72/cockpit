@@ -1,6 +1,7 @@
 /**
  * Aide des raccourcis (touche ?). Chaque entrée décrit un raccourci réellement branché :
  * ceux de partout dans shortcuts.ts, ceux des listes dans ui/data/row-keys.ts,
+ * ceux de la boîte de réception dans InboxPage (sur la ligne qui a le focus),
  * ceux du dashboard et du calendrier dans DashboardPage et CalendarPage (usePageShortcuts).
  */
 export type ShortcutEntry = {
@@ -11,8 +12,8 @@ export type ShortcutEntry = {
 
 export type ShortcutSection = { title: string; entries: ShortcutEntry[] };
 
-/** Nombre de sections de la colonne de gauche (Partout, Fenêtres) ; les autres vont à droite. */
-export const LEFT_COLUMN_SECTIONS = 2;
+/** Nombre de sections de la colonne de gauche (Partout, Fenêtres, Boîte de réception) ; les autres vont à droite. */
+export const LEFT_COLUMN_SECTIONS = 3;
 
 export const SHORTCUT_SECTIONS: ShortcutSection[] = [
   {
@@ -33,6 +34,15 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['Ctrl Entrée'], label: 'Enregistrer' },
       { keys: ['Échap'], label: 'Fermer' },
       { keys: ['Suppr'], label: 'Supprimer (panneau de tâche ou d’événement, fiche projet)' },
+    ],
+  },
+  {
+    title: 'Boîte de réception',
+    entries: [
+      { keys: ['T'], label: 'En faire une tâche' },
+      { keys: ['I'], label: 'En faire une idée de projet' },
+      { keys: ['E'], label: 'En faire un événement' },
+      { keys: ['Entrée'], label: 'Reformuler' },
     ],
   },
   {

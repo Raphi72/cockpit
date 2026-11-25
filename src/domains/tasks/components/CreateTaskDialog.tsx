@@ -2,6 +2,7 @@ import { addDays, parseISO } from 'date-fns';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { toISODate, todayISO } from '@/core/dates';
+import { useInboxToTask } from '@/domains/inbox/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
@@ -27,10 +28,12 @@ type WhenChoice = 'today' | 'tomorrow' | 'none' | 'custom';
 
 function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone: () => void }) {
   const createTask = useCreateTask();
+  // Tri de la boîte de réception : la capture quitte la boîte avec la création, dans le même lot.
+  const fromInbox = useInboxToTask();
   const today = todayISO();
   const tomorrow = toISODate(addDays(parseISO(today), 1));
 
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(defaults.inboxItem?.text ?? '');
   const [projectId, setProjectId] = useState<string | null>(defaults.projectId ?? null);
   const [scheduledDate, setScheduledDate] = useState<string | null>(defaults.scheduledDate ?? null);
   const [dueDate, setDueDate] = useState<string | null>(null);
@@ -57,6 +60,10 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
     event?.preventDefault();
     setSubmitted(true);
     if (Object.keys(errors).length > 0) return;
+    if (defaults.inboxItem) {
+      fromInbox.mutate({ item: defaults.inboxItem, input }, { onSuccess: onDone });
+      return;
+    }
     createTask.mutate(input, {
       onSuccess: () => {
         toast(scheduledDate === today ? 'Tâche ajoutée à aujourd’hui.' : 'Tâche ajoutée.');
@@ -151,7 +158,7 @@ function CreateTaskForm({ defaults, onDone }: { defaults: CreateDefaults; onDone
         <Button variant="ghost" onClick={onDone}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createTask.isPending}>
+        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createTask.isPending || fromInbox.isPending}>
           Ajouter la tâche
         </Button>
       </DialogFooter>

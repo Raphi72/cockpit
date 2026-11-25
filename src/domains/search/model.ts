@@ -1,15 +1,16 @@
 import { normalizeText } from '@/core/text';
 
 /** Ce que la recherche globale sait retrouver (une ligne de l'index `search_index` par élément). */
-export type SearchEntity = 'project' | 'task' | 'idea' | 'client' | 'event' | 'payment' | 'transaction';
+export type SearchEntity = 'project' | 'task' | 'idea' | 'inbox' | 'client' | 'event' | 'payment' | 'transaction';
 
 /** Ordre des groupes à pertinence égale. */
-export const SEARCH_ENTITIES: SearchEntity[] = ['project', 'task', 'idea', 'client', 'event', 'payment', 'transaction'];
+export const SEARCH_ENTITIES: SearchEntity[] = ['project', 'task', 'idea', 'inbox', 'client', 'event', 'payment', 'transaction'];
 
 export const SEARCH_GROUP_LABELS: Record<SearchEntity, string> = {
   project: 'Projets',
   task: 'Tâches',
   idea: 'Idées',
+  inbox: 'Boîte de réception',
   client: 'Clients',
   event: 'Événements',
   payment: 'Encaissements',

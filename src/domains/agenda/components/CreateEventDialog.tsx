@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { isISODate, todayISO } from '@/core/dates';
+import { useInboxToEvent } from '@/domains/inbox/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { FormRow } from '@/ui/layout/FormRow';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
@@ -28,9 +29,11 @@ import {
 
 function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDone: () => void }) {
   const createEvent = useCreateEvent();
+  // Tri de la boîte de réception : la capture quitte la boîte avec la création, dans le même lot.
+  const fromInbox = useInboxToEvent();
   const today = todayISO();
 
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(defaults.inboxItem?.text ?? '');
   const [kind, setKind] = useState<EventKind>('appointment');
   const [timing, setTiming] = useState<EventTiming>(() => initialTiming(defaults, today, new Date()));
   const [projectId, setProjectId] = useState<string | null>(defaults.projectId ?? null);
@@ -55,6 +58,10 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
     event?.preventDefault();
     setSubmitted(true);
     if (Object.keys(errors).length > 0) return;
+    if (defaults.inboxItem) {
+      fromInbox.mutate({ item: defaults.inboxItem, input }, { onSuccess: onDone });
+      return;
+    }
     createEvent.mutate(input, {
       onSuccess: () => {
         toast('Événement ajouté.');
@@ -164,7 +171,7 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
         <Button variant="ghost" onClick={onDone}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createEvent.isPending}>
+        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createEvent.isPending || fromInbox.isPending}>
           Ajouter l’événement
         </Button>
       </DialogFooter>

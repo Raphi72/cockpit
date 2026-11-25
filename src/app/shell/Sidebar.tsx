@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { PanelLeft } from 'lucide-react';
 import { memo } from 'react';
+import { useInboxCount } from '@/domains/inbox';
 import { ActiveProjectsNav } from '@/domains/projects/components/ActiveProjectsNav';
 import { mainNav, secondaryNav, type NavItem } from '../navigation';
 import { useUiStore } from '../ui-store';
@@ -9,6 +10,14 @@ const itemClass =
   'flex h-[34px] w-full shrink-0 items-center gap-3 rounded-md px-[9px] whitespace-nowrap text-ink-2 ' +
   'transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink';
 
+/** Captures à trier : un chiffre discret, ou un point sur l'icône quand la barre est réduite. Rien si la boîte est vide. */
+function InboxCount({ collapsed }: { collapsed: boolean }) {
+  const count = useInboxCount();
+  if (count === 0) return null;
+  if (collapsed) return <span className="absolute top-1.5 left-[21px] size-1.5 rounded-full bg-accent" aria-label={`${count} à trier`} />;
+  return <span className="tnum ml-auto pl-2 text-meta font-normal text-ink-3">{count}</span>;
+}
+
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const Icon = item.icon;
   const hint = item.shortcut ? `${item.label} · Ctrl ${item.shortcut}` : item.label;
@@ -16,12 +25,13 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
     <Link
       to={item.to}
       title={collapsed ? hint : undefined}
-      className={itemClass}
+      className={`relative ${itemClass}`}
       activeOptions={{ exact: item.to === '/' }}
       activeProps={{ className: 'bg-active !text-ink font-medium' }}
     >
       <Icon className="size-4 shrink-0" strokeWidth={1.75} />
       {!collapsed && <span className="truncate">{item.label}</span>}
+      {item.to === '/inbox' && <InboxCount collapsed={collapsed} />}
     </Link>
   );
 }

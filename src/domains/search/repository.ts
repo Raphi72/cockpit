@@ -86,6 +86,12 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.id IS NOT NULL OR i.project_id IN (SELECT id FROM scope)
 
        UNION ALL
+       SELECT 'inbox', i.id, i.text, NULL, NULL, NULL, NULL, NULL, 0, 1, h.score
+       FROM hits h
+       JOIN inbox_items i ON i.id = h.id
+       WHERE h.entity = 'inbox'
+
+       UNION ALL
        SELECT 'client', c.id, c.name, NULL, c.email, NULL, NULL, NULL, c.archived_at IS NOT NULL, 1, h.score
        FROM hits h
        JOIN clients c ON c.id = h.id
