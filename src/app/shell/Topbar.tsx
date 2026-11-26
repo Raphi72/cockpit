@@ -11,11 +11,13 @@ import {
   Plus,
   Search,
   SquareCheck,
+  Timer,
   User,
   type LucideIcon,
 } from 'lucide-react';
 import { Fragment, type KeyboardEvent } from 'react';
 import { todayISO } from '@/core/dates';
+import { useCompanion } from '@/domains/companion/store';
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { Kbd } from '@/ui/primitives/Kbd';
@@ -103,12 +105,25 @@ function SearchButton() {
   );
 }
 
+/** Le mode focus, dans les deux modes : un bouton toujours là (en plus de la touche F). */
+function FocusButton() {
+  const openFocus = useCompanion((state) => state.setFocusOpen);
+  return (
+    <Button variant="ghost" icon={Timer} shortcut="F" onClick={() => openFocus(true)}>
+      Focus
+    </Button>
+  );
+}
+
 export function Topbar() {
   return (
     <header className="shrink-0 border-b border-line">
       <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between gap-2 px-12">
         <SearchButton />
-        <NewMenu />
+        <div className="flex items-center gap-2">
+          <FocusButton />
+          <NewMenu />
+        </div>
       </div>
     </header>
   );
