@@ -17,6 +17,7 @@ pub const MIGRATIONS: &[&str] = &[
     include_str!("../../migrations/0007_recurrence.sql"),
     include_str!("../../migrations/0008_school.sql"),
     include_str!("../../migrations/0009_day.sql"),
+    include_str!("../../migrations/0010_pages.sql"),
 ];
 
 pub fn run(conn: &mut Connection, backup_dir: &Path) -> Result<(), Box<dyn Error>> {

@@ -161,8 +161,8 @@ pub async fn open_backup_dir(app: AppHandle, db: State<'_, Database>) -> Result<
         .map_err(err)
 }
 
-/// Type d'un export d'après le nom proposé par l'interface : un simple nom `cockpit-export-….json`
-/// ou `….csv` (motif ignoré par Git), jamais un chemin.
+/// Type d'un export d'après le nom proposé par l'interface : un simple nom `cockpit-export-….json`,
+/// `….csv` ou `….md` (une page), motif ignoré par Git, jamais un chemin.
 fn export_filter(file_name: &str) -> Option<(&'static str, &'static str)> {
     let plain = !file_name.contains(['/', '\\', ':']) && !file_name.contains("..");
     if !plain || !file_name.starts_with("cockpit-export-") {
@@ -172,6 +172,8 @@ fn export_filter(file_name: &str) -> Option<(&'static str, &'static str)> {
         Some(("Données JSON", "json"))
     } else if file_name.ends_with(".csv") {
         Some(("Tableur CSV (Excel)", "csv"))
+    } else if file_name.ends_with(".md") {
+        Some(("Texte Markdown", "md"))
     } else {
         None
     }

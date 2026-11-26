@@ -53,6 +53,9 @@ export const EXPORT_TABLES = [
   { table: 'grades', key: 'grades' },
   { table: 'week_templates', key: 'weekTemplates' },
   { table: 'week_template_blocks', key: 'weekTemplateBlocks' },
+  { table: 'pages', key: 'pages' },
+  { table: 'page_links', key: 'pageLinks' },
+  { table: 'attachments', key: 'attachments' },
 ] as const;
 
 export type ExportTableKey = (typeof EXPORT_TABLES)[number]['key'];

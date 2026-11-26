@@ -78,6 +78,15 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     ],
   },
   {
+    title: 'Pages',
+    entries: [
+      { keys: ['/'], label: 'Insérer un bloc (titre, liste, cases, tableau, image…)' },
+      { keys: ['[['], label: 'Lien vers une page (ou une nouvelle)' },
+      { keys: ['# ', '- ', '[ ] '], label: 'Titre, liste ou case, en tapant' },
+      { keys: ['Ctrl Entrée'], label: 'Faire d’une case une vraie tâche' },
+    ],
+  },
+  {
     title: 'Journée',
     entries: [
       { keys: ['←', '→'], label: 'Jour (ou semaine) précédent ou suivant' },

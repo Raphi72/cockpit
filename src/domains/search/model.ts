@@ -6,6 +6,7 @@ export type SearchEntity =
   | 'subject'
   | 'task'
   | 'exam'
+  | 'page'
   | 'idea'
   | 'inbox'
   | 'client'
@@ -19,6 +20,7 @@ export const SEARCH_ENTITIES: SearchEntity[] = [
   'subject',
   'task',
   'exam',
+  'page',
   'idea',
   'inbox',
   'client',
@@ -32,6 +34,7 @@ export const SEARCH_GROUP_LABELS: Record<SearchEntity, string> = {
   subject: 'Matières',
   task: 'Tâches et devoirs',
   exam: 'Examens',
+  page: 'Pages',
   idea: 'Idées',
   inbox: 'Boîte de réception',
   client: 'Clients',

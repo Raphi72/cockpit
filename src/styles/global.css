@@ -134,3 +134,161 @@
     transition: none !important;
   }
 }
+
+/* ─── Pages : l'éditeur (TipTap, étape 4) ─────────────────────────────────────
+   Sobre, dans la typographie de l'app : le préréglage de Tailwind efface les styles des titres et des
+   listes, ils sont rendus ici, seulement dans une page. */
+@layer components {
+  .page-editor {
+    min-height: 40vh;
+    font-size: 15px;
+    line-height: 1.65;
+    outline: none;
+  }
+  .page-editor > * + * {
+    margin-top: 0.55em;
+  }
+  .page-editor h1 {
+    margin-top: 1.4em;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .page-editor h2 {
+    margin-top: 1.3em;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .page-editor h3 {
+    margin-top: 1.1em;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .page-editor ul {
+    list-style: disc;
+    padding-left: 1.4em;
+  }
+  .page-editor ol {
+    list-style: decimal;
+    padding-left: 1.5em;
+  }
+  .page-editor li > p + * {
+    margin-top: 0.2em;
+  }
+  .page-editor ul[data-type='taskList'] {
+    list-style: none;
+    padding-left: 0.1em;
+  }
+  .page-editor ul[data-type='taskList'] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55em;
+  }
+  .page-editor ul[data-type='taskList'] li > label {
+    margin-top: 0.28em;
+    user-select: none;
+  }
+  .page-editor ul[data-type='taskList'] li > label input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent);
+  }
+  .page-editor ul[data-type='taskList'] li > div {
+    flex: 1;
+    min-width: 0;
+  }
+  .page-editor ul[data-type='taskList'] li[data-checked='true'] > div {
+    color: var(--text-3);
+    text-decoration: line-through;
+  }
+  .page-editor blockquote {
+    border-left: 3px solid var(--border-strong);
+    padding-left: 1em;
+    color: var(--text-2);
+  }
+  .page-editor code {
+    border-radius: 4px;
+    background: var(--bg-hover);
+    padding: 0.1em 0.35em;
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.88em;
+  }
+  .page-editor pre {
+    overflow-x: auto;
+    border-radius: 7px;
+    background: var(--bg-hover);
+    padding: 0.8em 1em;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .page-editor pre code {
+    background: none;
+    padding: 0;
+  }
+  .page-editor hr {
+    margin: 1.6em 0;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+  .page-editor table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+  .page-editor td,
+  .page-editor th {
+    border: 1px solid var(--border);
+    padding: 0.35em 0.6em;
+    vertical-align: top;
+  }
+  .page-editor th {
+    background: var(--bg-hover);
+    font-weight: 600;
+    text-align: left;
+  }
+  .page-editor .selectedCell {
+    background: var(--accent-soft);
+  }
+  .page-editor a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .page-editor .is-empty::before {
+    float: left;
+    height: 0;
+    content: attr(data-placeholder);
+    color: var(--text-3);
+    pointer-events: none;
+  }
+  .page-mention {
+    cursor: pointer;
+    border-radius: 4px;
+    background: var(--accent-soft);
+    padding: 0 0.3em;
+    color: var(--accent);
+  }
+  .page-mention-missing {
+    background: var(--bg-hover);
+    color: var(--text-3);
+    text-decoration: line-through;
+  }
+  .page-image img {
+    max-width: 100%;
+    border-radius: 7px;
+  }
+  .page-image.is-selected img {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .page-image-missing {
+    display: block;
+    border-radius: 7px;
+    background: var(--bg-hover);
+    padding: 1em;
+    color: var(--text-3);
+    font-size: 13px;
+  }
+}

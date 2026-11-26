@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChartGantt,
   FileCheck,
+  FileText,
   FolderClosed,
   Inbox,
   LayoutDashboard,
@@ -33,7 +34,8 @@ export type AppPath =
   | '/timetable'
   | '/exams'
   | '/grades'
-  | '/day';
+  | '/day'
+  | '/pages';
 
 export type NavItem = {
   to: AppPath;
@@ -48,6 +50,8 @@ export type ModeNav = { main: NavItem[]; secondary: NavItem[] };
 const today: NavItem = { to: '/', label: "Aujourd'hui", icon: LayoutDashboard, shortcut: '1' };
 // Journée (organisateur, étape 3) : commune aux deux modes, sans chiffre.
 const dayPage: NavItem = { to: '/day', label: 'Journée', icon: Sunrise };
+// Pages (étape 4) : communes aux deux modes ; les favorites sont listées sous la navigation.
+const pagesPage: NavItem = { to: '/pages', label: 'Pages', icon: FileText };
 // Sans chiffre : Ctrl+1…6 gardent leurs pages. Son compteur est posé par la barre latérale.
 const inbox: NavItem = { to: '/inbox', label: 'Boîte de réception', icon: Inbox };
 // Même chiffre dans les deux modes : Ctrl+4 ouvre toujours le calendrier.
@@ -64,6 +68,7 @@ export const NAV: Record<AppMode, ModeNav> = {
       today,
       dayPage,
       inbox,
+      pagesPage,
       { to: '/projects', label: 'Projets', icon: FolderClosed, shortcut: '2' },
       { to: '/tasks', label: 'Tâches', icon: SquareCheck, shortcut: '3' },
       calendar,
@@ -77,6 +82,7 @@ export const NAV: Record<AppMode, ModeNav> = {
       today,
       dayPage,
       inbox,
+      pagesPage,
       { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' },
       { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '3' },
       calendar,

@@ -30,6 +30,16 @@ const routes = [
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: '/pages',
+    component: lazyRouteComponent(() => import('@/domains/pages/pages/PagesPage'), 'PagesPage'),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/pages/$pageId',
+    component: lazyRouteComponent(() => import('@/domains/pages/pages/PageDetailPage'), 'PageDetailPage'),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: '/inbox',
     component: lazyRouteComponent(() => import('@/domains/inbox/pages/InboxPage'), 'InboxPage'),
   }),

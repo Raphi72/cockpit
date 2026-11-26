@@ -3,6 +3,7 @@ import { useDeleteShortcut } from '@/app/shortcuts';
 import { ArrowLeft, Ellipsis, Trash2 } from 'lucide-react';
 import { useToday } from '@/core/use-today';
 import { ProjectEvents } from '@/domains/agenda/components/ProjectEvents';
+import { EntityPages } from '@/domains/pages/components/EntityPages';
 import { PageContainer } from '@/ui/layout/Page';
 import { Menu, MenuContent, MenuItem, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
@@ -88,6 +89,10 @@ export function ProjectDetailPage() {
 
           <div className="mt-14">
             <ProjectPlan projectId={project.id} today={today} />
+          </div>
+
+          <div className="mt-14">
+            <EntityPages entityType="project" entityId={project.id} />
           </div>
 
           <section className="mt-14">

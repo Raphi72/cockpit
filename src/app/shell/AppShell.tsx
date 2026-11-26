@@ -16,6 +16,7 @@ import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
 import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
+import { CreatePageOnDemand } from '@/domains/pages/components/CreatePageOnDemand';
 import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
 import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDialog';
 import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
@@ -74,6 +75,7 @@ export function AppShell() {
         <ExamEditorDialog />
         <CreateGradeDialog />
         <GradeEditorDialog />
+        <CreatePageOnDemand />
         <CreatePaymentDialog />
         <CreateTransactionDialog />
         <ReceivePaymentDialog />

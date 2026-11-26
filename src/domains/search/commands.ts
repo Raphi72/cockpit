@@ -6,6 +6,7 @@ import {
   CalendarPlus,
   CircleCheck,
   FileCheck,
+  FileText,
   FolderClosed,
   HandCoins,
   HardDriveDownload,
@@ -63,6 +64,7 @@ type CreateCommand = Omit<PaletteCommand, 'id' | 'group' | 'action' | 'suggested
 
 const CREATE: CreateCommand[] = [
   { kind: 'task', label: 'Nouvelle tâche', icon: SquareCheck, shortcut: 'N', suggestedIn: 'work' },
+  { kind: 'page', label: 'Nouvelle page', icon: FileText, keywords: 'note document notion fiche', suggestedIn: 'both' },
   { kind: 'event', label: 'Nouvel événement', icon: CalendarPlus, keywords: 'rendez-vous réunion', suggestedIn: 'both' },
   { kind: 'project', label: 'Nouveau projet', icon: FolderClosed, suggestedIn: 'work' },
   { kind: 'client', label: 'Nouveau client', icon: User, keywords: 'organisation' },

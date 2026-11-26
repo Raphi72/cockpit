@@ -5,6 +5,7 @@ import { useDeleteShortcut } from '@/app/shortcuts';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { PageContainer } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
+import { EntityPages } from '@/domains/pages/components/EntityPages';
 import { SubjectClasses } from '../components/SubjectClasses';
 import { SubjectExams } from '../components/SubjectExams';
 import { SubjectGrades } from '../components/SubjectGrades';
@@ -81,6 +82,9 @@ function SubjectSections({ subjectId }: { subjectId: string }) {
         <SubjectHomework subjectId={subjectId} />
         <div className="mt-14">
           <SubjectGrades subjectId={subjectId} />
+        </div>
+        <div className="mt-14">
+          <EntityPages entityType="subject" entityId={subjectId} title="Fiches et pages" />
         </div>
       </div>
       <div className="min-w-0">

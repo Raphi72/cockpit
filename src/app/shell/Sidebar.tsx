@@ -4,6 +4,7 @@ import * as m from 'motion/react-m';
 import { PanelLeft } from 'lucide-react';
 import { memo, useEffect, useRef } from 'react';
 import { useInboxCount } from '@/domains/inbox';
+import { PinnedPagesNav } from '@/domains/pages/components/PinnedPagesNav';
 import { ActiveProjectsNav } from '@/domains/projects/components/ActiveProjectsNav';
 import { transitionFor } from '@/ui/motion/presets';
 import { APP_MODES, MODE_ICONS, MODE_LABELS, MODE_SHORTCUT } from '../modes';
@@ -98,6 +99,7 @@ function ModeNavLinks({ collapsed }: { collapsed: boolean }) {
         ))}
       </nav>
 
+      {!collapsed && <PinnedPagesNav />}
       {!collapsed && mode === 'work' && <ActiveProjectsNav />}
 
       <div className="mt-auto flex flex-col gap-0.5 pt-4">

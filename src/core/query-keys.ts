@@ -61,6 +61,14 @@ export const queryKeys = {
     blocks: (from: string, to: string) => ['day', 'blocks', from, to] as const,
     weekTemplates: ['day', 'week-templates'] as const,
   },
+  /** Pages (étape 4) : la liste sans contenu, une page, ses liens entrants, ses images. */
+  pages: {
+    all: ['pages'] as const,
+    list: ['pages', 'list'] as const,
+    detail: (id: string) => ['pages', 'detail', id] as const,
+    backlinks: (id: string) => ['pages', 'backlinks', id] as const,
+    attachment: (id: string) => ['pages', 'attachment', id] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

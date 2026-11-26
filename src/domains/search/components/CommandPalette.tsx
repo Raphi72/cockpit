@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Circle,
   FileCheck,
+  FileText,
   CircleCheck,
   FolderClosed,
   HandCoins,
@@ -55,6 +56,7 @@ const ENTITY_ICONS: Record<SearchEntity, LucideIcon> = {
   project: FolderClosed,
   subject: BookOpen,
   exam: FileCheck,
+  page: FileText,
   task: Circle,
   idea: Lightbulb,
   inbox: Inbox,
@@ -170,6 +172,9 @@ function usePaletteActions(close: () => void) {
         break;
       case 'exam':
         openExam(result.id);
+        break;
+      case 'page':
+        void navigate({ to: '/pages/$pageId', params: { pageId: result.id } });
         break;
       case 'idea':
         if (result.projectId) void navigate({ to: '/projects/$projectId', params: { projectId: result.projectId } });

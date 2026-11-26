@@ -123,6 +123,16 @@ function downloadInBrowser(fileName: string, content: string, mime: string): str
 }
 
 /**
+ * Enregistre un fichier exporté : la fenêtre native « Enregistrer sous » (Documents par défaut, sous le
+ * nom `cockpit-export-…` proposé), ou un téléchargement dans le navigateur de développement.
+ * Renvoie le nom du fichier, ou `null` si on annule.
+ */
+export function saveExportFile(fileName: string, content: string, mime: string): Promise<string | null> {
+  if (!isTauri()) return Promise.resolve(downloadInBrowser(fileName, content, mime));
+  return call<string | null>('export_save', { fileName, content });
+}
+
+/**
  * Exports : le fichier est préparé ici, puis la commande native demande où l'enregistrer
  * (Documents par défaut, sous un nom `cockpit-export-…` : Entrée suffit).
  */

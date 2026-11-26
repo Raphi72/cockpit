@@ -5,6 +5,7 @@
 mod backup;
 mod capture;
 mod data;
+mod notion;
 mod db;
 mod notify;
 mod presence;
@@ -92,6 +93,7 @@ pub fn run() {
             data::open_data_dir,
             data::open_backup_dir,
             data::export_save,
+            notion::notion_import_pick,
             notify::notify,
             presence::window_ready,
             presence::started_hidden,

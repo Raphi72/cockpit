@@ -1,5 +1,5 @@
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight, Moon, Sparkles } from 'lucide-react';
+import { BookText, ChevronLeft, ChevronRight, Moon, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { useUiStore } from '@/app/ui-store';
@@ -9,6 +9,7 @@ import { useWeekStartsOn } from '@/core/week-start';
 import { useAgenda } from '@/domains/agenda';
 import { viewTitle, weekdayShort } from '@/domains/agenda/model';
 import { DayTitle } from '@/domains/dashboard/components/DayTitle';
+import { useOpenJournal } from '@/domains/pages/hooks';
 import { useProjects } from '@/domains/projects/hooks';
 import { useSetting } from '@/domains/settings/hooks';
 import { SETTINGS, resolveDayHours } from '@/domains/settings/model';
@@ -75,6 +76,7 @@ export function DayPage() {
   // Propositions figées à l'ouverture : elles ne bougent pas pendant qu'on les coche.
   const [fill, setFill] = useState<FillProposal[] | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const openJournal = useOpenJournal();
 
   const week = useMemo(() => weekDays(day, weekStartsOn), [day, weekStartsOn]);
   const range = useMemo(() => ({ from: week[0]!, to: addDaysISO(week[6]!, 1) }), [week]);
@@ -164,6 +166,16 @@ export function DayPage() {
           {view === 'day' && day >= today && (
             <Button variant="ghost" icon={Sparkles} onClick={openFill} title="Proposer des blocs dans les créneaux libres">
               Remplir les trous
+            </Button>
+          )}
+          {view === 'day' && (
+            <Button
+              variant="ghost"
+              icon={BookText}
+              title="La page de ce jour (créée au premier clic)"
+              onClick={() => openJournal.mutate(day, { onSuccess: (id) => void navigate({ to: '/pages/$pageId', params: { pageId: id } }) })}
+            >
+              Journal
             </Button>
           )}
           <WeekTemplatesMenu weekDays={week} weekBlocks={weekBlocks} />
