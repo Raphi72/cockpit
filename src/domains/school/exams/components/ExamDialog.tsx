@@ -10,6 +10,7 @@ import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { DateField } from '@/ui/primitives/DateField';
 import { Input, Textarea } from '@/ui/primitives/Input';
 import { TimeField } from '@/ui/primitives/TimeField';
+import { ExamGradeLine } from '../../grades/components/ExamGradeLine';
 import { SubjectMenu } from '../../subjects/components/SubjectMenu';
 import { useDeleteExam, useExam, useSaveExam } from '../hooks';
 import { examCountdown, examToInput, validateExam, type Exam, type ExamInput } from '../model';
@@ -123,6 +124,12 @@ function ExamForm({ exam, defaults, onDone }: { exam?: Exam; defaults?: Partial<
         <Row label="À réviser">
           <Textarea value={input.notes} onChange={(e) => set('notes', e.target.value)} placeholder="Chapitres, consignes, ce qu’il faut apporter…" aria-label="À réviser" />
         </Row>
+        {/* Le jour même ou après : la note obtenue. */}
+        {exam && exam.date <= today && (
+          <Row label="Note">
+            <ExamGradeLine exam={exam} onLeave={onDone} />
+          </Row>
+        )}
       </div>
 
       <DialogFooter>

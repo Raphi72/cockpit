@@ -22,7 +22,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['Ctrl K'], label: 'Rechercher ou lancer une commande' },
       { keys: ['N', 'Ctrl N'], label: 'Nouvelle tâche (un devoir en mode Cours)' },
       { keys: ['Ctrl Maj Espace'], label: 'Capture rapide, même hors de Cockpit (réglable)' },
-      { keys: ['C'], label: 'Nouveau…, puis la lettre du menu (T, E, P… ; D pour un devoir en Cours)' },
+      { keys: ['C'], label: 'Nouveau…, puis la lettre du menu (T, E, P… ; en Cours : D, X, N…)' },
       { keys: ['Ctrl 1 … 6'], label: 'Aller aux pages principales du mode' },
       { keys: ['Ctrl M'], label: 'Passer du mode Travail au mode Cours, et inversement' },
       { keys: ['Ctrl B'], label: 'Réduire ou déplier la barre latérale' },

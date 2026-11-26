@@ -19,6 +19,7 @@ import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
 import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDialog';
 import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
+import { CreateGradeDialog, GradeEditorDialog } from '@/domains/school/grades/components/GradeDialog';
 import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -71,6 +72,8 @@ export function AppShell() {
         <CreateSlotDialog />
         <CreateExamDialog />
         <ExamEditorDialog />
+        <CreateGradeDialog />
+        <GradeEditorDialog />
         <CreatePaymentDialog />
         <CreateTransactionDialog />
         <ReceivePaymentDialog />

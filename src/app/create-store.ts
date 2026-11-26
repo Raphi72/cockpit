@@ -11,7 +11,8 @@ export type CreateKind =
   | 'transaction'
   | 'subject'
   | 'class'
-  | 'exam';
+  | 'exam'
+  | 'grade';
 
 /** Contexte pré-rempli : depuis une fiche projet, la tâche (ou l'encaissement, la dépense) est rattachée à ce projet. */
 export type CreateDefaults = {
@@ -21,6 +22,9 @@ export type CreateDefaults = {
   scheduledDate?: string | null;
   /** Devoir : le jour où il est à rendre. */
   dueDate?: string | null;
+  /** Note saisie depuis un examen passé : l'examen, et son jour comme date de la note. */
+  examId?: string | null;
+  gradeDate?: string;
   /** Événement créé depuis le calendrier : jour ('YYYY-MM-DD') ou créneau ('YYYY-MM-DDTHH:MM') cliqué. */
   eventStart?: string;
   /** Clic dans la ligne « journée » d'un jour. */
@@ -62,6 +66,6 @@ export function subjectFromPath(pathname: string): string | null {
 }
 
 export function createDefaultsFor(kind: CreateKind, pathname: string, today: string): CreateDefaults {
-  if (kind === 'homework' || kind === 'class' || kind === 'exam') return { subjectId: subjectFromPath(pathname) };
+  if (kind === 'homework' || kind === 'class' || kind === 'exam' || kind === 'grade') return { subjectId: subjectFromPath(pathname) };
   return PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, today) : {};
 }

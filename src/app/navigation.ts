@@ -1,4 +1,5 @@
 import {
+  Award,
   BookOpen,
   CalendarClock,
   CalendarDays,
@@ -29,7 +30,8 @@ export type AppPath =
   | '/subjects'
   | '/homework'
   | '/timetable'
-  | '/exams';
+  | '/exams'
+  | '/grades';
 
 export type NavItem = {
   to: AppPath;
@@ -74,6 +76,7 @@ export const NAV: Record<AppMode, ModeNav> = {
       calendar,
       { to: '/timetable', label: 'Emploi du temps', icon: CalendarClock, shortcut: '5' },
       { to: '/exams', label: 'Examens', icon: FileCheck },
+      { to: '/grades', label: 'Notes', icon: Award, shortcut: '6' },
     ],
     secondary: [settings],
   },

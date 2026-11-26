@@ -7,6 +7,7 @@ import { PageContainer } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
 import { SubjectClasses } from '../components/SubjectClasses';
 import { SubjectExams } from '../components/SubjectExams';
+import { SubjectGrades } from '../components/SubjectGrades';
 import { SubjectHomework } from '../components/SubjectHomework';
 import { SubjectDialog } from '../subjects/components/SubjectDialog';
 import { useDeleteSubject, useSubject } from '../subjects/hooks';
@@ -78,6 +79,9 @@ function SubjectSections({ subjectId }: { subjectId: string }) {
     <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)] items-start gap-x-16">
       <div className="min-w-0">
         <SubjectHomework subjectId={subjectId} />
+        <div className="mt-14">
+          <SubjectGrades subjectId={subjectId} />
+        </div>
       </div>
       <div className="min-w-0">
         <SubjectClasses subjectId={subjectId} />
