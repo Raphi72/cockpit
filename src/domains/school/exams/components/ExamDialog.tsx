@@ -12,6 +12,8 @@ import { Input, Textarea } from '@/ui/primitives/Input';
 import { TimeField } from '@/ui/primitives/TimeField';
 import { ExamGradeLine } from '../../grades/components/ExamGradeLine';
 import { SubjectMenu } from '../../subjects/components/SubjectMenu';
+import { useSubjects } from '../../subjects/hooks';
+import { useRevisionPlan } from './RevisionPlanDialog';
 import { useDeleteExam, useExam, useSaveExam } from '../hooks';
 import { examCountdown, examToInput, validateExam, type Exam, type ExamInput } from '../model';
 
@@ -51,6 +53,8 @@ function ExamForm({ exam, defaults, onDone }: { exam?: Exam; defaults?: Partial<
   const [submitted, setSubmitted] = useState(false);
   const save = useSaveExam();
   const remove = useDeleteExam();
+  const { data: subjects = [] } = useSubjects();
+  const proposeRevisions = useRevisionPlan((state) => state.open);
   const errors = validateExam(input);
   const set = <K extends keyof ExamInput>(key: K, value: ExamInput[K]) => setInput((prev) => ({ ...prev, [key]: value }));
   const error = (key: keyof typeof errors) => submitted && errors[key] && <p className="mt-1.5 text-meta text-danger">{errors[key]}</p>;
@@ -66,6 +70,11 @@ function ExamForm({ exam, defaults, onDone }: { exam?: Exam; defaults?: Partial<
         onSuccess: () => {
           if (!exam) toast(`Examen ajouté : ${examCountdown({ date: input.date! }, today).toLowerCase()}.`);
           onDone();
+          // Un nouvel examen à venir : proposer ses révisions à rebours (J-7, J-3, J-1).
+          if (!exam && input.date! > today) {
+            const subjectName = subjects.find((s) => s.id === input.subjectId)?.name ?? '';
+            proposeRevisions({ title: input.title.trim(), subjectName, date: input.date! });
+          }
         },
       },
     );

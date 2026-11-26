@@ -8,6 +8,7 @@ import { Button } from '@/ui/primitives/Button';
 import { EntityPages } from '@/domains/pages/components/EntityPages';
 import { SubjectClasses } from '../components/SubjectClasses';
 import { SubjectExams } from '../components/SubjectExams';
+import { SubjectFlashcards } from '../components/SubjectFlashcards';
 import { SubjectGrades } from '../components/SubjectGrades';
 import { SubjectHomework } from '../components/SubjectHomework';
 import { SubjectDialog } from '../subjects/components/SubjectDialog';
@@ -62,7 +63,7 @@ export function SubjectDetailPage() {
         <p className="mt-1.5 text-ink-2">{subjectDetails(subject)}</p>
       </header>
 
-      <SubjectSections subjectId={subject.id} />
+      <SubjectSections subjectId={subject.id} subjectName={subject.name} />
 
       <SubjectDialog
         open={editing}
@@ -75,7 +76,7 @@ export function SubjectDetailPage() {
 }
 
 /** Le contenu de la fiche : ses devoirs, ses cours, ses examens et ses notes. */
-function SubjectSections({ subjectId }: { subjectId: string }) {
+function SubjectSections({ subjectId, subjectName }: { subjectId: string; subjectName: string }) {
   return (
     <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)] items-start gap-x-16">
       <div className="min-w-0">
@@ -91,6 +92,9 @@ function SubjectSections({ subjectId }: { subjectId: string }) {
         <SubjectClasses subjectId={subjectId} />
         <div className="mt-12">
           <SubjectExams subjectId={subjectId} />
+        </div>
+        <div className="mt-12">
+          <SubjectFlashcards subjectId={subjectId} subjectName={subjectName} />
         </div>
       </div>
     </div>

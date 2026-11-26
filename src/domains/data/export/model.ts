@@ -56,6 +56,8 @@ export const EXPORT_TABLES = [
   { table: 'pages', key: 'pages' },
   { table: 'page_links', key: 'pageLinks' },
   { table: 'attachments', key: 'attachments' },
+  { table: 'flashcards', key: 'flashcards' },
+  { table: 'flashcard_reviews', key: 'flashcardReviews' },
 ] as const;
 
 export type ExportTableKey = (typeof EXPORT_TABLES)[number]['key'];

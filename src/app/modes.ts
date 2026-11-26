@@ -22,7 +22,7 @@ export function otherMode(mode: AppMode): AppMode {
 }
 
 const WORK_PAGES = ['/projects', '/tasks', '/planning', '/finances', '/clients'];
-const SCHOOL_PAGES = ['/subjects', '/homework', '/timetable', '/exams', '/grades'];
+const SCHOOL_PAGES = ['/subjects', '/homework', '/timetable', '/exams', '/grades', '/revisions'];
 
 const startsWithPage = (pathname: string, page: string) => pathname === page || pathname.startsWith(`${page}/`);
 

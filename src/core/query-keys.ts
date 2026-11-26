@@ -53,6 +53,7 @@ export const queryKeys = {
     slots: ['school', 'slots'] as const,
     exams: (filter: object) => ['school', 'exams', filter] as const,
     grades: (filter: object) => ['school', 'grades', filter] as const,
+    flashcards: (filter: object) => ['school', 'flashcards', filter] as const,
   },
   /** Organisateur de journée : modules, blocs posés, semaines types. */
   day: {

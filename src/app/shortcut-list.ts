@@ -87,6 +87,13 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     ],
   },
   {
+    title: 'Révision',
+    entries: [
+      { keys: ['Espace'], label: 'Voir la réponse' },
+      { keys: ['1', '2', '3', '4'], label: 'À revoir, difficile, bien, facile' },
+    ],
+  },
+  {
     title: 'Journée',
     entries: [
       { keys: ['←', '→'], label: 'Jour (ou semaine) précédent ou suivant' },
