@@ -1,5 +1,4 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { useCreateStore } from '@/app/create-store';
 import { addMinutesToTime, timeToMinutes } from '@/core/dates';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { toast } from '@/ui/overlays/toast';
@@ -156,14 +155,3 @@ export function SlotDialog({ open, onOpenChange, slot, defaults }: SlotDialogPro
 }
 
 /** Fenêtre de création globale (menu « Nouveau », palette). */
-export function CreateSlotDialog() {
-  const open = useCreateStore((state) => (state.open?.kind === 'class' ? state.open : null));
-  const close = useCreateStore((state) => state.close);
-  return (
-    <SlotDialog
-      open={open !== null}
-      onOpenChange={(next) => !next && close()}
-      defaults={{ subjectId: open?.defaults.subjectId ?? null }}
-    />
-  );
-}

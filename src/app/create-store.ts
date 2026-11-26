@@ -10,7 +10,6 @@ export type CreateKind =
   | 'payment'
   | 'transaction'
   | 'subject'
-  | 'class'
   | 'exam'
   | 'grade'
   | 'page';
@@ -74,6 +73,6 @@ export function subjectFromPath(pathname: string): string | null {
 export function createDefaultsFor(kind: CreateKind, pathname: string, today: string): CreateDefaults {
   // Une page créée depuis une fiche (projet, matière) y est rattachée.
   if (kind === 'page') return { projectId: defaultsFromPath(pathname, today).projectId ?? null, subjectId: subjectFromPath(pathname) };
-  if (kind === 'homework' || kind === 'class' || kind === 'exam' || kind === 'grade') return { subjectId: subjectFromPath(pathname) };
+  if (kind === 'homework' || kind === 'exam' || kind === 'grade') return { subjectId: subjectFromPath(pathname) };
   return PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, today) : {};
 }

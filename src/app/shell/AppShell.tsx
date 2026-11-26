@@ -1,32 +1,10 @@
 import { Outlet, useRouterState } from '@tanstack/react-router';
-import { useEffect } from 'react';
-import { CreateEventDialog } from '@/domains/agenda/components/CreateEventDialog';
-import { EventSheet } from '@/domains/agenda/components/EventSheet';
-import { ClientEditorDialog, CreateClientDialog } from '@/domains/clients/components/ClientDialog';
+import { lazy, Suspense, useEffect } from 'react';
 import { announceRestoreIfDone } from '@/domains/data';
-import { RecoveryNotice } from '@/domains/data/components/RecoveryNotice';
-import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/payments/components/PaymentDialog';
-import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
-import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
 import { useNotificationScheduler } from '@/domains/notifications';
 import { usePresence } from '@/domains/presence';
-import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
-import { CreateTaskDialog } from '@/domains/tasks/components/CreateTaskDialog';
-import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
-import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
-import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
-import { CommandPalette } from '@/domains/search/components/CommandPalette';
-import { CreatePageOnDemand } from '@/domains/pages/components/CreatePageOnDemand';
-import { WorkoutDialog } from '@/domains/habits/components/WorkoutDialog';
-import { Companion } from '@/domains/companion/components/Companion';
-import { GoogleEventDialog } from '@/domains/google/components/GoogleEventDialog';
 import { useGoogleAutoSync } from '@/domains/google/hooks';
 import { useAutoSync } from '@/domains/sync/hooks';
-import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
-import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDialog';
-import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
-import { CreateGradeDialog, GradeEditorDialog } from '@/domains/school/grades/components/GradeDialog';
-import { RevisionPlanDialog } from '@/domains/school/exams/components/RevisionPlanDialog';
 import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -34,9 +12,11 @@ import { useGlobalShortcuts } from '../shortcuts';
 import { useUiStore } from '../ui-store';
 import { useModeFollowsPage } from '../use-mode';
 import { OverlaysBoundary } from './OverlaysBoundary';
-import { ShortcutsDialog } from './ShortcutsDialog';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+
+// Les fenêtres globales, dans leur propre morceau : chargées juste après le premier affichage.
+const Overlays = lazy(() => import('./Overlays').then((module) => ({ default: module.Overlays })));
 
 export function AppShell() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
@@ -74,36 +54,9 @@ export function AppShell() {
 
       {/* Fenêtres globales, ouvrables depuis n'importe quelle page. Une erreur n'y emporte jamais toute l'app. */}
       <OverlaysBoundary>
-        <CreateTaskDialog />
-        <CreateEventDialog />
-        <CreateProjectDialog />
-        <CreateClientDialog />
-        <CreateSubjectDialog />
-        <CreateSlotDialog />
-        <CreateExamDialog />
-        <ExamEditorDialog />
-        <CreateGradeDialog />
-        <GradeEditorDialog />
-        <CreatePageOnDemand />
-        <RevisionPlanDialog />
-        <WorkoutDialog />
-        <CreatePaymentDialog />
-        <CreateTransactionDialog />
-        <ReceivePaymentDialog />
-        <PaymentEditorDialog />
-        <ClientEditorDialog />
-        <TransactionEditorDialog />
-        <WorkPlanDialog />
-        <TaskSheet />
-        <EventSheet />
-        <GoogleEventDialog />
-        <SelectionBar />
-        <CommandPalette />
-        <ShortcutsDialog />
-        {/* Le compagnon : écran du matin, mode focus, célébrations, sons. */}
-        <Companion />
-        {/* Une base abîmée reprise au démarrage : ce qui a été fait, une seule fois. */}
-        <RecoveryNotice />
+        <Suspense fallback={null}>
+          <Overlays />
+        </Suspense>
       </OverlaysBoundary>
       <Toaster />
     </div>
