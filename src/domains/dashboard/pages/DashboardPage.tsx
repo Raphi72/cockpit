@@ -20,6 +20,7 @@ import { addDaysISO, daysBetween } from '@/core/dates';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, useAgenda, type AgendaItem } from '@/domains/agenda';
+import { isSchoolItem } from '@/domains/agenda/model';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
 import { useSetting } from '@/domains/settings/hooks';
 import { SETTINGS } from '@/domains/settings/model';
@@ -31,7 +32,7 @@ import { useProjects } from '@/domains/projects/hooks';
 import { CONFIRMED_STATUSES, statusOn } from '@/domains/projects/model';
 import { FutureDayTasks, PastDayTasks, TodayTasks, estimateSummary } from '@/domains/tasks/components/TaskGroups';
 import { useDoneOn, useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
-import { selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
+import { isHomework, selectPlannedOn, selectToday, tasksOfMode, type TaskItem } from '@/domains/tasks/model';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
@@ -262,7 +263,7 @@ function DayTasksSection(props: { day: string; today: string; openTasks: TaskIte
           addLabel={diff === 1 ? 'Ajouter une tâche pour demain' : 'Ajouter une tâche pour ce jour'}
         />
       )}
-      {diff < 0 && <PastDayTasks open={openTasks} day={day} today={today} />}
+      {diff < 0 && <PastDayTasks open={openTasks} day={day} today={today} keep={(task) => !isHomework(task)} />}
     </section>
   );
 }
@@ -284,12 +285,16 @@ function WorkDashboard() {
   const deadlineRange = useMemo(() => ({ from: day, to: addDaysISO(day, deadlineDays + 1) }), [day, deadlineDays]);
   const { data: projects } = useProjects({ statuses: CONFIRMED_STATUSES });
   const { data: overduePayments = [] } = useOverduePayments(today);
-  const { data: openTasks } = useOpenTasks();
-  const { data: doneToday = [] } = useDoneToday(today);
-  const { data: doneThatDay = [] } = useDoneOn(day, day < today);
+  // Le mode Travail ne montre ni les devoirs, ni les cours, ni les examens (P13) : ils sont dans le mode Cours.
+  const { data: allOpenTasks } = useOpenTasks();
+  const openTasks = useMemo(() => allOpenTasks && tasksOfMode(allOpenTasks, 'work'), [allOpenTasks]);
+  const doneToday = tasksOfMode(useDoneToday(today).data ?? [], 'work');
+  const doneThatDay = tasksOfMode(useDoneOn(day, day < today).data ?? [], 'work');
   const { data: finance } = useFinanceSummary(today);
-  const { data: agenda } = useAgenda(agendaRange);
-  const { data: deadlineAgenda } = useAgenda(deadlineRange);
+  const { data: allAgenda } = useAgenda(agendaRange);
+  const agenda = useMemo(() => allAgenda?.filter((item) => !isSchoolItem(item)), [allAgenda]);
+  const { data: allDeadlineAgenda } = useAgenda(deadlineRange);
+  const deadlineAgenda = useMemo(() => allDeadlineAgenda?.filter((item) => !isSchoolItem(item)), [allDeadlineAgenda]);
   const { data: showAmounts } = useSetting(SETTINGS.dashboardShowAmounts);
 
   const goTo = (next: string) => void navigate({ search: next === today ? {} : { day: next } });

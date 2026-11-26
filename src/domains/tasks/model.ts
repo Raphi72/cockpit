@@ -1,5 +1,6 @@
 import { addDays, format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { AppMode } from '@/core/app-mode';
 import { addDaysISO, daysBetween, isISODate, toISODate } from '@/core/dates';
 import { DEADLINE_HORIZON, deadlineStatus, relativeDayText, type DeadlineTone } from '@/core/deadline';
 import type { Priority } from '@/domains/projects/model';
@@ -46,12 +47,17 @@ export type TaskItem = {
    * Aujourd'hui ; ses dates ne changent pas, elle retrouve donc sa place le lendemain.
    */
   plannedOn: string | null;
+  /** Devoir (P14) : la matière à laquelle la tâche est rattachée. Jamais en même temps qu'un projet. */
+  subjectId: string | null;
+  subjectName: string | null;
+  subjectColor: PaletteKey | null;
 };
 
 export type TaskPatch = Partial<{
   title: string;
   notes: string | null;
   projectId: string | null;
+  subjectId: string | null;
   parentId: string | null;
   status: TaskStatus;
   priority: Priority;
@@ -61,6 +67,38 @@ export type TaskPatch = Partial<{
 }>;
 
 // ─── Règles ─────────────────────────────────────────────────────────────────
+
+/** Un devoir : une tâche rattachée à une matière (P14). */
+export function isHomework(task: Pick<TaskItem, 'subjectId'>): boolean {
+  return task.subjectId !== null;
+}
+
+/**
+ * Chaque mode montre les siens (P13) : les devoirs en Cours, toutes les autres tâches en Travail.
+ * Le calendrier et la boîte de réception, eux, montrent tout.
+ */
+export function tasksOfMode<T extends Pick<TaskItem, 'subjectId'>>(tasks: T[], mode: AppMode): T[] {
+  return tasks.filter((task) => isHomework(task) === (mode === 'school'));
+}
+
+/** Projet ou matière : ce qui situe une tâche, sur sa ligne. */
+export function taskContext(
+  task: Pick<TaskItem, 'projectName' | 'projectColor' | 'subjectName' | 'subjectColor'>,
+): { name: string; color: PaletteKey | null } | null {
+  if (task.projectName) return { name: task.projectName, color: task.projectColor };
+  if (task.subjectName) return { name: task.subjectName, color: task.subjectColor };
+  return null;
+}
+
+/**
+ * Un devoir n'est jamais aussi dans un projet, et l'inverse : choisir l'un retire l'autre
+ * (dans le même lot, voir updateTaskStatements).
+ */
+export function exclusiveAttachment(patch: TaskPatch): TaskPatch {
+  if (patch.subjectId) return { ...patch, projectId: null };
+  if (patch.projectId) return { ...patch, subjectId: null };
+  return patch;
+}
 
 const isOpen = (task: Pick<TaskItem, 'status'>) => task.status !== 'done';
 
@@ -228,18 +266,19 @@ export function totalEstimate(tasks: Pick<TaskItem, 'estimateMin'>[]): number {
 
 /**
  * Une tâche peut devenir sous-tâche de `candidate` : un seul niveau (la candidate n'est pas
- * elle-même une sous-tâche, et la tâche n'a pas de sous-tâches), dans le même projet (ou toutes
- * deux libres), et jamais d'elle-même.
+ * elle-même une sous-tâche, et la tâche n'a pas de sous-tâches), dans le même projet ou la même
+ * matière (ou toutes deux libres), et jamais d'elle-même.
  */
 export function canBeParentOf(
-  candidate: Pick<TaskItem, 'id' | 'parentId' | 'projectId'>,
-  task: Pick<TaskItem, 'id' | 'projectId' | 'subtasksTotal'>,
+  candidate: Pick<TaskItem, 'id' | 'parentId' | 'projectId' | 'subjectId'>,
+  task: Pick<TaskItem, 'id' | 'projectId' | 'subjectId' | 'subtasksTotal'>,
 ): boolean {
   return (
     candidate.id !== task.id &&
     candidate.parentId === null &&
     task.subtasksTotal === 0 &&
-    candidate.projectId === task.projectId
+    candidate.projectId === task.projectId &&
+    candidate.subjectId === task.subjectId
   );
 }
 
@@ -443,7 +482,9 @@ export function keyboardDrop(nodes: TaskNode[], taskId: string, key: TreeKey): T
 export type NewTaskInput = {
   title: string;
   projectId: string | null;
-  /** Sous-tâche : elle rejoint le projet de sa parente. */
+  /** Devoir : sa matière (jamais avec un projet). */
+  subjectId?: string | null;
+  /** Sous-tâche : elle rejoint le projet (ou la matière) de sa parente. */
   parentId?: string | null;
   scheduledDate: string | null;
   dueDate: string | null;
@@ -454,7 +495,7 @@ export type NewTaskInput = {
 
 export function validateNewTask(input: NewTaskInput): Partial<Record<keyof NewTaskInput, string>> {
   const errors: Partial<Record<keyof NewTaskInput, string>> = {};
-  if (input.title.trim() === '') errors.title = 'Donne un titre à la tâche.';
+  if (input.title.trim() === '') errors.title = input.subjectId ? 'Donne un titre au devoir.' : 'Donne un titre à la tâche.';
   if (input.scheduledDate && !isISODate(input.scheduledDate)) errors.scheduledDate = 'Date invalide.';
   if (input.dueDate && !isISODate(input.dueDate)) errors.dueDate = 'Deadline invalide.';
   return errors;

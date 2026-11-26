@@ -2,7 +2,7 @@ import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { todayISO } from '@/core/dates';
 import { undoLatest } from '@/ui/overlays/toast';
-import { defaultsFromPath, useCreateStore } from './create-store';
+import { createDefaultsFor, useCreateStore, type CreateKind } from './create-store';
 import { shortcutTarget } from './navigation';
 import { useUiStore } from './ui-store';
 import { useSwitchMode } from './use-mode';
@@ -19,6 +19,11 @@ export function digitFromEvent(event: Pick<KeyboardEvent, 'code' | 'key'>): stri
   if (physical) return physical[1] ?? null;
   if (/^\d$/.test(event.key)) return event.key;
   return AZERTY_DIGITS[event.key] ?? null;
+}
+
+/** N : une nouvelle tâche en mode Travail, un nouveau devoir en mode Cours. */
+function newItemKind(): CreateKind {
+  return useUiStore.getState().mode === 'school' ? 'homework' : 'task';
 }
 
 /** Vrai si une fenêtre ou un menu est ouvert. */
@@ -40,7 +45,8 @@ function isTyping(target: EventTarget | null): boolean {
  * Raccourcis disponibles partout :
  * Ctrl+K pour la palette, Ctrl+1…6 pour les pages du mode, Ctrl+M pour changer de mode,
  * Ctrl+B pour la barre latérale, Ctrl+Z pour annuler,
- * N (ou Ctrl+N) pour une nouvelle tâche, C pour le menu « Nouveau », ? pour l'aide des raccourcis.
+ * N (ou Ctrl+N) pour une nouvelle tâche (un devoir en mode Cours), C pour le menu « Nouveau »,
+ * ? pour l'aide des raccourcis.
  */
 export function useGlobalShortcuts(): void {
   const navigate = useNavigate();
@@ -89,7 +95,7 @@ export function useGlobalShortcuts(): void {
         // Ctrl+N : toujours, même en tapant du texte (sauf si une fenêtre est déjà ouverte).
         if (!event.shiftKey && letter === 'n') {
           event.preventDefault();
-          if (!overlayOpen()) openCreate('task', defaultsFromPath(router.state.location.pathname, todayISO()));
+          if (!overlayOpen()) openCreate(newItemKind(), createDefaultsFor(newItemKind(), router.state.location.pathname, todayISO()));
         }
         return;
       }
@@ -110,7 +116,7 @@ export function useGlobalShortcuts(): void {
       // N : nouvelle tâche. Ctrl+N reste disponible, mais certains navigateurs le réservent.
       if (key === 'n') {
         event.preventDefault();
-        openCreate('task', defaultsFromPath(router.state.location.pathname, todayISO()));
+        openCreate(newItemKind(), createDefaultsFor(newItemKind(), router.state.location.pathname, todayISO()));
       }
     };
 

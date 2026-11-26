@@ -10,6 +10,7 @@ import { validatePlanningSearch } from '@/domains/agenda/timeline/search';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
 import { validateDashboardSearch } from '@/domains/dashboard/search';
 import { validateFinancesSearch } from '@/domains/finance/search';
+import { validateHomeworkSearch } from '@/domains/school/homework/model';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateTasksSearch } from '@/domains/tasks/search';
 import { AppShell } from './shell/AppShell';
@@ -74,6 +75,12 @@ const routes = [
     getParentRoute: () => rootRoute,
     path: '/subjects/$subjectId',
     component: lazyRouteComponent(() => import('@/domains/school/pages/SubjectDetailPage'), 'SubjectDetailPage'),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/homework',
+    validateSearch: validateHomeworkSearch,
+    component: lazyRouteComponent(() => import('@/domains/school/pages/HomeworkPage'), 'HomeworkPage'),
   }),
   createRoute({
     getParentRoute: () => rootRoute,

@@ -1,11 +1,12 @@
 import { BriefcaseBusiness, GraduationCap, type LucideIcon } from 'lucide-react';
+import type { AppMode } from '@/core/app-mode';
 
 /**
  * Deux modes (P13, V2 étape 2) : Travail (projets, tâches, planning, finances, clients) et Cours
  * (matières, devoirs, emploi du temps, examens, notes). Chaque mode montre les siens ; le calendrier,
  * la boîte de réception et les paramètres sont communs. Le mode est mémorisé (ui-store).
  */
-export type AppMode = 'work' | 'school';
+export type { AppMode };
 
 export const APP_MODES: AppMode[] = ['work', 'school'];
 

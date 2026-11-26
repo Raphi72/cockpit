@@ -9,7 +9,7 @@ import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { Button } from '@/ui/primitives/Button';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { useOpenTasks, useSaveWorkPlan, useUpdateTask } from '../hooks';
-import { formatDuration, taskDateLabel, type TaskItem } from '../model';
+import { formatDuration, taskDateLabel, tasksOfMode, type TaskItem } from '../model';
 import {
   PLAN_COUNT_MAX,
   PLAN_COUNT_MIN,
@@ -132,7 +132,10 @@ function Unestimated({ tasks }: { tasks: TaskItem[] }) {
 
 function WorkPlanForm({ onDone }: { onDone: () => void }) {
   const today = useToday();
-  const { data: open } = useOpenTasks();
+  // Les tâches du mode affiché : les devoirs en mode Cours, le reste en mode Travail.
+  const mode = useUiStore((state) => state.mode);
+  const { data: allOpen } = useOpenTasks();
+  const open = allOpen && tasksOfMode(allOpen, mode);
   const { data: paused } = useProjects({ statuses: ['on_hold'] });
   const request = resolvePlanRequest(useUiStore((state) => state.workPlanRequest));
   const setRequest = useUiStore((state) => state.setWorkPlanRequest);

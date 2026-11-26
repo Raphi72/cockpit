@@ -7,7 +7,7 @@ import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { useCompletingTasks } from '../completion-store';
 import { useDeleteTask, useToggleTask } from '../hooks';
-import { rowCompletion, taskDateLabel, type RowCompletion, type TaskItem } from '../model';
+import { rowCompletion, taskContext, taskDateLabel, type RowCompletion, type TaskItem } from '../model';
 import { TASK_ROW_ATTRIBUTE, useTaskSelection } from '../selection-store';
 import { useTaskSheet } from '../sheet-store';
 import { TaskCheckbox } from './TaskCheckbox';
@@ -15,7 +15,7 @@ import { TaskCheckbox } from './TaskCheckbox';
 type TaskRowProps = {
   task: TaskItem;
   today: string;
-  /** Afficher le projet (vues globales) ; inutile dans la fiche d'un projet. */
+  /** Afficher le projet ou la matière (vues globales) ; inutile dans la fiche d'un projet ou d'une matière. */
   showProject?: boolean;
   /** Afficher « Parente › » devant une sous-tâche ; inutile quand elle est rangée sous sa parente. */
   showParent?: boolean;
@@ -61,7 +61,7 @@ function HoverAction({ icon: Icon, label, onClick }: { icon: LucideIcon; label: 
 }
 
 /**
- * Ligne de tâche : case, titre, puis seulement le projet et la date qui compte.
+ * Ligne de tâche : case, titre, puis seulement le projet (ou la matière d'un devoir) et la date qui compte.
  * Un clic ouvre la tâche ; Ctrl+clic et Maj+clic la sélectionnent (actions groupées).
  */
 export const TaskRow = memo(function TaskRow({
@@ -98,6 +98,7 @@ export const TaskRow = memo(function TaskRow({
   }, [leaving]);
   const horizon = useDeadlineHorizon();
   const label = taskDateLabel(task, today, horizon);
+  const context = taskContext(task);
   const date = label?.kind === 'scheduled' && task.scheduledDate === shownDay ? null : label;
   const toggle = () => toggleTask(task);
 
@@ -159,10 +160,10 @@ export const TaskRow = memo(function TaskRow({
       <span className="flex items-center gap-4 text-meta text-ink-3">
         {onAddSubtask && <HoverAction icon={ListPlus} label="Ajouter une sous-tâche" onClick={onAddSubtask} />}
         {onUnplan && <HoverAction icon={CalendarMinus} label="Retirer du programme" onClick={onUnplan} />}
-        {showProject && task.projectName && (
+        {showProject && context && (
           <span className="flex max-w-[200px] items-center gap-2">
-            {task.projectColor && <ColorDot color={task.projectColor} />}
-            <span className="truncate">{task.projectName}</span>
+            {context.color && <ColorDot color={context.color} />}
+            <span className="truncate">{context.name}</span>
           </span>
         )}
         {date && (

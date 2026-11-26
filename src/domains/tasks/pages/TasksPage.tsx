@@ -10,7 +10,16 @@ import { GroupHeading, TodayTasks, estimateSummary } from '../components/TaskGro
 import { InlineAddTask } from '../components/InlineAddTask';
 import { TaskList } from '../components/TaskList';
 import { useDoneTasks, useDoneToday, useOpenTasks } from '../hooks';
-import { dayHeading, groupByProject, selectOverdue, selectPriority, selectToday, selectUpcoming, type TaskItem } from '../model';
+import {
+  dayHeading,
+  groupByProject,
+  selectOverdue,
+  selectPriority,
+  selectToday,
+  selectUpcoming,
+  tasksOfMode,
+  type TaskItem,
+} from '../model';
 import { TASK_VIEWS, TASK_VIEW_LABELS, type TaskView } from '../search';
 import { useWorkPlanDialog } from '../work-plan-store';
 
@@ -61,9 +70,10 @@ export function TasksPage() {
   const today = useToday();
   const view: TaskView = search.view ?? 'today';
 
-  const { data: open = [] } = useOpenTasks();
-  const { data: doneToday = [] } = useDoneToday(today);
-  const doneAll = useDoneTasks();
+  // Les devoirs ont leur page (mode Cours) : ici, seulement les tâches du mode Travail.
+  const open = tasksOfMode(useOpenTasks().data ?? [], 'work');
+  const doneToday = tasksOfMode(useDoneToday(today).data ?? [], 'work');
+  const doneAll = tasksOfMode(useDoneTasks().data ?? [], 'work');
 
   const todayGroups = selectToday(open, today);
   const todayTasks = [...todayGroups.overdue, ...todayGroups.today];
@@ -119,8 +129,8 @@ export function TasksPage() {
         ))}
       {view === 'all' && <AllView open={open} today={today} />}
       {view === 'done' &&
-        (doneAll.data?.length ? (
-          <TaskList tasks={doneAll.data} today={today} showCompletion />
+        (doneAll.length ? (
+          <TaskList tasks={doneAll} today={today} showCompletion />
         ) : (
           <Empty>Aucune tâche terminée pour l’instant.</Empty>
         ))}

@@ -6,6 +6,7 @@ import { deadlineStatus } from '@/core/deadline';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { useToday } from '@/core/use-today';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
+import { SubjectMenu } from '@/domains/school/subjects/components/SubjectMenu';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handlePanelDeleteKey } from '@/ui/data/row-keys';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
@@ -14,7 +15,7 @@ import { Button } from '@/ui/primitives/Button';
 import { InlineDate, InlineText, InlineTextarea } from '@/ui/primitives/InlineFields';
 import { COMPLETE_IN_PANEL_DELAY_MS, useCompletingTasks } from '../completion-store';
 import { useCompleteTask, useDeleteTask, useSubtasks, useTask, useToggleTask, useUpdateTask } from '../hooks';
-import type { TaskItem, TaskPatch } from '../model';
+import { isHomework, type TaskItem, type TaskPatch } from '../model';
 import { useTaskSheet } from '../sheet-store';
 import { InlineAddTask } from './InlineAddTask';
 import { TaskCheckbox } from './TaskCheckbox';
@@ -75,6 +76,16 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
               className="-ml-2 flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-meta text-ink-2 hover:bg-hover hover:text-ink"
             >
               <span className="truncate">{task.projectName}</span>
+              <ArrowUpRight className="size-3.5 shrink-0" strokeWidth={1.75} />
+            </Link>
+          ) : task.subjectId && task.subjectName ? (
+            <Link
+              to="/subjects/$subjectId"
+              params={{ subjectId: task.subjectId }}
+              onClick={onClose}
+              className="-ml-2 flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-meta text-ink-2 hover:bg-hover hover:text-ink"
+            >
+              <span className="truncate">Devoir · {task.subjectName}</span>
               <ArrowUpRight className="size-3.5 shrink-0" strokeWidth={1.75} />
             </Link>
           ) : (
@@ -139,9 +150,16 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
             onChange={(status) => (status === 'done' ? complete(task, COMPLETE_IN_PANEL_DELAY_MS) : save({ status }))}
           />
         </PropertyRow>
-        <PropertyRow label="Projet">
-          <ProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />
-        </PropertyRow>
+        {/* Un devoir a une matière à la place d'un projet (P14). */}
+        {isHomework(task) ? (
+          <PropertyRow label="Matière">
+            <SubjectMenu value={task.subjectId} onChange={(subjectId) => save({ subjectId })} />
+          </PropertyRow>
+        ) : (
+          <PropertyRow label="Projet">
+            <ProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />
+          </PropertyRow>
+        )}
         {/* Une tâche qui a des sous-tâches reste au premier niveau (un seul niveau de sous-tâches). */}
         {task.subtasksTotal === 0 && (
           <PropertyRow label="Sous-tâche de">
@@ -151,11 +169,11 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
         <PropertyRow label="Priorité">
           <TaskPriorityMenu value={task.priority} onChange={(priority) => save({ priority })} />
         </PropertyRow>
-        <PropertyRow label="Début">
+        <PropertyRow label={isHomework(task) ? 'À faire le' : 'Début'}>
           <InlineDate value={task.scheduledDate} onSave={(scheduledDate) => save({ scheduledDate })} aria-label="Début" />
         </PropertyRow>
-        <PropertyRow label="Deadline" hint={<DeadlineHint task={task} today={today} />}>
-          <InlineDate value={task.dueDate} onSave={(dueDate) => save({ dueDate })} aria-label="Deadline" />
+        <PropertyRow label={isHomework(task) ? 'À rendre' : 'Deadline'} hint={<DeadlineHint task={task} today={today} />}>
+          <InlineDate value={task.dueDate} onSave={(dueDate) => save({ dueDate })} aria-label={isHomework(task) ? 'À rendre' : 'Deadline'} />
         </PropertyRow>
         <PropertyRow label="Estimation">
           <TaskEstimateMenu value={task.estimateMin} onChange={(estimateMin) => save({ estimateMin })} />

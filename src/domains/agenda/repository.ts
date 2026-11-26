@@ -83,7 +83,7 @@ export async function listAgenda(
   const rows = await db.query<AgendaRow>(
     `SELECT 'event' AS source, e.id, e.kind, e.title, e.location AS detail,
             e.starts_at AS "start", e.ends_at AS "end", e.all_day, e.project_id, pt.color, NULL AS amount_cents,
-            e.recurrence
+            e.recurrence, NULL AS subject_id
      FROM events e
      LEFT JOIN projects p ON p.id = e.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
@@ -92,24 +92,25 @@ export async function listAgenda(
      WHERE e.starts_at < ? AND (e.recurrence IS NOT NULL OR COALESCE(e.ends_at, e.starts_at) >= ?)
 
      UNION ALL
-     SELECT 'project', p.id, 'project_start', p.name, NULL, p.start_date, NULL, 1, p.id, pt.color, NULL, NULL
+     SELECT 'project', p.id, 'project_start', p.name, NULL, p.start_date, NULL, 1, p.id, pt.color, NULL, NULL, NULL
      FROM projects p
      JOIN project_types pt ON pt.id = p.type_id
      WHERE p.start_date >= ? AND p.start_date < ? AND ${CONFIRMED_PROJECT}
 
      UNION ALL
-     SELECT 'project', p.id, 'project_deadline', p.name, NULL, p.deadline, NULL, 1, p.id, pt.color, NULL, NULL
+     SELECT 'project', p.id, 'project_deadline', p.name, NULL, p.deadline, NULL, 1, p.id, pt.color, NULL, NULL, NULL
      FROM projects p
      JOIN project_types pt ON pt.id = p.type_id
      WHERE p.deadline >= ? AND p.deadline < ? AND ${CONFIRMED_PROJECT}
 
      UNION ALL
      SELECT 'task', t.id, CASE WHEN t.due_date IS NULL THEN 'task_scheduled' ELSE 'task_due' END,
-            t.title, p.name, ${TASK_FIRST_DAY}, CASE WHEN t.scheduled_date < t.due_date THEN t.due_date END,
-            1, t.project_id, pt.color, NULL, NULL
+            t.title, COALESCE(p.name, s.name), ${TASK_FIRST_DAY}, CASE WHEN t.scheduled_date < t.due_date THEN t.due_date END,
+            1, t.project_id, COALESCE(pt.color, s.color), NULL, NULL, t.subject_id
      FROM tasks t
      LEFT JOIN projects p ON p.id = t.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
+     LEFT JOIN subjects s ON s.id = t.subject_id
      WHERE t.status <> 'done' AND (p.id IS NULL OR (${OPEN_PROJECT}))
        AND (t.due_date IS NOT NULL OR t.priority >= 2 OR ?)
        AND ${TASK_FIRST_DAY} < ? AND COALESCE(t.due_date, t.scheduled_date) >= ?
@@ -117,7 +118,7 @@ export async function listAgenda(
      UNION ALL
      SELECT 'payment', pay.id, 'payment_due', COALESCE(p.name, c.name, pay.label),
             CASE WHEN COALESCE(p.name, c.name) IS NULL THEN NULL ELSE pay.label END,
-            pay.due_date, NULL, 1, pay.project_id, pt.color, pay.amount_cents, NULL
+            pay.due_date, NULL, 1, pay.project_id, pt.color, pay.amount_cents, NULL, NULL
      FROM payments pay
      LEFT JOIN projects p ON p.id = pay.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id

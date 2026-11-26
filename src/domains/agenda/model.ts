@@ -313,6 +313,8 @@ export type AgendaItem = {
   projectId: string | null;
   color: PaletteKey | null;
   amountCents: number | null;
+  /** Matière : un devoir, un cours ou un examen (espace Cours). Absent ou `null` pour le reste. */
+  subjectId?: string | null;
   /**
    * Occurrence d'un événement qui se répète : le jour prévu par sa règle (il la désigne, même si
    * elle a été déplacée). Absent pour tout le reste. `start` et `end` sont ceux de l'occurrence.
@@ -330,6 +332,14 @@ const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
 
 export function agendaKindLabel(kind: AgendaKind): string {
   return kind in EVENT_KIND_LABELS ? EVENT_KIND_LABELS[kind as EventKind] : KIND_LABELS[kind as keyof typeof KIND_LABELS];
+}
+
+/**
+ * Ce qui appartient à l'espace Cours (devoirs, cours, examens) : le dashboard du mode Travail ne le
+ * montre pas, celui du mode Cours ne montre que ça et les événements. Le calendrier montre tout.
+ */
+export function isSchoolItem(item: Pick<AgendaItem, 'subjectId'>): boolean {
+  return item.subjectId != null;
 }
 
 /** Une date à tenir : deadline de projet ou de tâche, ou événement « Échéance ». */

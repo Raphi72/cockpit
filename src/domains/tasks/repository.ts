@@ -1,11 +1,12 @@
 import { sqlDaysModifier } from '@/core/dates';
 import type { Db, SqlValue, Statement } from '@/core/db';
-import type { NewTaskInput, TaskItem, TaskPatch, TreePlacement } from './model';
+import { exclusiveAttachment, type NewTaskInput, type TaskItem, type TaskPatch, type TreePlacement } from './model';
 
 const COLUMNS = `
   t.id, t.project_id, p.name AS project_name, pt.color AS project_color,
   t.title, t.notes, t.status, t.priority, t.scheduled_date, t.due_date, t.estimate_min,
   t.sort_order, t.completed_at, t.created_at, t.parent_id, par.title AS parent_title, t.planned_on,
+  t.subject_id, s.name AS subject_name, s.color AS subject_color,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id) AS subtasks_total,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id AND c.status = 'done') AS subtasks_done`;
 
@@ -13,7 +14,8 @@ const FROM = `
   FROM tasks t
   LEFT JOIN tasks par ON par.id = t.parent_id
   LEFT JOIN projects p ON p.id = t.project_id
-  LEFT JOIN project_types pt ON pt.id = p.type_id`;
+  LEFT JOIN project_types pt ON pt.id = p.type_id
+  LEFT JOIN subjects s ON s.id = t.subject_id`;
 
 /** Tâches d'un projet clos ou archivé : visibles dans sa fiche, jamais dans les vues globales. */
 const IN_OPEN_PROJECT = `(p.id IS NULL OR (p.status NOT IN ('done', 'cancelled') AND p.archived_at IS NULL))`;
@@ -60,14 +62,14 @@ export function listSubtasks(db: Db, parentId: string): Promise<TaskItem[]> {
 
 /**
  * Tâches qui peuvent accueillir `task` comme sous-tâche : du premier niveau, ouvertes, dans le même
- * projet (ou libres, pour une tâche libre), sauf elle-même. Voir aussi canBeParentOf.
+ * projet ou la même matière (ou libres, pour une tâche libre), sauf elle-même. Voir aussi canBeParentOf.
  */
-export function listParentCandidates(db: Db, task: Pick<TaskItem, 'id' | 'projectId'>): Promise<TaskItem[]> {
+export function listParentCandidates(db: Db, task: Pick<TaskItem, 'id' | 'projectId' | 'subjectId'>): Promise<TaskItem[]> {
   return db.query<TaskItem>(
     `SELECT ${COLUMNS} ${FROM}
-     WHERE t.parent_id IS NULL AND t.status <> 'done' AND t.project_id IS ? AND t.id <> ?
+     WHERE t.parent_id IS NULL AND t.status <> 'done' AND t.project_id IS ? AND t.subject_id IS ? AND t.id <> ?
      ORDER BY t.sort_order`,
-    [task.projectId, task.id],
+    [task.projectId, task.subjectId, task.id],
   );
 }
 
@@ -90,23 +92,28 @@ export function getTask(db: Db, id: string): Promise<TaskItem | undefined> {
 }
 
 /**
- * Nouvelle tâche, placée en fin de liste de son projet (ou des tâches libres). Une sous-tâche se
- * place après ses sœurs et prend le projet de sa parente, quel que soit `input.projectId`.
+ * Nouvelle tâche, placée en fin de liste de son projet (ou de sa matière, ou des tâches libres). Une
+ * sous-tâche se place après ses sœurs et prend le projet et la matière de sa parente, quels que soient
+ * `input.projectId` et `input.subjectId`.
  */
 export function insertTaskStatement(id: string, input: NewTaskInput, now: string): Statement {
   const parentId = input.parentId ?? null;
+  const subjectId = input.subjectId ?? null;
+  const projectId = subjectId ? null : input.projectId;
   const project = parentId ? '(SELECT project_id FROM tasks WHERE id = ?)' : '?';
+  const subject = parentId ? '(SELECT subject_id FROM tasks WHERE id = ?)' : '?';
   const order = parentId
     ? 'COALESCE((SELECT MAX(sort_order) FROM tasks WHERE parent_id = ?), 0) + 1'
-    : 'COALESCE((SELECT MAX(sort_order) FROM tasks WHERE project_id IS ?), 0) + 1';
+    : 'COALESCE((SELECT MAX(sort_order) FROM tasks WHERE project_id IS ? AND subject_id IS ?), 0) + 1';
   return {
     sql: `INSERT INTO tasks
-            (id, project_id, parent_id, title, notes, status, priority, scheduled_date, due_date, estimate_min,
-             sort_order, created_at, updated_at)
-          VALUES (?, ${project}, ?, ?, ?, 'todo', ?, ?, ?, ?, ${order}, ?, ?)`,
+            (id, project_id, subject_id, parent_id, title, notes, status, priority, scheduled_date, due_date,
+             estimate_min, sort_order, created_at, updated_at)
+          VALUES (?, ${project}, ${subject}, ?, ?, ?, 'todo', ?, ?, ?, ?, ${order}, ?, ?)`,
     params: [
       id,
-      parentId ?? input.projectId,
+      parentId ?? projectId,
+      parentId ?? subjectId,
       parentId,
       input.title.trim(),
       input.notes?.trim() || null,
@@ -114,7 +121,7 @@ export function insertTaskStatement(id: string, input: NewTaskInput, now: string
       input.scheduledDate,
       input.dueDate,
       input.estimateMin,
-      parentId ?? input.projectId,
+      ...(parentId ? [parentId] : [projectId, subjectId]),
       now,
       now,
     ],
@@ -125,12 +132,13 @@ export function insertTaskStatement(id: string, input: NewTaskInput, now: string
 export function restoreTaskStatement(task: TaskItem, now: string): Statement {
   return {
     sql: `INSERT INTO tasks
-            (id, project_id, parent_id, title, notes, status, priority, scheduled_date, due_date, estimate_min,
-             sort_order, completed_at, planned_on, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (id, project_id, subject_id, parent_id, title, notes, status, priority, scheduled_date, due_date,
+             estimate_min, sort_order, completed_at, planned_on, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     params: [
       task.id,
       task.projectId,
+      task.subjectId,
       task.parentId,
       task.title,
       task.notes,
@@ -152,6 +160,7 @@ const PATCH_COLUMNS: Record<keyof TaskPatch, string> = {
   title: 'title',
   notes: 'notes',
   projectId: 'project_id',
+  subjectId: 'subject_id',
   parentId: 'parent_id',
   status: 'status',
   priority: 'priority',
@@ -181,10 +190,12 @@ export function updateTaskStatement(id: string, patch: TaskPatch, now: string): 
  * Tout est écrit en SQL à partir des identifiants : rien ne dépend de ce qu'affiche l'écran.
  * - Terminer une tâche termine ses sous-tâches ; terminer la dernière sous-tâche ouverte termine la parente.
  * - Rouvrir une sous-tâche rouvre sa parente.
- * - Changer de projet : les sous-tâches suivent ; une sous-tâche qui quitte le projet de sa parente s'en détache.
- * - Devenir sous-tâche : on rejoint le projet de sa parente (rouverte si besoin).
+ * - Changer de projet ou de matière : les sous-tâches suivent ; une sous-tâche qui quitte le projet (ou la
+ *   matière) de sa parente s'en détache. Choisir une matière retire le projet, et l'inverse.
+ * - Devenir sous-tâche : on rejoint le projet et la matière de sa parente (rouverte si besoin).
  */
-export function updateTaskStatements(id: string, patch: TaskPatch, now: string): Statement[] {
+export function updateTaskStatements(id: string, requested: TaskPatch, now: string): Statement[] {
+  const patch = exclusiveAttachment(requested);
   const statements = [updateTaskStatement(id, patch, now)];
   const parentOf = '(SELECT parent_id FROM tasks WHERE id = ?)';
   const reopenParentIfOpenChild = {
@@ -211,26 +222,31 @@ export function updateTaskStatements(id: string, patch: TaskPatch, now: string):
     statements.push(reopenParentIfOpenChild);
   }
 
-  if (patch.projectId !== undefined) {
-    statements.push(
-      { sql: 'UPDATE tasks SET project_id = ?, updated_at = ? WHERE parent_id = ?', params: [patch.projectId, now, id] },
-      {
-        sql: `UPDATE tasks SET parent_id = NULL
-              WHERE id = ? AND parent_id IS NOT NULL
-                AND (SELECT p.project_id FROM tasks p WHERE p.id = tasks.parent_id) IS NOT project_id`,
-        params: [id],
-      },
-    );
+  if (patch.projectId !== undefined || patch.subjectId !== undefined) {
+    if (patch.projectId !== undefined) {
+      statements.push({ sql: 'UPDATE tasks SET project_id = ?, updated_at = ? WHERE parent_id = ?', params: [patch.projectId, now, id] });
+    }
+    if (patch.subjectId !== undefined) {
+      statements.push({ sql: 'UPDATE tasks SET subject_id = ?, updated_at = ? WHERE parent_id = ?', params: [patch.subjectId, now, id] });
+    }
+    statements.push({
+      sql: `UPDATE tasks SET parent_id = NULL
+            WHERE id = ? AND parent_id IS NOT NULL
+              AND ((SELECT p.project_id FROM tasks p WHERE p.id = tasks.parent_id) IS NOT project_id
+                OR (SELECT p.subject_id FROM tasks p WHERE p.id = tasks.parent_id) IS NOT subject_id)`,
+      params: [id],
+    });
   }
 
   if (patch.parentId) {
     statements.push(
       {
-        // Elle rejoint le projet de sa parente, après ses nouvelles sœurs.
+        // Elle rejoint le projet et la matière de sa parente, après ses nouvelles sœurs.
         sql: `UPDATE tasks SET project_id = (SELECT p.project_id FROM tasks p WHERE p.id = ?),
+                subject_id = (SELECT p.subject_id FROM tasks p WHERE p.id = ?),
                 sort_order = COALESCE((SELECT MAX(s.sort_order) FROM tasks s WHERE s.parent_id = ? AND s.id <> ?), 0) + 1
               WHERE id = ?`,
-        params: [patch.parentId, patch.parentId, id, id],
+        params: [patch.parentId, patch.parentId, patch.parentId, id, id],
       },
       reopenParentIfOpenChild,
     );
@@ -238,7 +254,8 @@ export function updateTaskStatements(id: string, patch: TaskPatch, now: string):
     // Sortie de sa parente : en fin de liste de son projet.
     statements.push({
       sql: `UPDATE tasks SET sort_order =
-              COALESCE((SELECT MAX(s.sort_order) FROM tasks s WHERE s.project_id IS tasks.project_id AND s.id <> tasks.id), 0) + 1
+              COALESCE((SELECT MAX(s.sort_order) FROM tasks s
+                        WHERE s.project_id IS tasks.project_id AND s.subject_id IS tasks.subject_id AND s.id <> tasks.id), 0) + 1
             WHERE id = ?`,
       params: [id],
     });

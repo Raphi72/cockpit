@@ -1,4 +1,4 @@
-import { CalendarPlus, Inbox, Lightbulb, SquareCheck, Trash2 } from 'lucide-react';
+import { CalendarPlus, Inbox, Lightbulb, NotebookPen, SquareCheck, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
@@ -119,6 +119,10 @@ function InboxRow({ item, now, today, onLeaving }: RowProps) {
     onLeaving();
     openCreate('event', { inboxItem: item });
   };
+  const toHomework = () => {
+    onLeaving();
+    openCreate('homework', { inboxItem: item });
+  };
   const setIdeaMenuOpen = (open: boolean) => {
     if (open) onLeaving();
     setIdeaMenu(open);
@@ -144,7 +148,12 @@ function InboxRow({ item, now, today, onLeaving }: RowProps) {
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
-      const actions: Record<string, (() => void) | undefined> = { t: toTask, i: () => setIdeaMenuOpen(true), e: toEvent };
+      const actions: Record<string, (() => void) | undefined> = {
+        t: toTask,
+        i: () => setIdeaMenuOpen(true),
+        e: toEvent,
+        d: toHomework,
+      };
       const action = actions[event.key.toLowerCase()];
       if (action) {
         event.preventDefault();
@@ -215,6 +224,10 @@ function InboxRow({ item, now, today, onLeaving }: RowProps) {
           <button type="button" onClick={toEvent} title="En faire un événement · E" className={actionClass}>
             <CalendarPlus className="size-3.5" strokeWidth={1.75} />
             Événement
+          </button>
+          <button type="button" onClick={toHomework} title="En faire un devoir · D" className={actionClass}>
+            <NotebookPen className="size-3.5" strokeWidth={1.75} />
+            Devoir
           </button>
           <button
             type="button"

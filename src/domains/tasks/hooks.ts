@@ -64,9 +64,9 @@ export function useSubtasks(parentId: string) {
   return useQuery({ queryKey: queryKeys.tasks.subtasks(parentId), queryFn: () => listSubtasks(db, parentId) });
 }
 
-export function useParentCandidates(task: Pick<TaskItem, 'id' | 'projectId'>) {
+export function useParentCandidates(task: Pick<TaskItem, 'id' | 'projectId' | 'subjectId'>) {
   return useQuery({
-    queryKey: queryKeys.tasks.parentCandidates(task.id, task.projectId),
+    queryKey: queryKeys.tasks.parentCandidates(task.id, task.projectId, task.subjectId),
     queryFn: () => listParentCandidates(db, task),
   });
 }

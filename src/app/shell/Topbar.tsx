@@ -5,6 +5,7 @@ import {
   CalendarPlus,
   FolderClosed,
   HandCoins,
+  NotebookPen,
   Plus,
   Search,
   SquareCheck,
@@ -33,6 +34,7 @@ export const NEW_MENU: Record<AppMode, MenuEntry[]> = {
     { kind: 'transaction', key: 'D', label: 'Nouvelle transaction', icon: ArrowRightLeft },
   ],
   school: [
+    { kind: 'homework', key: 'D', label: 'Nouveau devoir', icon: NotebookPen },
     { kind: 'event', key: 'E', label: 'Nouvel événement', icon: CalendarPlus },
     { kind: 'subject', key: 'M', label: 'Nouvelle matière', icon: BookOpen, separatorBefore: true },
   ],

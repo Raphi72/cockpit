@@ -341,7 +341,7 @@ describe('migration 0007', () => {
       sql`INSERT INTO events (id, title, kind, all_day, starts_at, created_at, updated_at)
           VALUES ('e1', 'Dentiste', 'appointment', 0, '2026-11-09T09:00', ${NOW}, ${NOW})`,
     ]);
-    raw.exec(readMigrations()[6]!);
+    for (const migration of readMigrations().slice(6)) raw.exec(migration);
 
     expect(await getEvent(db, 'e1')).toMatchObject({ title: 'Dentiste', recurrence: null });
     expect(await starts(db)).toEqual(['2026-11-09T09:00']);

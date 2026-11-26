@@ -153,8 +153,15 @@ export function FutureDayTasks({ open, day, today, addLabel }: { open: TaskItem[
  * Un jour passé : ce qui a été terminé ce jour-là, puis ce qui y était prévu et n'est pas fait
  * (reporté dans Aujourd'hui, et toujours à cocher ici).
  */
-export function PastDayTasks({ open, day, today }: { open: TaskItem[]; day: string; today: string }) {
-  const { data: done = [] } = useDoneOn(day);
+export function PastDayTasks(props: {
+  open: TaskItem[];
+  day: string;
+  today: string;
+  /** Les terminées à garder (celles du mode affiché). */
+  keep?: (task: TaskItem) => boolean;
+}) {
+  const { open, day, today, keep = () => true } = props;
+  const done = (useDoneOn(day).data ?? []).filter(keep);
   const notDone = selectPlannedOn(open, day, today);
   return (
     <div>

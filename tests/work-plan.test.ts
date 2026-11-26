@@ -48,6 +48,9 @@ const task = (overrides: Partial<TaskItem> = {}): TaskItem => ({
   subtasksTotal: 0,
   subtasksDone: 0,
   plannedOn: null,
+  subjectId: null,
+  subjectName: null,
+  subjectColor: null,
   ...overrides,
 });
 
@@ -252,7 +255,7 @@ describe('programme : en base', () => {
   it('la migration ajoute la colonne à une base existante, sans programme', async () => {
     const { db, raw } = createTestDb({ migrations: 4 });
     await db.batch([sql`INSERT INTO tasks (id, title, sort_order, created_at, updated_at) VALUES ('x', 'Vieille', 1, ${NOW}, ${NOW})`]);
-    raw.exec(readMigrations()[4]!);
+    for (const migration of readMigrations().slice(4)) raw.exec(migration);
     expect((await getTask(db, 'x'))?.plannedOn).toBeNull();
   });
 });

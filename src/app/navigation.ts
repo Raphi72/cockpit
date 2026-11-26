@@ -5,6 +5,7 @@ import {
   FolderClosed,
   Inbox,
   LayoutDashboard,
+  NotebookPen,
   SlidersHorizontal,
   SquareCheck,
   Users,
@@ -23,7 +24,8 @@ export type AppPath =
   | '/finances'
   | '/clients'
   | '/settings'
-  | '/subjects';
+  | '/subjects'
+  | '/homework';
 
 export type NavItem = {
   to: AppPath;
@@ -60,7 +62,13 @@ export const NAV: Record<AppMode, ModeNav> = {
     secondary: [{ to: '/clients', label: 'Clients', icon: Users }, settings],
   },
   school: {
-    main: [today, inbox, { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' }, calendar],
+    main: [
+      today,
+      inbox,
+      { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' },
+      { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '3' },
+      calendar,
+    ],
     secondary: [settings],
   },
 };

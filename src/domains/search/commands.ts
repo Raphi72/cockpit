@@ -6,6 +6,7 @@ import {
   FolderClosed,
   HandCoins,
   HardDriveDownload,
+  NotebookPen,
   Keyboard,
   PanelLeft,
   Power,
@@ -64,6 +65,7 @@ const CREATE: CreateCommand[] = [
   { kind: 'client', label: 'Nouveau client', icon: User, keywords: 'organisation' },
   { kind: 'payment', label: 'Nouvel encaissement', icon: HandCoins, keywords: 'paiement facture argent' },
   { kind: 'transaction', label: 'Nouvelle transaction', icon: ArrowRightLeft, keywords: 'dépense revenu virement' },
+  { kind: 'homework', label: 'Nouveau devoir', icon: NotebookPen, keywords: 'exercice rendre cours école', suggestedIn: 'school' },
   { kind: 'subject', label: 'Nouvelle matière', icon: BookOpen, keywords: 'cours école discipline', suggestedIn: 'school' },
 ];
 

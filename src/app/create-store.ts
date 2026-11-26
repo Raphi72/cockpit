@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 
 /** Fenêtres de création globales, ouvrables depuis n'importe où (bouton « Nouveau », raccourcis…). */
-export type CreateKind = 'task' | 'event' | 'project' | 'client' | 'payment' | 'transaction' | 'subject';
+export type CreateKind = 'task' | 'homework' | 'event' | 'project' | 'client' | 'payment' | 'transaction' | 'subject';
 
 /** Contexte pré-rempli : depuis une fiche projet, la tâche (ou l'encaissement, la dépense) est rattachée à ce projet. */
 export type CreateDefaults = {
   projectId?: string | null;
+  /** Devoir créé depuis la fiche d'une matière : il y est rattaché. */
+  subjectId?: string | null;
   scheduledDate?: string | null;
+  /** Devoir : le jour où il est à rendre. */
+  dueDate?: string | null;
   /** Événement créé depuis le calendrier : jour ('YYYY-MM-DD') ou créneau ('YYYY-MM-DDTHH:MM') cliqué. */
   eventStart?: string;
   /** Clic dans la ligne « journée » d'un jour. */
@@ -42,6 +46,12 @@ export function defaultsFromPath(pathname: string, today: string): CreateDefault
 /** Ces créations reprennent le projet de la fiche ouverte ; un projet ou un client part de zéro. */
 const PROJECT_AWARE: CreateKind[] = ['task', 'event', 'payment', 'transaction'];
 
+/** Sur la fiche d'une matière, ce qu'on crée (devoir, examen, note, cours) lui est rattaché. */
+export function subjectFromPath(pathname: string): string | null {
+  return /^\/subjects\/([^/]+)$/.exec(pathname)?.[1] ?? null;
+}
+
 export function createDefaultsFor(kind: CreateKind, pathname: string, today: string): CreateDefaults {
+  if (kind === 'homework') return { subjectId: subjectFromPath(pathname) };
   return PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, today) : {};
 }

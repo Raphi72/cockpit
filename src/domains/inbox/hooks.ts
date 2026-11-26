@@ -132,7 +132,11 @@ export function useInboxToTask() {
       return { taskId, today: ctx.today };
     },
     onSuccess: ({ taskId, today }, { item, input }) => {
-      const message = input.scheduledDate === today ? 'Tâche ajoutée à aujourd’hui.' : 'Tâche ajoutée.';
+      const message = input.subjectId
+        ? 'Devoir ajouté.'
+        : input.scheduledDate === today
+          ? 'Tâche ajoutée à aujourd’hui.'
+          : 'Tâche ajoutée.';
       announceTriage(queryClient, message, item, { kind: 'task', id: taskId });
     },
   });

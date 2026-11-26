@@ -5,6 +5,7 @@ import { useDeleteShortcut } from '@/app/shortcuts';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { PageContainer } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
+import { SubjectHomework } from '../components/SubjectHomework';
 import { SubjectDialog } from '../subjects/components/SubjectDialog';
 import { useDeleteSubject, useSubject } from '../subjects/hooks';
 import { subjectDetails } from '../subjects/model';
@@ -69,8 +70,14 @@ export function SubjectDetailPage() {
   );
 }
 
-/** Le contenu de la fiche, rempli au fil des sous-étapes (devoirs, cours, examens, notes). */
+/** Le contenu de la fiche : ses devoirs, ses cours, ses examens et ses notes. */
 function SubjectSections({ subjectId }: { subjectId: string }) {
-  void subjectId;
-  return <p className="text-ink-3">Ses devoirs, ses cours, ses examens et ses notes apparaîtront ici.</p>;
+  return (
+    <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)] items-start gap-x-16">
+      <div className="min-w-0">
+        <SubjectHomework subjectId={subjectId} />
+      </div>
+      <div className="min-w-0" />
+    </div>
+  );
 }

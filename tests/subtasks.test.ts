@@ -191,6 +191,9 @@ describe('sous-tâches : règles d’affichage', () => {
     subtasksTotal: 0,
     subtasksDone: 0,
     plannedOn: null,
+    subjectId: null,
+    subjectName: null,
+    subjectColor: null,
     ...overrides,
   });
 

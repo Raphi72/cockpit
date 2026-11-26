@@ -41,6 +41,9 @@ const item = (id: string, sortOrder: number, overrides: Partial<TaskItem> = {}):
   subtasksTotal: 0,
   subtasksDone: 0,
   plannedOn: null,
+  subjectId: null,
+  subjectName: null,
+  subjectColor: null,
   ...overrides,
 });
 
