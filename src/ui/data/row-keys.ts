@@ -33,11 +33,13 @@ type RowActions = {
   toggle?: () => void;
   /** Suppr : supprimer, avec « Annuler » dans le toast. */
   remove?: () => void;
+  /** F2 : renommer sur place. */
+  rename?: () => void;
 };
 
 /**
  * Clavier d'une ligne de liste (à poser avec `data-row` et `tabIndex={0}`) :
- * ↑ ↓ passent à la ligne voisine, Entrée ouvre, Espace coche, Suppr supprime.
+ * ↑ ↓ passent à la ligne voisine, Entrée ouvre, Espace coche, Suppr supprime, F2 renomme.
  * Après une suppression, le focus reste dans la liste, sur la ligne suivante.
  */
 export function handleRowKeyDown(event: KeyboardEvent<HTMLElement>, actions: RowActions): void {
@@ -52,6 +54,11 @@ export function handleRowKeyDown(event: KeyboardEvent<HTMLElement>, actions: Row
       if (!actions.toggle) return;
       event.preventDefault();
       actions.toggle();
+      break;
+    case 'F2':
+      if (!actions.rename) return;
+      event.preventDefault();
+      actions.rename();
       break;
     case 'Delete':
       if (!actions.remove) return;

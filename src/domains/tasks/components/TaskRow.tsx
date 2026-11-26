@@ -1,12 +1,12 @@
-import { CalendarClock, CalendarMinus, Flag, ListPlus, type LucideIcon } from 'lucide-react';
-import { memo, useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
+import { CalendarClock, CalendarMinus, Flag, ListPlus, Pencil, type LucideIcon } from 'lucide-react';
+import { memo, useLayoutEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type MouseEvent } from 'react';
 import { formatCompletedAt, relativeDateLabel, toISODate } from '@/core/dates';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { handleRowKeyDown } from '@/ui/data/row-keys';
 import { useCompletingTasks } from '../completion-store';
-import { useDeleteTask, useToggleTask } from '../hooks';
+import { useDeleteTask, useToggleTask, useUpdateTask } from '../hooks';
 import { rowCompletion, taskContext, taskDateLabel, type RowCompletion, type TaskItem } from '../model';
 import { TASK_ROW_ATTRIBUTE, useTaskSelection } from '../selection-store';
 import { useTaskSheet } from '../sheet-store';
@@ -61,8 +61,48 @@ function HoverAction({ icon: Icon, label, onClick }: { icon: LucideIcon; label: 
 }
 
 /**
+ * Le titre en champ, pour le renommer sans ouvrir la tâche : Entrée ou un clic ailleurs enregistre,
+ * Échap annule. Les clics et le glisser n'atteignent pas la ligne.
+ */
+function TitleInput({ task, onDone }: { task: TaskItem; onDone: () => void }) {
+  const update = useUpdateTask();
+  const [draft, setDraft] = useState(task.title);
+  const finished = useRef(false);
+  const save = () => {
+    if (finished.current) return;
+    finished.current = true;
+    const title = draft.trim();
+    if (title && title !== task.title) update.mutate({ id: task.id, patch: { title } });
+    onDone();
+  };
+  const cancel = () => {
+    finished.current = true;
+    onDone();
+  };
+  return (
+    <input
+      autoFocus
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={save}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') save();
+        if (e.key === 'Escape') cancel();
+      }}
+      aria-label="Titre de la tâche"
+      className="-my-1 h-8 min-w-0 flex-1 rounded-md border border-line-strong bg-elevated px-2 outline-none focus:border-accent"
+    />
+  );
+}
+
+/**
  * Ligne de tâche : case, titre, puis seulement le projet (ou la matière d'un devoir) et la date qui compte.
- * Un clic ouvre la tâche ; Ctrl+clic et Maj+clic la sélectionnent (actions groupées).
+ * Un clic ouvre la tâche ; Ctrl+clic et Maj+clic la sélectionnent (actions groupées). Le crayon au survol
+ * (ou F2) la renomme sur place.
  */
 export const TaskRow = memo(function TaskRow({
   task,
@@ -101,6 +141,12 @@ export const TaskRow = memo(function TaskRow({
   const context = taskContext(task);
   const date = label?.kind === 'scheduled' && task.scheduledDate === shownDay ? null : label;
   const toggle = () => toggleTask(task);
+  const [renaming, setRenaming] = useState(false);
+  const endRename = () => {
+    setRenaming(false);
+    // Le clavier revient sur la ligne, pour continuer à naviguer.
+    requestAnimationFrame(() => rowRef.current?.focus());
+  };
 
   const onClick = (event: MouseEvent) => {
     const selection = useTaskSelection.getState();
@@ -123,7 +169,7 @@ export const TaskRow = memo(function TaskRow({
       onMouseDown={(event) => event.shiftKey && event.preventDefault()}
       onClick={onClick}
       onKeyDown={(event) =>
-        handleRowKeyDown(event, { open: () => openTask(task.id), toggle, remove: () => deleteTask.mutate(task) })
+        handleRowKeyDown(event, { open: () => openTask(task.id), toggle, remove: () => deleteTask.mutate(task), rename: () => setRenaming(true) })
       }
       {...dragProps}
       className={
@@ -142,15 +188,19 @@ export const TaskRow = memo(function TaskRow({
             className={`size-1.5 shrink-0 rounded-full ${task.priority === 3 ? 'bg-danger' : 'bg-warning'}`}
           />
         )}
-        <span
-          className={
-            'truncate transition-colors duration-300 ease-soft ' +
-            (checking ? 'task-strike text-ink-3' : done ? 'text-ink-3 line-through decoration-line-strong' : '')
-          }
-        >
-          {showParent && task.parentTitle && <span className="text-ink-3">{task.parentTitle} › </span>}
-          {task.title}
-        </span>
+        {renaming ? (
+          <TitleInput task={task} onDone={endRename} />
+        ) : (
+          <span
+            className={
+              'truncate transition-colors duration-300 ease-soft ' +
+              (checking ? 'task-strike text-ink-3' : done ? 'text-ink-3 line-through decoration-line-strong' : '')
+            }
+          >
+            {showParent && task.parentTitle && <span className="text-ink-3">{task.parentTitle} › </span>}
+            {task.title}
+          </span>
+        )}
         {task.subtasksTotal > 0 && (
           <span className="tnum shrink-0 text-meta text-ink-3" title="Sous-tâches terminées">
             {task.subtasksDone}/{task.subtasksTotal}
@@ -158,6 +208,7 @@ export const TaskRow = memo(function TaskRow({
         )}
       </span>
       <span className="flex items-center gap-4 text-meta text-ink-3">
+        {!renaming && <HoverAction icon={Pencil} label="Renommer · F2" onClick={() => setRenaming(true)} />}
         {onAddSubtask && <HoverAction icon={ListPlus} label="Ajouter une sous-tâche" onClick={onAddSubtask} />}
         {onUnplan && <HoverAction icon={CalendarMinus} label="Retirer du programme" onClick={onUnplan} />}
         {showProject && context && (
