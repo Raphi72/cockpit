@@ -839,7 +839,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 
 **Mouvement** : 120 ms au survol et au clic, 150 ms à l'apparition (opacité + décalage de 4 px), 100 ms à la disparition, courbe `cubic-bezier(.2,.8,.2,1)`. Le réglage `prefers-reduced-motion` est respecté.
 
-**Mise en page** : sidebar de 232 px (56 px réduite), barre supérieure de 56 px. Le contenu est centré avec une largeur maximale de 1120 px et des marges de 48 px. Le dashboard est en deux colonnes (`1.5fr / 1fr`) et passe en une seule sous 1180 px.
+**Mise en page** : sidebar de 232 px (56 px réduite), barre supérieure de 56 px. Le contenu est centré avec une largeur maximale de 1120 px et des marges de 48 px ; sur un grand écran, il s'élargit par paliers (1440 px dès 1700 px de fenêtre, 1760 px dès 2100 ; `CONTENT_WIDTH` dans `ui/layout/Page.tsx`, la barre du haut suit), pour ne pas laisser de grands vides. Un écran 1080p à 125 % (environ 1536 px) garde 1120 px. Le dashboard est en deux colonnes (`1.5fr / 1fr`) et passe en une seule sous 1180 px.
 
 ### 6.3 Règles d'écriture et de format
 

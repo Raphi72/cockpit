@@ -18,6 +18,7 @@ import {
 import { Fragment, type KeyboardEvent } from 'react';
 import { todayISO } from '@/core/dates';
 import { useCompanion } from '@/domains/companion/store';
+import { CONTENT_WIDTH } from '@/ui/layout/Page';
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { Kbd } from '@/ui/primitives/Kbd';
@@ -118,7 +119,7 @@ function FocusButton() {
 export function Topbar() {
   return (
     <header className="shrink-0 border-b border-line">
-      <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between gap-2 px-12">
+      <div className={`mx-auto flex h-14 ${CONTENT_WIDTH} items-center justify-between gap-2 px-12`}>
         <SearchButton />
         <div className="flex items-center gap-2">
           <FocusButton />
