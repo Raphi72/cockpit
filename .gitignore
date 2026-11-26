@@ -19,3 +19,5 @@ backups-dev/
 exports/
 cockpit-export*
 cockpit_*.db
+# Copie de données réelles pour le navigateur de développement (`?data`) : jamais versionnée.
+local-data/

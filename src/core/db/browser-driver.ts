@@ -16,13 +16,30 @@ const migrations = import.meta.glob<string>('/src-tauri/migrations/*.sql', {
 
 let database: Promise<Database> | null = null;
 
+/**
+ * `?data` dans l'adresse : part d'une copie de vraies données (local-data/cockpit.db, ignoré par git,
+ * préparée hors de l'app, index de recherche sans FTS5) au lieu d'une base vide. Tout reste en mémoire :
+ * recharger la page repart de la copie, rien n'est jamais réécrit.
+ */
+async function initialBytes(): Promise<Uint8Array | null> {
+  if (!new URLSearchParams(window.location.search).has('data')) return null;
+  const response = await fetch('/local-data/cockpit.db');
+  if (!response.ok) {
+    console.warn('?data : local-data/cockpit.db introuvable, base vide.');
+    return null;
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
 function open(): Promise<Database> {
-  database ??= initSqlJs({ locateFile: () => wasmUrl }).then((SQL) => {
-    const db = new SQL.Database();
+  database ??= Promise.all([initSqlJs({ locateFile: () => wasmUrl }), initialBytes()]).then(([SQL, bytes]) => {
+    const db = bytes ? new SQL.Database(bytes) : new SQL.Database();
     db.exec('PRAGMA foreign_keys = ON');
-    for (const path of Object.keys(migrations).sort()) db.exec(withoutFts5(migrations[path]!));
-    // Comme au démarrage de l'app : la version du schéma suit les migrations.
-    db.exec(`PRAGMA user_version = ${Object.keys(migrations).length}`);
+    // Comme au démarrage de l'app : seules les migrations pas encore passées s'appliquent.
+    const current = Number(db.exec('PRAGMA user_version')[0]?.values[0]?.[0] ?? 0);
+    const paths = Object.keys(migrations).sort();
+    for (const path of paths.slice(current)) db.exec(withoutFts5(migrations[path]!));
+    db.exec(`PRAGMA user_version = ${paths.length}`);
     return db;
   });
   return database;

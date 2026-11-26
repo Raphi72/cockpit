@@ -65,6 +65,7 @@ Rust et cargo sont dans `%USERPROFILE%\.cargo\bin` : dans PowerShell, ajouter `$
 
 - Toujours : `npm run typecheck` et `npm test`.
 - **Tester l'interface dans le navigateur intégré**, sur `npm run dev` ou le Vite de `tauri dev`, port 1420. C'est isolé et fiable.
+- **Avec de vraies données** : `?data` dans l'adresse (`http://localhost:1420/?data`, `?data&mobile` pour le téléphone) part de `local-data/cockpit.db` (ignoré par git), une copie préparée à partir d'une sauvegarde de Cockpit (index de recherche sans FTS5). Tout reste en mémoire ; rien n'est réécrit. Ne jamais versionner ce dossier.
 - **Ne pas saisir de texte dans la vraie fenêtre Cockpit via l'automatisation Windows** : la fenêtre de Claude peut reprendre le focus et la saisie part ailleurs (c'est déjà arrivé). Des raccourcis seuls ou des captures d'écran suffisent.
 - Dans le navigateur de test, `Ctrl+N` et `Ctrl+1…6` sont réservés par le navigateur ; dans l'app, `N` et `Ctrl+1…6` fonctionnent.
 - Si l'interface affiche « Invalid hook call » après l'ajout d'une dépendance, recharger complètement la page (réoptimisation Vite).
