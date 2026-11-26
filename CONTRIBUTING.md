@@ -76,15 +76,15 @@ Restent à essayer à la main (§7.3) : les fenêtres natives de sauvegarde et d
 Le compagnon de tous les jours : travail, cours, sport et journée organisée, sur le PC et sur le téléphone Android. Détail complet au §9 de la [conception](docs/CONCEPTION.md) ; les étapes, dans l'ordre de leurs dépendances :
 
 - [x] **1. Toujours là** (branche `v2-toujours-la`) : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre (URSSAF), premières animations.
-  - [x] **Boîte de réception** : une page sous « Aujourd'hui » ; chaque capture devient une tâche (`T`), une idée de projet (`I`) ou un événement (`E`), avec « Annuler ».
+  - [x] **Boîte de réception** : une page sous « Aujourd'hui » ; chaque capture devient une tâche (`T`), une idée de projet (`I`) ou un événement (`E`), avec « Annuler ». *Retirée le 26/11/2026 : un clic droit sur une ligne de page fait la même chose.*
   - [x] **Zone de notification et démarrage avec Windows** : fermer la fenêtre garde Cockpit ouvert, l'icône la rouvre ou le quitte ; lancé avec Windows, il démarre caché. Réglable dans Paramètres.
-  - [x] **Capture rapide** : `Ctrl+Maj+Espace` (réglable) ouvre une petite fenêtre, même Cockpit caché ; Entrée, et c'est dans la boîte de réception.
+  - [x] **Capture rapide** : `Ctrl+Maj+Espace` (réglable) ouvre une petite fenêtre, même Cockpit caché ; Entrée, et c'est dans la boîte de réception. *Retirée le 26/11/2026, avec la boîte.*
   - [x] **Événements récurrents** : chaque jour, semaine (jours au choix), deux semaines, mois ou année, avec une fin facultative ; visibles dans le calendrier, le dashboard, la fiche projet et les notifications.
   - [x] **Une fois ou toute la série** : modifier, glisser ou supprimer une occurrence seule, ou la série (« cette fois », « celle-ci et les suivantes », « toute la série »).
   - [x] **Chiffre d'affaires** : onglet de Finances, par trimestre et par mois (encaissements reçus, à leur date de réception).
   - [x] **Premières animations** (Motion) : changement de page, lignes des listes, toasts, barre latérale ; coupées par « Réduire les animations » de Windows.
 
-  Restent à essayer à la main (§7.3) : la zone de notification et la capture dans la fenêtre de développement ; le démarrage avec Windows, l'instance unique et le temps de démarrage dans l'app installée.
+  Restent à essayer à la main (§7.3) : la zone de notification dans la fenêtre de développement ; le démarrage avec Windows, l'instance unique et le temps de démarrage dans l'app installée.
 - [ ] **2. Modes et espace Cours** : modes Travail et Cours, matières, emploi du temps, devoirs, examens, notes et moyennes.
 - [ ] **3. Organisateur de journée** : modules réutilisables (« Sport 3 h »), blocs glissés sur la journée, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
 - [ ] **4. Pages** (à la place de Notion) : éditeur en blocs, sous-pages, pages rattachées à un projet ou une matière, liens `[[…]]`, modèles, journal du jour, import Notion.
@@ -93,7 +93,7 @@ Le compagnon de tous les jours : travail, cours, sport et journée organisée, s
 - [ ] **7. Le compagnon** : écran du matin, mode focus, mini-fenêtre « En ce moment », célébrations, nouvelles notifications.
 - [ ] **8. Google Agenda** : connexion Google, événements Google dans le calendrier et la journée (et, si retenu, les blocs envoyés dans Google).
 - [ ] **9. Synchronisation** par Google Drive : fichiers de modifications chiffrés, jamais la base elle-même.
-- [ ] **10. Application Android** : journée, capture, devoirs, habitudes, notifications et widget.
+- [ ] **10. Application Android** : journée, devoirs, habitudes, pages, notifications et widget.
 
 Avec ces étapes, **refonte visuelle, à faire ensemble** : mieux voir ce qu'on fait d'un coup d'œil, tout en restant sobre et professionnel. À travailler avec l'utilisateur, écran par écran, avec des maquettes validées avant de coder. Les principes du design system restent (peu d'informations à la fois, beaucoup d'espace, pas de cartes partout) : il s'agit de mieux hiérarchiser, pas de charger.
 

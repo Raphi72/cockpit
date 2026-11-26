@@ -194,7 +194,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 - Le dashboard repose sur quelques requêtes agrégées et indexées. Toutes les colonnes de filtre et de tri ont un index (§3.3).
 - Au-delà d'une centaine de lignes, les listes sont virtualisées et leurs lignes mémoïsées. L'état d'interface est dans Zustand, lu par sélecteurs : ouvrir la palette ne re-rend pas la page.
 - Il n'y a pas de bibliothèque lourde de graphiques ni de calendrier tiers. Le calendrier et la timeline sont faits maison, légers et stylés comme le reste.
-- Les animations (V2) ne pèsent pas sur le démarrage : le moteur de Motion est un morceau à part, chargé après le premier rendu. La petite fenêtre de capture rapide est créée cachée, une seconde et demie après le lancement.
+- Les animations (V2) ne pèsent pas sur le démarrage : le moteur de Motion est un morceau à part, chargé après le premier rendu.
 
 ### 2.7 Données, sauvegarde, sécurité
 
@@ -226,7 +226,7 @@ Les tests implémentent cette interface avec `node:sqlite` (intégré à Node 24
 | Besoin | Choix | Raison |
 |---|---|---|
 | Coquille desktop | Tauri 2 (2.12 depuis la V2) | Légère, native, installeur Windows (NSIS) avec raccourcis |
-| Toujours là (V2) | Plugins Tauri `autostart`, `single-instance`, `global-shortcut`, icône `tray` | Démarrage avec Windows, une seule instance, capture rapide, zone de notification |
+| Toujours là (V2) | Plugins Tauri `autostart`, `single-instance`, icône `tray` | Démarrage avec Windows, une seule instance, zone de notification (la capture rapide et son plugin `global-shortcut` ont été retirés le 26/11/2026) |
 | Animations (V2) | Motion (`LazyMotion`) | Transitions et ressorts ; le moteur est chargé après le premier rendu |
 | UI | React 19 + TypeScript strict | — |
 | Build | Vite | Rechargement instantané en développement |
@@ -564,7 +564,7 @@ END;
 - La palette Ctrl+K combine cette recherche et des commandes (« Nouvelle tâche », « Aller au calendrier », « Marquer reçu… »).
 - L'index est rempli par la migration `0002_search.sql` et tenu à jour par des triggers : l'app n'y écrit jamais. Une nouvelle table cherchable doit y ajouter ses triggers (dans une nouvelle migration).
 - Un virement n'est indexé qu'une fois (sa ligne de sortie).
-- Depuis, les idées de projet (`idea`, migration `0003`) et les captures de la boîte de réception (`inbox`, migration `0006`) y sont aussi, avec leurs triggers. Un événement qui se répète y est sans date.
+- Depuis, les idées de projet (`idea`, migration `0003`) y sont aussi, avec leurs triggers (les captures de la boîte de réception, `inbox`, migration `0006`, en sont reparties avec elle, migration `0018`). Un événement qui se répète y est sans date.
 - En mode navigateur de développement, sql.js n'a pas FTS5 : l'index y est une table ordinaire et la recherche passe par `LIKE` (sans ignorer les accents). Voir `core/db/fts-fallback.ts`.
 
 ---
@@ -584,22 +584,22 @@ gestion_projets/
 │  │  ├─ backup.rs                    # VACUUM INTO, rotation, vérification et restauration
 │  │  ├─ data.rs                      # commandes de Paramètres › Données (fenêtres de fichier natives)
 │  │  ├─ notify.rs                    # envoi des notifications Windows
-│  │  ├─ presence.rs                  # V2 : zone de notification, fermeture, démarrage avec Windows, battement
-│  │  └─ capture.rs                   # V2 : raccourci global et petite fenêtre de capture rapide
+│  │  └─ presence.rs                  # V2 : zone de notification, fermeture, démarrage avec Windows, battement
 │  ├─ migrations/
 │  │  ├─ 0001_init.sql
 │  │  ├─ 0002_search.sql              # index FTS5 et ses triggers
 │  │  ├─ 0003 … 0005                  # idées, sous-tâches, programme du jour
-│  │  ├─ 0006_inbox.sql               # V2 : boîte de réception
-│  │  └─ 0007_recurrence.sql          # V2 : événements récurrents et leurs exceptions
-│  ├─ capabilities/                   # permissions Tauri minimales (fenêtre principale, capture)
+│  │  ├─ 0006_inbox.sql               # V2 : boîte de réception (retirée par 0018)
+│  │  ├─ 0007_recurrence.sql          # V2 : événements récurrents et leurs exceptions
+│  │  ├─ …
+│  │  └─ 0018_inbox_to_pages.sql      # V2 : la boîte de réception rejoint les Pages (page « Captures »)
+│  ├─ capabilities/                   # permissions Tauri minimales (fenêtre principale, mini-fenêtre)
 │  ├─ icons/
 │  ├─ Cargo.toml
 │  └─ tauri.conf.json
 │
 ├─ src/
 │  ├─ main.tsx
-│  ├─ capture.tsx                     # V2 : entrée de la petite fenêtre de capture (capture.html)
 │  ├─ app/
 │  │  ├─ App.tsx                      # providers : QueryClient, Router, thème
 │  │  ├─ router.tsx                   # routes, chargées à la demande
@@ -635,7 +635,6 @@ gestion_projets/
 │  │  │  ├─ recurrence.ts             # V2 : règle RRULE, occurrences, exceptions (règles pures)
 │  │  │  ├─ calendar/                 # MonthView, WeekView, DayView
 │  │  │  └─ timeline/                 # PlanningPage (Gantt simplifié)
-│  │  ├─ inbox/                       # V2 : boîte de réception, capture rapide et son réglage
 │  │  ├─ presence/                    # V2 : « Toujours là » côté interface (réglages, première explication)
 │  │  ├─ dashboard/                   # requêtes agrégées + sections du cockpit
 │  │  ├─ search/                      # FTS5 + CommandPalette
@@ -659,7 +658,6 @@ gestion_projets/
 ├─ tests/                             # Vitest : règles métier + repositories sur SQLite en mémoire
 ├─ docs/
 ├─ index.html
-├─ capture.html                       # V2 : seconde page, pour la fenêtre de capture rapide
 ├─ package.json
 ├─ tsconfig.json
 └─ vite.config.ts
@@ -673,9 +671,9 @@ gestion_projets/
 
 **Sidebar** (232 px, réductible à 56 px avec Ctrl+B). Depuis la V2 (étape 2), elle dépend du mode, choisi en haut à gauche par un sélecteur à deux icônes (Travail, Cours ; `Ctrl M`) :
 
-- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), **Boîte de réception**, **Pages** (V2, étape 4) et **Habitudes** (V2, étape 6), en une rangée de quatre icônes (le nom au survol, depuis les retours du 26/11/2026 : la place va aux projets en cours) ; les pages favorites sont listées sous la navigation ;
-- **mode Travail** : Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
-- **mode Cours** : Aujourd'hui, Boîte de réception, Devoirs, Emploi du temps, Calendrier, Examens, Notes ; en bas, Paramètres. (La page Révisions des flashcards a été retirée le 26/11/2026 ; la page Matières aussi, le même jour : les matières se créent seules depuis les cours de Google.)
+- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), **Pages** (V2, étape 4) et **Habitudes** (V2, étape 6), en une rangée de trois icônes (le nom au survol, depuis les retours du 26/11/2026 : la place va aux projets en cours) ; les pages favorites sont listées sous la navigation ;
+- **mode Travail** : Aujourd'hui (dashboard), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
+- **mode Cours** : Aujourd'hui, Devoirs, Emploi du temps, Calendrier, Examens, Notes ; en bas, Paramètres. (La page Révisions des flashcards a été retirée le 26/11/2026 ; la page Matières aussi, le même jour : les matières se créent seules depuis les cours de Google. La Boîte de réception aussi : ce qu'elle faisait se fait depuis n'importe quelle page, voir §7.3.)
 
 La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le dashboard joue déjà le rôle de vue globale. La sidebar utilise des icônes Lucide plutôt que des emojis, pour un rendu plus net et plus sobre.
 
@@ -688,8 +686,7 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet. En mode Cours : nouveau devoir (rattaché à la matière de la fiche ouverte) |
 | `Ctrl 1` … `Ctrl 6` | Aller aux pages principales du mode (`Ctrl 4` : le calendrier dans les deux) |
 | `Ctrl M` | V2 : passer du mode Travail au mode Cours, et inversement |
-| `Ctrl Maj Espace` | V2 : capture rapide, depuis n'importe quelle application (réglable) |
-| `T` · `I` · `E` · `D` | V2, boîte de réception : faire de la capture une tâche, une idée de projet, un événement ou un devoir |
+| Clic droit sur une ligne de page | V2 : en faire une tâche, un devoir, un événement, une idée de projet ou un projet (remplace la boîte de réception et la capture rapide, retirées le 26/11/2026) |
 | `Ctrl B` | Réduire / déplier la sidebar |
 | `↑ ↓` · `Entrée` · `Espace` | Parcourir une liste · ouvrir · cocher la tâche |
 | `← →` · `T` · `M` `S` `J` | Calendrier : période précédente ou suivante, aujourd'hui, vue mois, semaine ou jour |
@@ -937,7 +934,10 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
 
 **Retours d'usage du 26/11/2026** (premier essai de la V2 sur les vraies données, dans le navigateur avec `?data`) :
-- **Barre latérale** : Journée, Boîte de réception, Pages et Habitudes en une rangée d'icônes, pour voir tous les projets en cours.
+- **Barre latérale** : Journée, Boîte de réception, Pages et Habitudes en une rangée d'icônes, pour voir tous les projets en cours. (La boîte de réception est partie ensuite : Journée, Pages et Habitudes.)
+- **Boîte de réception retirée** (« elle ne me sert à rien, c'est vraiment le principe de Page ») : ce qu'elle faisait se fait maintenant dans **n'importe quelle page**. Un **clic droit sur une ligne** (ou la touche Menu) ouvre « En faire » : une tâche, un devoir, un événement, une idée de projet (sous-menu des projets en cours, celui de la page en premier) ou un projet. Tâche, devoir, événement et projet ouvrent leur fenêtre de création pré-remplie avec le texte de la ligne (et le projet ou la matière de la page) ; l'idée se crée tout de suite. La ligne **quitte la page** (une puce entière, ou seulement son texte si elle a des sous-puces) ; « Annuler » (ou `Ctrl Z`) retire ce qui a été créé et remet la ligne à sa place, même après avoir quitté la page (à la fin de la page si elle a changé entre-temps). Le menu habituel (copier, coller) reste sur une sélection, une ligne vide, du code, un tableau et dans les modèles. Domaine : `pages/editor/page-lines.ts` (règles, testées sans navigateur), `LineMenu.tsx`, `line-actions.ts`, `pages/service.ts`. Un projet créé ainsi n'ouvre pas sa fiche : on reste sur la page.
+- **Capture rapide retirée** avec elle (choix de l'utilisateur) : plus de raccourci global (`Ctrl Maj Espace`), de petite fenêtre, de réglage dans Paramètres, d'entrée dans le menu de l'icône, ni de bouton de capture sur le téléphone ; le plugin `global-shortcut` est parti. On note directement dans la page qu'on veut.
+- **Captures existantes** (migration `0018`) : reprises dans une page **« Captures »**, mise en favori, une puce par capture de la plus ancienne à la plus récente, sous une ligne qui rappelle le clic droit. Identifiant fixe (`page-captures`) : deux appareils synchronisés qui passent la migration écrivent la même page. Pas de page si la boîte était vide. La table `inbox_items` part avec ses déclencheurs, ses traces de synchronisation, son index de recherche et le réglage `capture.shortcut`. Installer cette version met la vraie base au schéma 18 (sauvegarde automatique d'avant migration). Vérifié dans le navigateur de test (clic droit, les cinq choix, « Annuler » dans la page et après l'avoir quittée, la page « Captures » rendue par l'éditeur) ; pas encore dans l'app (le clic droit natif de WebView2 est à voir).
 - **Tâches** : renommer sur place (crayon au survol, ou F2), sans ouvrir la tâche.
 - **Flashcards retirées** (elles ne servaient pas) : page Révisions, session, cartes des matières et des pages, notification ; migration `0015`. Les révisions à rebours des examens restent.
 - **Cours depuis Google Agenda** : l'emploi du temps de l'intranet arrive dans un agenda Google (lien iCal). Marqué « Agenda des cours » dans Paramètres, ses événements deviennent des cours : chaque intitulé, ramené à sa matière (« Maths - TD » → « Maths »), est relié à la matière de même nom ou à une matière **créée toute seule** ; « Ce n'est pas un cours » l'ignore pour de bon. Les cours vont dans « Cours du jour » (avec la semaine type), la Journée et le calendrier (couleur de la matière), pas dans la vue mois ni les Prochains jours, sans rappel. Un clic sur un cours : sa matière, les devoirs attendus, « Ajouter un devoir » à rendre au cours suivant de la matière. Migration `0016`.
@@ -1026,8 +1026,8 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **Ailleurs** : les blocs sont dans le calendrier (filtre « Blocs », vues semaine et jour, glissables d'un jour à l'autre), pas au mois ni dans « Prochains jours ».
 
 **Choix faits en V2, étape 2 (« Modes et espace Cours »)**, à confirmer à l'usage :
-- **Modes** (P13, `app/modes.ts`) : le mode est mémorisé (`ui-store`) et suit la page ouverte (ouvrir un projet depuis la recherche repasse en Travail). Changer de mode sur une page de l'autre mode ramène à Aujourd'hui ; une page commune (calendrier, boîte de réception, paramètres) reste affichée. Les pages de l'autre mode se trouvent toujours par `Ctrl K` ; seules celles du mode en cours y sont suggérées. Le menu « Nouveau » et `N` suivent le mode.
-- **Chaque mode montre les siens** : la page Tâches, Aujourd'hui (mode Travail) et « Je veux travailler… » ne montrent pas les devoirs ; le dashboard du mode Travail ne montre ni cours ni examens. Le calendrier, la boîte de réception, la recherche et les notifications montrent tout.
+- **Modes** (P13, `app/modes.ts`) : le mode est mémorisé (`ui-store`) et suit la page ouverte (ouvrir un projet depuis la recherche repasse en Travail). Changer de mode sur une page de l'autre mode ramène à Aujourd'hui ; une page commune (calendrier, pages, paramètres) reste affichée. Les pages de l'autre mode se trouvent toujours par `Ctrl K` ; seules celles du mode en cours y sont suggérées. Le menu « Nouveau » et `N` suivent le mode.
+- **Chaque mode montre les siens** : la page Tâches, Aujourd'hui (mode Travail) et « Je veux travailler… » ne montrent pas les devoirs ; le dashboard du mode Travail ne montre ni cours ni examens. Le calendrier, la recherche et les notifications montrent tout.
 - **Matières** (migration `0008`, `domains/school`) : nom, couleur (la première libre est proposée), prof, salle, coefficient (saisi « 1,5 » ou « 1.5 »). Une fiche par matière : ses devoirs, ses notes du semestre, ses cours de la semaine, ses examens. Supprimer une matière emporte ses devoirs, cours, examens et notes ; le toast dit ce qui part et « Annuler » remet tout.
 - **Devoirs** (P14) : une tâche avec `subject_id` ; jamais à la fois dans un projet et une matière (choisir l'un retire l'autre). Les sous-tâches suivent la matière de leur parente. Leur date principale est « À rendre » (la deadline) ; « À faire le » (le début) est facultatif. Page Devoirs : en retard, à rendre jour par jour, sans date, puis « Rendus ».
 - **Emploi du temps** : **une seule semaine type**, toute l'année (pas de semaines A/B, comme demandé). Contrairement à l'esquisse du §9.4, les cours ne sont pas des événements récurrents mais une table à part (`timetable_slots`) : ils suivent le calendrier scolaire (semestres, vacances), et `events.kind` ne peut pas recevoir de nouvelle valeur sans reconstruire la table. Les cours de chaque jour sont tout de même calculés, jamais recopiés (P8, P15). Ils sont dans les vues semaine et jour du calendrier (filtre « Cours »), pas au mois (une routine qui cacherait le reste), et ne se glissent pas : on les change dans la page Emploi du temps. Annuler un seul cours (prof absent) n'existe pas encore.
@@ -1037,18 +1037,18 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **Aujourd'hui en mode Cours** : deux colonnes. À gauche, les cours du jour (celui en cours en avant, les passés effacés) et les devoirs à rendre (retards, semaine qui vient, à faire ce jour-là) ; à droite, le prochain examen et les prochains jours (examens et événements sans projet). Même navigation de jour en jour qu'en mode Travail ; `P` compose un programme de devoirs.
 
 **Choix faits en V2, étape 1 (« Toujours là »)**, à confirmer à l'usage :
-- **Boîte de réception** (migration `0006`, domaine `inbox`) : une page sous « Aujourd'hui », sans raccourci `Ctrl+chiffre` (les six pages gardent les leurs), avec un compteur dans la barre latérale (un point quand elle est réduite). Les captures les plus récentes d'abord, sur une ligne. Sur la ligne qui a le focus : `T` et `E` ouvrent « Nouvelle tâche » et « Nouvel événement » pré-remplis (on choisit le projet ou la date avant de valider), `I` range la capture en idée d'un projet, `Entrée` la reformule, `Suppr` la supprime. La capture quitte la boîte dans le même lot que la création ; « Annuler » la remet à sa place. Le focus passe à la ligne suivante.
-- **Zone de notification** (`presence.rs`) : fermer la fenêtre la cache (réglage `presence.keepInTray`, activé par défaut, lu côté natif à la fermeture) ; décoché, fermer quitte. L'icône est toujours là tant que Cockpit tourne : un clic rouvre la fenêtre, le clic droit propose « Ouvrir Cockpit », « Capture rapide » et « Quitter ». La palette a aussi « Quitter Cockpit ». En développement, l'infobulle de l'icône dit « Cockpit (développement) ».
+- **Boîte de réception** (migration `0006`, domaine `inbox`) : une page sous « Aujourd'hui », sans raccourci `Ctrl+chiffre` (les six pages gardent les leurs), avec un compteur dans la barre latérale (un point quand elle est réduite). Les captures les plus récentes d'abord, sur une ligne. Sur la ligne qui a le focus : `T` et `E` ouvrent « Nouvelle tâche » et « Nouvel événement » pré-remplis (on choisit le projet ou la date avant de valider), `I` range la capture en idée d'un projet, `Entrée` la reformule, `Suppr` la supprime. La capture quitte la boîte dans le même lot que la création ; « Annuler » la remet à sa place. Le focus passe à la ligne suivante. *(Retirée le 26/11/2026 : voir « Boîte de réception retirée » au §7.3.)*
+- **Zone de notification** (`presence.rs`) : fermer la fenêtre la cache (réglage `presence.keepInTray`, activé par défaut, lu côté natif à la fermeture) ; décoché, fermer quitte. L'icône est toujours là tant que Cockpit tourne : un clic rouvre la fenêtre, le clic droit propose « Ouvrir Cockpit » et « Quitter » (« Capture rapide » retirée le 26/11/2026). La palette a aussi « Quitter Cockpit ». En développement, l'infobulle de l'icône dit « Cockpit (développement) ».
 - **Démarrage avec Windows** : activé d'office une seule fois, au premier lancement de l'app installée (réglage `presence.autostartDecided`), puis réglable dans Paramètres › Démarrage et fermeture. La case montre l'état réel côté Windows (il peut aussi être coupé depuis le Gestionnaire des tâches), pas une valeur recopiée. Jamais inscrit depuis un build de développement : il pointerait vers un exécutable qui ne marche pas sans son serveur.
 - **Lancé caché** (`--autostart`) : la tournée des rappels n'est pas celle d'« ouverture » mais une vérification ordinaire, qui devient la tournée du matin dès 8 h, résumé compris (avant midi) : le tableau de bord n'est pas à l'écran. Le journal des notifications est purgé à chaque tournée, et la sauvegarde du jour vérifiée chaque heure, puisque Cockpit peut rester lancé plusieurs jours.
 - **Instance unique** : seulement dans l'app installée. L'app de développement et l'app installée ont le même identifiant et doivent pouvoir tourner ensemble.
 - **Fenêtres créées cachées** : elles ne prennent pas le focus à leur création (sinon la frappe en cours dans une autre application se perdait) ; elles le reçoivent en s'affichant.
-- **Capture rapide** (`capture.rs`, `capture.html`) : le raccourci ouvre une fenêtre d'une ligne, sans bordure, toujours au-dessus, au premier quart de l'écran où se trouve le pointeur ; un second appui la referme. `Entrée` note et referme, `Ctrl+Entrée` note et garde la fenêtre, `Échap` abandonne ; cliquer ailleurs la cache en gardant le brouillon. Raccourcis proposés : `Ctrl+Maj+Espace`, `Alt+Maj+C`, `Win+Alt+C`, ou aucun (réglage `capture.shortcut`). Si Windows refuse un raccourci déjà pris, rien ne change et Paramètres le dit. Quand l'app de développement et l'app installée tournent ensemble, le raccourci appartient à la première lancée.
+- **Capture rapide** (`capture.rs`, `capture.html`) : le raccourci ouvre une fenêtre d'une ligne, sans bordure, toujours au-dessus, au premier quart de l'écran où se trouve le pointeur ; un second appui la referme. `Entrée` note et referme, `Ctrl+Entrée` note et garde la fenêtre, `Échap` abandonne ; cliquer ailleurs la cache en gardant le brouillon. Raccourcis proposés : `Ctrl+Maj+Espace`, `Alt+Maj+C`, `Win+Alt+C`, ou aucun (réglage `capture.shortcut`). Si Windows refuse un raccourci déjà pris, rien ne change et Paramètres le dit. Quand l'app de développement et l'app installée tournent ensemble, le raccourci appartient à la première lancée. *(Retirée le 26/11/2026 : voir « Boîte de réception retirée » au §7.3.)*
 - **Événements récurrents** (migration `0007`, `agenda/recurrence.ts`) : le RRULE est écrit à la main pour ce que l'interface saisit (jour, semaine, mois, année, intervalle, jours de la semaine, fin). Une règle incomprise ne répète rien. Les jours sont calculés sans fuseau horaire. « Chaque mois » le 31 saute les mois plus courts et le 29 février ne revient que les années bissextiles, comme le veut la norme. « Toutes les 2 semaines » compte en semaines du lundi au dimanche, quel que soit le réglage du premier jour de la semaine. Le jour de la semaine du premier événement reste toujours coché ; il suit un changement de date.
 - **Occurrences** : `listAgenda` renvoie une ligne par occurrence. Le calendrier, « Prochains jours », le bloc Deadlines et les notifications suivent sans autre changement ; chaque occurrence a sa notification. La fiche projet montre l'événement une fois, à sa prochaine occurrence. Dans `Ctrl+K`, un événement récurrent n'a pas de date et n'est jamais « passé ».
 - **Une fois ou toute la série** : dans le panneau ouvert sur une occurrence, « Date » et « Horaire » sont ceux de cette occurrence ; les changer demande « Cette fois » ou « Toute la série ». « Cette fois » ne porte que sur la date et l'heure : le titre, le type, le lieu, les notes, « Journée entière » et la répétition valent pour l'événement entier. Changer le jour pour toute la série remplace ce jour de la semaine par le nouveau ; une série non hebdomadaire se décale d'autant. Une occurrence modifiée « cette fois » garde son moment si l'heure de la série change ensuite. Glisser une occurrence dans le calendrier ne déplace qu'elle. Supprimer « celle-ci et les suivantes » arrête la série la veille ; depuis la première occurrence, cela supprime l'événement. `Ctrl+Z` n'agit pas tant que le panneau est ouvert (règle commune aux fenêtres) : le bouton « Annuler » du toast reste cliquable.
 - **Chiffre d'affaires** : onglet de Finances, une année à la fois, trimestres et mois. Tous les encaissements reçus, à leur date de réception, quel que soit le type de projet ou le compte : la même règle que « Encaissé ce mois ». Un mois à venir affiche un tiret. Si certains types de projet doivent un jour être exclus de la déclaration, ce sera un réglage à ajouter.
-- **Animations** (Motion, `ui/motion`) : fondu au changement de page (pas de déplacement : les pages qui se mesurent, comme le calendrier, restent justes), lignes qui s'ouvrent et se replient dans les listes de tâches sans glisser-déposer et dans la boîte de réception, toasts, repli de la barre latérale. Une liste qui change de plus de 3 lignes d'un coup s'affiche sans animation. Le principe 6 du design system (§6.1) est revu en conséquence. Restent pour plus tard : l'arbre des tâches et le kanban (glisser-déposer), les fenêtres et les panneaux.
+- **Animations** (Motion, `ui/motion`) : fondu au changement de page (pas de déplacement : les pages qui se mesurent, comme le calendrier, restent justes), lignes qui s'ouvrent et se replient dans les listes de tâches sans glisser-déposer, toasts, repli de la barre latérale. Une liste qui change de plus de 3 lignes d'un coup s'affiche sans animation. Le principe 6 du design system (§6.1) est revu en conséquence. Restent pour plus tard : l'arbre des tâches et le kanban (glisser-déposer), les fenêtres et les panneaux.
 - **Poids** : le code chargé au démarrage grossit d'environ 47 kB (15 kB compressés) ; le moteur d'animation (49 kB) est chargé après le premier rendu.
 
 
@@ -1317,15 +1317,15 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - **Mini-fenêtre « En ce moment »** : petite fenêtre toujours au-dessus, avec le bloc en cours, le temps restant et la case de la tâche. *(Fait, étape 7 : à la demande, Ctrl Maj E.)*
 - **Petites célébrations** : une journée bouclée, une série qui continue, un objectif atteint. Discrètes et désactivables. *(Fait, étape 7 : un toast avec une étincelle ; les séries à certains paliers.)*
 - **Sons** facultatifs (fin de bloc, fin de Pomodoro), désactivés par défaut. *(Fait, étape 7.)*
-- **Boîte de réception** : tout ce qui est capturé vite (idée, tâche, devoir, note) atterrit là, et se trie plus tard en un geste. *(Fait, étape 1 : en tâche, en idée de projet ou en événement ; les devoirs et les notes viendront avec leurs espaces.)*
+- **Boîte de réception** : tout ce qui est capturé vite (idée, tâche, devoir, note) atterrit là, et se trie plus tard en un geste. *(Fait, étape 1 : en tâche, en idée de projet ou en événement ; les devoirs et les notes viendront avec leurs espaces.)* *(Retirée le 26/11/2026 : « c'est vraiment le principe de Page ». Un clic droit sur une ligne de n'importe quelle page en fait une tâche, un devoir, un événement, une idée ou un projet ; voir §7.3.)*
 
 #### Toujours là
 - **Lancé au démarrage de Windows** (réglable) et **gardé dans la zone de notification** : fermer la fenêtre ne quitte pas l'app, donc les notifications arrivent toujours. *(Fait, étape 1.)*
-- **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception. *(Fait, étape 1 : `Ctrl+Maj+Espace` par défaut.)*
+- **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception. *(Fait, étape 1 : `Ctrl+Maj+Espace` par défaut. Retiré le 26/11/2026, avec la boîte de réception : on note dans la page qu'on veut.)*
 - **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir. *(Début et fin de bloc faits à l'étape 3, rappel d'habitude à l'étape 6, les autres à l'étape 7 ; les révisions du jour sont des blocs Révision.)*
 
 #### Mobile (Android)
-- **Application Android** construite avec Tauri 2, avec le même code React et des écrans adaptés au téléphone : Journée, Capture rapide, Tâches et devoirs du jour, Habitudes, Pages (lecture et petite édition).
+- **Application Android** construite avec Tauri 2, avec le même code React et des écrans adaptés au téléphone : Journée, Tâches et devoirs du jour, Habitudes, Pages (lecture et petite édition). (La capture rapide du téléphone a été retirée le 26/11/2026.)
 - **Hors ligne** : le téléphone a sa propre base, synchronisée (P22).
 - **Notifications** sur le téléphone, calculées sur place à partir des données synchronisées.
 - **Widget** sur l'écran d'accueil : le bloc en cours et le suivant, et un bouton de capture.
@@ -1355,7 +1355,7 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 | `habits`, `habit_logs` | Habitudes | fréquence, module lié ; une ligne par jour coché |
 | `goals`, `goal_steps` | Objectifs | échéance, étapes |
 | `exercises`, `workouts`, `workout_sets` | Carnet de séances | séance (date, ressenti, bloc facultatif) et ses séries |
-| `inbox_items` | Boîte de réception | texte, date de capture. **Fait** (migration `0006`) |
+| `inbox_items` | Boîte de réception | texte, date de capture. **Fait** (migration `0006`), **retirée** (migration `0018` : les captures passent dans la page « Captures ») |
 | `sync_rows`, `sync_state` | Synchronisation | dernier changement de chaque ligne (traces de suppression comprises), état de l'appareil, dernier fichier lu par appareil. **Fait** (migration `0014`) |
 
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
@@ -1395,7 +1395,7 @@ CREATE TABLE event_exceptions (
 
 L'agenda (§3.5) gagne des sources : `block`, `class` (occurrences des cours), `exam` et `google`. Le calendrier, la Journée, le dashboard et les notifications continuent de lire ce même flux. Depuis l'étape 1, un événement qui se répète y donne une ligne par occurrence (champ `occurrence`, clé propre à chacune).
 
-Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoutent leurs triggers FTS5 dans leur migration.
+Les nouvelles tables cherchables (pages, matières) ajoutent leurs triggers FTS5 dans leur migration.
 
 ### 9.5 Architecture : synchronisation, mobile, éditeur
 
@@ -1420,10 +1420,10 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 - Alternative : BlockNote, plus proche de Notion dès le départ, mais il impose ses styles.
 
 **Toujours là** *(fait, étape 1)*
-- Plugins Tauri : `autostart` (démarrage avec Windows), icône de la zone de notification (`tray`), `global-shortcut` (capture rapide), et une seconde fenêtre pour la mini-fenêtre et la capture. S'y ajoute `single-instance` : sans lui, relancer Cockpit alors qu'il attend dans la zone de notification ouvrirait une seconde app.
+- Plugins Tauri : `autostart` (démarrage avec Windows), icône de la zone de notification (`tray`), et une seconde fenêtre pour la mini-fenêtre (le plugin `global-shortcut` et la fenêtre de capture rapide ont été retirés le 26/11/2026). S'y ajoute `single-instance` : sans lui, relancer Cockpit alors qu'il attend dans la zone de notification ouvrirait une seconde app.
 - Ces plugins demandent **Tauri 2.12** (Rust et paquets npm), au lieu de 2.11.
-- Côté natif : `presence.rs` (icône, fermeture, démarrage, battement d'une minute) et `capture.rs` (raccourci, petite fenêtre). Les règles restent côté TypeScript.
-- La capture est une seconde page (`capture.html`, entrée Vite à part), sans routeur ni cache de requêtes : elle écrit par le même pont SQLite, et la fenêtre principale est prévenue par un événement.
+- Côté natif : `presence.rs` (icône, fermeture, démarrage, battement d'une minute) (et `capture.rs`, retiré le 26/11/2026). Les règles restent côté TypeScript.
+- La capture était une seconde page (`capture.html`, entrée Vite à part), sans routeur ni cache de requêtes ; retirée le 26/11/2026. La mini-fenêtre « En ce moment » (étape 7) suit le même principe.
 
 **Animations** *(premières faites, étape 1)*
 - Une bibliothèque d'animation (Motion, ex-Framer Motion) pour les transitions et les ressorts, chargée seulement là où elle sert, pour garder un démarrage en moins d'une seconde (§2.6).
@@ -1439,14 +1439,14 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 
 6. **Étape 1, « Toujours là »** (25/11/2026) :
    - le démarrage avec Windows est activé d'office, et Cockpit démarre alors caché dans la zone de notification ;
-   - le raccourci global de capture est `Ctrl+Maj+Espace`, modifiable dans Paramètres (jamais `Ctrl+Alt`, qui est AltGr en AZERTY) ;
-   - la boîte de réception est une page de la barre latérale, sous « Aujourd'hui », avec un compteur ;
+   - le raccourci global de capture est `Ctrl+Maj+Espace`, modifiable dans Paramètres (jamais `Ctrl+Alt`, qui est AltGr en AZERTY) ; *(retiré le 26/11/2026)*
+   - la boîte de réception est une page de la barre latérale, sous « Aujourd'hui », avec un compteur ; *(retirée le 26/11/2026 : le clic droit sur une ligne de page la remplace)*
    - la répétition se saisit par un menu de choix tout faits, des pastilles de jours en hebdomadaire et une fin facultative ;
    - sur une occurrence : modifier ou déplacer « cette fois » ou « toute la série » ; supprimer « cette fois », « celle-ci et les suivantes » ou « toute la série » ;
    - le chiffre d'affaires compte tous les encaissements reçus, à leur date de réception.
 
 7. **Étape 2, « Modes et espace Cours »** (26/11/2026) :
-   - chaque mode montre les siens : les devoirs n'apparaissent pas dans les tâches du mode Travail ; le calendrier et la boîte de réception montrent tout ;
+   - chaque mode montre les siens : les devoirs n'apparaissent pas dans les tâches du mode Travail ; le calendrier montre tout ;
    - moyennes par semestre, avec des dates réglables, plus la moyenne de l'année ;
    - une semaine type toute l'année, avec des vacances (périodes sans cours) ;
    - dashboard du mode Cours en deux colonnes : cours du jour et devoirs à rendre à gauche, prochain examen et prochains jours à droite.
