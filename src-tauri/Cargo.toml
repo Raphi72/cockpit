@@ -30,6 +30,8 @@ keyring = { version = "3", features = ["windows-native"] }
 sha2 = "0.10"
 base64 = "0.22"
 getrandom = "0.3"
+# Synchronisation (V2, étape 9) : fichiers chiffrés avant de partir sur Google Drive.
+chacha20poly1305 = "0.10"
 
 [profile.release]
 codegen-units = 1

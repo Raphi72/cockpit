@@ -24,8 +24,10 @@ const AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const REVOKE_URL: &str = "https://oauth2.googleapis.com/revoke";
 const API: &str = "https://www.googleapis.com/calendar/v3";
-/// Lecture seule de tous les agendas (choix de l'étape 8).
-const SCOPE: &str = "https://www.googleapis.com/auth/calendar.readonly";
+/// Lecture seule de tous les agendas (choix de l'étape 8), et le dossier caché de l'app sur Google Drive
+/// pour la synchronisation (étape 9) : Cockpit n'y voit que ses propres fichiers.
+const CALENDAR_SCOPE: &str = "https://www.googleapis.com/auth/calendar.readonly";
+pub(crate) const DRIVE_SCOPE: &str = "https://www.googleapis.com/auth/drive.appdata";
 
 /// Le coffre de Windows : un nom par application, l'app de développement à part (comme sa base).
 const SERVICE: &str = if cfg!(debug_assertions) { "Cockpit (développement) · Google" } else { "Cockpit · Google" };
@@ -36,7 +38,7 @@ const TOKEN_KEY: &str = "token";
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// Message des erreurs qui demandent de se reconnecter (l'interface le montre tel quel).
-const RECONNECT: &str = "Google a coupé la connexion : reconnecte-toi dans Paramètres › Google Agenda.";
+pub(crate) const RECONNECT: &str = "Google a coupé la connexion : reconnecte-toi dans Paramètres › Google Agenda.";
 
 #[derive(Serialize, Deserialize)]
 struct Client {
@@ -48,6 +50,14 @@ struct Client {
 struct Token {
     refresh_token: String,
     account: Option<String>,
+    /// Les droits accordés (séparés par des espaces) ; absent pour une connexion de l'étape 8.
+    #[serde(default)]
+    scopes: Option<String>,
+}
+
+/// La synchronisation est-elle autorisée (droit sur le dossier caché de Drive) ?
+pub(crate) fn drive_allowed() -> Result<bool, String> {
+    Ok(vault_read::<Token>(TOKEN_KEY)?.and_then(|t| t.scopes).is_some_and(|s| s.split(' ').any(|scope| scope == DRIVE_SCOPE)))
 }
 
 /// Le jeton d'accès en cours et sa fin de validité : en mémoire seulement.
@@ -139,11 +149,14 @@ fn decode(value: &str) -> String {
 }
 
 fn auth_url(client_id: &str, redirect_uri: &str, challenge: &str, state: &str) -> String {
+    let scope = format!("{CALENDAR_SCOPE} {DRIVE_SCOPE}");
     let params = [
         ("client_id", client_id),
         ("redirect_uri", redirect_uri),
         ("response_type", "code"),
-        ("scope", SCOPE),
+        ("scope", &scope),
+        // Garder les droits déjà donnés (l'agenda) en ajoutant ceux qui manquent.
+        ("include_granted_scopes", "true"),
         ("code_challenge", challenge),
         ("code_challenge_method", "S256"),
         ("state", state),
@@ -311,7 +324,7 @@ fn keep_calendars(raw: Vec<RawCalendar>) -> Vec<GoogleCalendar> {
 
 // ─── Réseau ─────────────────────────────────────────────────────────────────
 
-fn agent() -> ureq::Agent {
+pub(crate) fn agent() -> ureq::Agent {
     ureq::Agent::config_builder()
         .timeout_global(Some(Duration::from_secs(30)))
         .http_status_as_error(false)
@@ -319,7 +332,7 @@ fn agent() -> ureq::Agent {
         .new_agent()
 }
 
-fn network(e: ureq::Error) -> String {
+pub(crate) fn network(e: ureq::Error) -> String {
     format!("Google injoignable ({e}). Vérifie la connexion à Internet.")
 }
 
@@ -328,6 +341,7 @@ struct TokenResponse {
     access_token: String,
     expires_in: u64,
     refresh_token: Option<String>,
+    scope: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -354,7 +368,7 @@ fn token_request(form: &[(&str, &str)]) -> Result<TokenResponse, String> {
 }
 
 /// Le jeton d'accès : celui en mémoire s'il vaut encore, sinon un nouveau, demandé avec le jeton de renouvellement.
-fn access_token(app: &AppHandle) -> Result<String, String> {
+pub(crate) fn access_token(app: &AppHandle) -> Result<String, String> {
     let session = app.state::<GoogleSession>();
     if let Some((token, until)) = session.0.lock().map_err(|e| e.to_string())?.as_ref() {
         if Instant::now() < *until {
@@ -501,7 +515,7 @@ fn connect(app: &AppHandle) -> Result<GoogleStatus, String> {
         .ok_or("Google n'a pas donné de jeton de renouvellement : retire l'accès de Cockpit dans ton compte Google, puis réessaie.")?;
     let until = Instant::now() + Duration::from_secs(token.expires_in.saturating_sub(60));
     *app.state::<GoogleSession>().0.lock().map_err(|e| e.to_string())? = Some((token.access_token, until));
-    vault_write(TOKEN_KEY, &Token { refresh_token, account: None })?;
+    vault_write(TOKEN_KEY, &Token { refresh_token, account: None, scopes: token.scope })?;
 
     // Le compte connecté : l'identifiant de l'agenda principal est l'adresse e-mail.
     let account = list_calendars(app).ok().and_then(|calendars| calendars.into_iter().find(|c| c.primary).map(|c| c.id));
@@ -522,12 +536,16 @@ pub struct GoogleStatus {
     account: Option<String>,
     /// Le début de l'ID du client, pour le reconnaître (jamais le code secret).
     client_hint: Option<String>,
+    /// Le droit sur le dossier caché de Drive (synchronisation) a été donné.
+    sync_allowed: bool,
 }
 
 fn status() -> Result<GoogleStatus, String> {
     let client: Option<Client> = vault_read(CLIENT_KEY)?;
     let token: Option<Token> = vault_read(TOKEN_KEY)?;
+    let sync_allowed = token.as_ref().and_then(|t| t.scopes.as_deref()).is_some_and(|s| s.split(' ').any(|scope| scope == DRIVE_SCOPE));
     Ok(GoogleStatus {
+        sync_allowed,
         configured: client.is_some(),
         connected: token.is_some(),
         account: token.and_then(|t| t.account),
@@ -666,7 +684,8 @@ mod tests {
         let url = auth_url("abc.apps.googleusercontent.com", "http://127.0.0.1:5000", "defi", "etat");
         assert!(url.starts_with("https://accounts.google.com/o/oauth2/v2/auth?client_id=abc.apps.googleusercontent.com&"));
         assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A5000"));
-        assert!(url.contains("scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.readonly"));
+        assert!(url.contains("scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.appdata"));
+        assert!(url.contains("include_granted_scopes=true"));
         assert!(url.contains("code_challenge_method=S256") && url.contains("access_type=offline"));
         assert_eq!(encode("fr.french#holiday@group.v.calendar.google.com"), "fr.french%23holiday%40group.v.calendar.google.com");
     }

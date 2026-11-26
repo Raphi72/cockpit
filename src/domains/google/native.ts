@@ -7,7 +7,7 @@ import type { GoogleStatus, RemoteCalendar, RemoteEvent } from './model';
  */
 export const googleAvailable = (): boolean => isTauri();
 
-const OFFLINE: GoogleStatus = { configured: false, connected: false, account: null, clientHint: null };
+const OFFLINE: GoogleStatus = { configured: false, connected: false, account: null, clientHint: null, syncAllowed: false };
 
 export function readGoogleStatus(): Promise<GoogleStatus> {
   return googleAvailable() ? invoke<GoogleStatus>('google_status') : Promise.resolve(OFFLINE);

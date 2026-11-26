@@ -21,6 +21,7 @@ import { CategoriesEditor } from '@/domains/finance/transactions/components/Cate
 import { CaptureSettings } from '@/domains/inbox';
 import { CompanionSettings } from '@/domains/companion/components/CompanionSettings';
 import { GoogleSettings } from '@/domains/google/components/GoogleSettings';
+import { SyncSettings } from '@/domains/sync/components/SyncSettings';
 import { NotificationSettings } from '@/domains/notifications';
 import { PresenceSettings } from '@/domains/presence';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
@@ -291,6 +292,7 @@ export function SettingsPage() {
       <CaptureSettings />
       <CompanionSettings />
       <GoogleSettings />
+      <SyncSettings />
       <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />

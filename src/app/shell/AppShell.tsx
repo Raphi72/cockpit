@@ -21,6 +21,7 @@ import { WorkoutDialog } from '@/domains/habits/components/WorkoutDialog';
 import { Companion } from '@/domains/companion/components/Companion';
 import { GoogleEventDialog } from '@/domains/google/components/GoogleEventDialog';
 import { useGoogleAutoSync } from '@/domains/google/hooks';
+import { useAutoSync } from '@/domains/sync/hooks';
 import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
 import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDialog';
 import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
@@ -52,6 +53,8 @@ export function AppShell() {
   useInboxSync();
   // Google Agenda : relu au lancement puis toutes les 15 minutes, s'il est connecté.
   useGoogleAutoSync();
+  // Synchronisation entre appareils : chaque minute et à la fermeture de la fenêtre, si elle est activée.
+  useAutoSync();
   usePreferencesSync();
   useEffect(announceRestoreIfDone, []);
 

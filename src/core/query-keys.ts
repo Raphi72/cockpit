@@ -87,6 +87,10 @@ export const queryKeys = {
     calendars: ['google', 'calendars'] as const,
     event: (id: string) => ['google', 'event', id] as const,
   },
+  /** Synchronisation entre appareils (étape 9) : clé présente, dernière synchronisation. */
+  sync: {
+    status: ['sync', 'status'] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

@@ -114,7 +114,7 @@ export function GoogleSettings() {
       <Section title="Google Agenda" meta="lecture seule">
         <p className="mb-4 text-ink-2">
           Identifiants enregistrés <span className="text-ink-3">(client {status.clientHint}…)</span>. Connecte ton compte : ton navigateur s’ouvre sur la page de
-          Google.
+          Google, qui demande la lecture de tes agendas et le dossier caché de Cockpit sur ton Drive (synchronisation).
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="primary" disabled={connect.isPending} onClick={() => connect.mutate(undefined)}>

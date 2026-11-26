@@ -7,7 +7,8 @@ import type { PaletteKey } from '@/ui/data/ColorDot';
  */
 
 /** Où en est la connexion : identifiants du client enregistrés, compte connecté. */
-export type GoogleStatus = { configured: boolean; connected: boolean; account: string | null; clientHint: string | null };
+/** `syncAllowed` : le droit sur le dossier caché de Drive (synchronisation, étape 9) a été donné. */
+export type GoogleStatus = { configured: boolean; connected: boolean; account: string | null; clientHint: string | null; syncAllowed: boolean };
 
 /** Un agenda tel que Google le décrit. */
 export type RemoteCalendar = { id: string; name: string; color: string | null; primary: boolean; selected: boolean };

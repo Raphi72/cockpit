@@ -1,6 +1,6 @@
 //! Coquille native de Cockpit, volontairement fine : toute la logique métier est côté TypeScript.
 //! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite, exports,
-//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, capture rapide, mini-fenêtre « En ce moment » et connexion Google.
+//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, capture rapide, mini-fenêtre « En ce moment », connexion Google et synchronisation.
 
 mod backup;
 mod capture;
@@ -11,6 +11,7 @@ mod db;
 mod notify;
 mod now;
 mod presence;
+mod sync;
 
 use backup::BackupDirs;
 use presence::Presence;
@@ -116,6 +117,14 @@ pub fn run() {
             google::google_calendars,
             google::google_events,
             google::google_open_link,
+            sync::sync_has_key,
+            sync::sync_create_key,
+            sync::sync_join,
+            sync::sync_show_code,
+            sync::sync_forget_key,
+            sync::sync_list,
+            sync::sync_download,
+            sync::sync_upload,
         ])
         .run(tauri::generate_context!())
         .expect("impossible de lancer Cockpit");
