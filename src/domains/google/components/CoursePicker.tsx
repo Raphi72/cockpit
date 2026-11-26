@@ -35,17 +35,24 @@ const dayTitle = (day: string) => format(parseISO(day), 'EEEE d MMMM', { locale:
 /**
  * Le cours pour lequel un devoir est à rendre : une séance précise de l'agenda des cours, parmi les
  * 4 prochaines semaines, groupées par jour, avec un filtre sur le nom. « Sans cours précis » repasse à
- * une matière et une date.
+ * une matière et une date. Pour un examen : un horizon plus long, et pas de « sans cours ».
  */
 export function CoursePicker(props: {
   value: string | null;
   onChange: (course: CourseOnDay | null) => void;
   variant?: 'field' | 'inline';
+  /** Jusqu'où chercher les séances (4 semaines par défaut). */
+  horizonDays?: number;
+  label?: string;
+  /** Le choix « sans cours » ; `null` : pas proposé. */
+  noneLabel?: string | null;
 }) {
   const today = useToday();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
-  const { data: courses = [] } = useCoursesBetween(today, addDaysISO(today, PICKER_DAYS));
+  const horizon = props.horizonDays ?? PICKER_DAYS;
+  const noneLabel = props.noneLabel === undefined ? 'Sans cours précis (une matière et une date)' : props.noneLabel;
+  const { data: courses = [] } = useCoursesBetween(today, addDaysISO(today, horizon));
   const { data: selected } = useCourse(props.value);
 
   const days = useMemo(() => {
@@ -66,9 +73,11 @@ export function CoursePicker(props: {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    // `modal` : la liste a son propre droit de défiler. Sans lui, dans une fenêtre (nouveau devoir), la
+    // fenêtre bloque la molette sur ce qui est posé par-dessus, et seule la barre de défilement marche.
+    <Popover modal open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <PropertyButton variant={props.variant} aria-label="Cours du devoir">
+        <PropertyButton variant={props.variant} aria-label={props.label ?? 'Cours du devoir'}>
           {selected ? (
             <>
               <ColorDot color={selected.subjectColor ?? 'slate'} />
@@ -103,7 +112,7 @@ export function CoursePicker(props: {
         <div className="max-h-80 overflow-y-auto p-1">
           {days.length === 0 && (
             <p className="px-2.5 py-2 text-meta text-ink-3">
-              {courses.length === 0 ? 'Aucun cours dans les 4 prochaines semaines.' : 'Aucun cours de ce nom.'}
+              {courses.length === 0 ? 'Aucun cours à venir dans ton agenda des cours.' : 'Aucun cours de ce nom.'}
             </p>
           )}
           {days.map(([day, list]) => (
@@ -125,15 +134,17 @@ export function CoursePicker(props: {
             </div>
           ))}
         </div>
-        <div className="border-t border-line p-1">
-          <button
-            type="button"
-            onClick={() => choose(null)}
-            className="flex h-8 w-full items-center rounded-md px-2.5 text-left text-meta text-ink-2 transition-colors duration-[120ms] ease-soft hover:bg-hover"
-          >
-            Sans cours précis (une matière et une date)
-          </button>
-        </div>
+        {noneLabel && (
+          <div className="border-t border-line p-1">
+            <button
+              type="button"
+              onClick={() => choose(null)}
+              className="flex h-8 w-full items-center rounded-md px-2.5 text-left text-meta text-ink-2 transition-colors duration-[120ms] ease-soft hover:bg-hover"
+            >
+              {noneLabel}
+            </button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

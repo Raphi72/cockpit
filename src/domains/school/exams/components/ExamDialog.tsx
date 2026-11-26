@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { useCreateStore } from '@/app/create-store';
 import { addDaysISO } from '@/core/dates';
 import { useToday } from '@/core/use-today';
+import { CoursePicker, courseLabel } from '@/domains/google/components/CoursePicker';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { toast } from '@/ui/overlays/toast';
 import { Button } from '@/ui/primitives/Button';
@@ -25,6 +26,9 @@ export const useExamEditor = create<ExamEditorState>()((set) => ({
   openExam: (id) => set({ examId: id }),
   close: () => set({ examId: null }),
 }));
+
+/** Un examen se cherche plus loin qu'un devoir : jusqu'à la fin du semestre, à peu près. */
+const EXAM_HORIZON_DAYS = 200;
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -51,6 +55,8 @@ function ExamForm({ exam, defaults, onDone }: { exam?: Exam; defaults?: Partial<
         },
   );
   const [submitted, setSubmitted] = useState(false);
+  // La séance choisie dans l'emploi du temps : un raccourci pour remplir, l'examen garde ses propres champs.
+  const [session, setSession] = useState<string | null>(null);
   const save = useSaveExam();
   const remove = useDeleteExam();
   const { data: subjects = [] } = useSubjects();
@@ -102,6 +108,29 @@ function ExamForm({ exam, defaults, onDone }: { exam?: Exam; defaults?: Partial<
       {error('title')}
 
       <div className="mt-5 grid grid-cols-[92px_minmax(0,1fr)] gap-x-4 gap-y-3">
+        <Row label="Séance">
+          <CoursePicker
+            variant="field"
+            value={session}
+            label="Séance de l’examen"
+            horizonDays={EXAM_HORIZON_DAYS}
+            noneLabel={null}
+            onChange={(course) => {
+              if (!course) return;
+              setSession(course.itemId);
+              setInput((prev) => ({
+                ...prev,
+                subjectId: course.subjectId ?? prev.subjectId,
+                title: prev.title.trim() ? prev.title : courseLabel(course),
+                date: course.startsAt.slice(0, 10),
+                startsAt: course.startsAt.slice(11, 16),
+                endsAt: course.endsAt && course.endsAt.slice(0, 10) === course.startsAt.slice(0, 10) ? course.endsAt.slice(11, 16) : prev.endsAt,
+                room: course.location ?? prev.room,
+              }));
+            }}
+          />
+          <p className="mt-1 text-meta text-ink-3">Remplit la matière, le jour, l’horaire et la salle depuis ton emploi du temps.</p>
+        </Row>
         <Row label="Matière">
           <SubjectMenu variant="field" value={input.subjectId} onChange={(id) => set('subjectId', id)} />
           {error('subjectId')}
