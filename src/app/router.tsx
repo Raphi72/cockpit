@@ -84,6 +84,11 @@ const routes = [
   }),
   createRoute({
     getParentRoute: () => rootRoute,
+    path: '/timetable',
+    component: lazyRouteComponent(() => import('@/domains/school/pages/TimetablePage'), 'TimetablePage'),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
     path: '/settings',
     component: lazyRouteComponent(() => import('@/domains/settings/pages/SettingsPage'), 'SettingsPage'),
   }),

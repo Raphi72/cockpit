@@ -1,5 +1,5 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import type { AgendaItem } from '../model';
+import { isMovable, type AgendaItem } from '../model';
 
 /** Glisser-déposer du calendrier (voir CalendarDnd) : les éléments qu'on prend et les cases où on les dépose. */
 
@@ -19,8 +19,8 @@ export function useSlotDrop(day: string, firstHour: number, hourHeight: number) 
 /**
  * Un élément du calendrier qu'on peut prendre et déposer ailleurs. `id` doit être unique à l'écran :
  * un même élément peut apparaître dans plusieurs cases (barre coupée par la semaine…).
- * L'occurrence d'un événement qui se répète se glisse seule : la série ne bouge pas.
+ * L'occurrence d'un événement qui se répète se glisse seule : la série ne bouge pas. Un cours ne se glisse pas.
  */
 export function useAgendaDrag(item: AgendaItem, id: string) {
-  return useDraggable({ id, data: { item } });
+  return useDraggable({ id, data: { item }, disabled: !isMovable(item) });
 }

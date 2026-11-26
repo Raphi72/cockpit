@@ -33,6 +33,9 @@ export function buildShiftBatch(item: AgendaItem, days: number, now: string): Mo
         return shiftEventStatement(item.id, by, now);
       case 'project':
         return shiftProjectDateStatement(item.id, item.kind === 'project_start' ? 'startDate' : 'deadline', by, now);
+      case 'class':
+        // Un cours vient de la semaine type : il ne se glisse pas (isMovable).
+        throw new Error('Un cours se change dans l’emploi du temps.');
     }
   };
   return { statements: [shift(days)], undo: [shift(-days)] };

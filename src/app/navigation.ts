@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarClock,
   CalendarDays,
   ChartGantt,
   FolderClosed,
@@ -25,7 +26,8 @@ export type AppPath =
   | '/clients'
   | '/settings'
   | '/subjects'
-  | '/homework';
+  | '/homework'
+  | '/timetable';
 
 export type NavItem = {
   to: AppPath;
@@ -68,6 +70,7 @@ export const NAV: Record<AppMode, ModeNav> = {
       { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' },
       { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '3' },
       calendar,
+      { to: '/timetable', label: 'Emploi du temps', icon: CalendarClock, shortcut: '5' },
     ],
     secondary: [settings],
   },

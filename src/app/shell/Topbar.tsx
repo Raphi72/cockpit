@@ -2,6 +2,7 @@ import { useRouterState } from '@tanstack/react-router';
 import {
   ArrowRightLeft,
   BookOpen,
+  CalendarClock,
   CalendarPlus,
   FolderClosed,
   HandCoins,
@@ -37,6 +38,7 @@ export const NEW_MENU: Record<AppMode, MenuEntry[]> = {
     { kind: 'homework', key: 'D', label: 'Nouveau devoir', icon: NotebookPen },
     { kind: 'event', key: 'E', label: 'Nouvel événement', icon: CalendarPlus },
     { kind: 'subject', key: 'M', label: 'Nouvelle matière', icon: BookOpen, separatorBefore: true },
+    { kind: 'class', key: 'C', label: 'Nouveau cours (emploi du temps)', icon: CalendarClock },
   ],
 };
 

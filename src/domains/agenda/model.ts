@@ -265,9 +265,9 @@ export function seriesChangeFromOccurrence(
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
 
 /** D'où vient une date : elle n'est stockée qu'à cet endroit. */
-export type AgendaSource = 'event' | 'project' | 'task' | 'payment';
+export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'class';
 
-export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment'];
+export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'class'];
 
 /** Filtres du calendrier. */
 export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
@@ -275,6 +275,7 @@ export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
   project: 'Projets',
   task: 'Tâches',
   payment: 'Encaissements',
+  class: 'Cours',
 };
 
 export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
@@ -282,6 +283,7 @@ export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
   project: 'débuts et deadlines',
   task: 'deadlines et tâches prioritaires',
   payment: 'échéances non reçues',
+  class: 'emploi du temps (vues semaine et jour)',
 };
 
 /** Option du filtre « Tâches » : les tâches ordinaires, sans deadline ni priorité, à leur début. */
@@ -294,7 +296,8 @@ export type AgendaKind =
   | 'project_deadline'
   | 'task_due'
   | 'task_scheduled'
-  | 'payment_due';
+  | 'payment_due'
+  | 'class';
 
 export type AgendaItem = {
   /** `${source}:${id}:${kind}` */
@@ -328,6 +331,7 @@ const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
   task_due: 'Deadline de la tâche',
   task_scheduled: 'Début de la tâche',
   payment_due: 'Encaissement attendu',
+  class: 'Cours',
 };
 
 export function agendaKindLabel(kind: AgendaKind): string {
@@ -519,6 +523,18 @@ export function layoutRow(items: AgendaItem[], days: string[]): RowLayout {
  * Où l'on dépose un élément : un jour, et une heure si c'est un créneau de la grille horaire.
  * L'élément se décale du nombre de jours entre le jour où on l'a pris et celui-ci.
  */
+/**
+ * Ce qui se glisse dans le calendrier. Un cours non : il vient de la semaine type (page Emploi du temps).
+ */
+export function isMovable(item: Pick<AgendaItem, 'source'>): boolean {
+  return item.source !== 'class';
+}
+
+/** La vue mois ne montre pas les cours : une routine de chaque semaine qui cacherait le reste. */
+export function isShownInMonth(item: Pick<AgendaItem, 'source'>): boolean {
+  return item.source !== 'class';
+}
+
 export type CalendarDrop = { day: string; time: string | null };
 
 /** Un événement à heure fixe déposé sur un créneau change d'heure ; le reste change seulement de jour. */

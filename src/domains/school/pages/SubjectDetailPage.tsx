@@ -5,6 +5,7 @@ import { useDeleteShortcut } from '@/app/shortcuts';
 import { ColorDot } from '@/ui/data/ColorDot';
 import { PageContainer } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
+import { SubjectClasses } from '../components/SubjectClasses';
 import { SubjectHomework } from '../components/SubjectHomework';
 import { SubjectDialog } from '../subjects/components/SubjectDialog';
 import { useDeleteSubject, useSubject } from '../subjects/hooks';
@@ -77,7 +78,9 @@ function SubjectSections({ subjectId }: { subjectId: string }) {
       <div className="min-w-0">
         <SubjectHomework subjectId={subjectId} />
       </div>
-      <div className="min-w-0" />
+      <div className="min-w-0">
+        <SubjectClasses subjectId={subjectId} />
+      </div>
     </div>
   );
 }

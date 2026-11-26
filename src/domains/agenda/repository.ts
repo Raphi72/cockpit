@@ -9,6 +9,9 @@ import {
   type EventPatch,
   type NewEventInput,
 } from './model';
+import { listPeriods } from '@/domains/school/periods/repository';
+import { classesBetween, slotRoom, slotTitle } from '@/domains/school/timetable/model';
+import { listSlots } from '@/domains/school/timetable/repository';
 import { expandSeries, formatRecurrence, nextOccurrence, type EventException } from './recurrence';
 
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
@@ -127,7 +130,10 @@ export async function listAgenda(
     [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to],
   );
   const recurring = rows.filter((row) => row.recurrence !== null);
-  const exceptions = await listExceptions(db, recurring.map((row) => row.id));
+  const [exceptions, classes] = await Promise.all([
+    listExceptions(db, recurring.map((row) => row.id)),
+    listClassItems(db, from, to),
+  ]);
   return rows
     .flatMap(({ allDay, recurrence, ...row }): AgendaItem[] => {
       const item = { ...row, key: `${row.source}:${row.id}:${row.kind}`, allDay: allDay === 1 };
@@ -142,7 +148,33 @@ export async function listAgenda(
         occurrence: occurrence.day,
       }));
     })
+    .concat(classes)
     .sort(compareAgendaByDay);
+}
+
+/**
+ * Les cours de [from, to[, calculés depuis la semaine type (pendant les semestres, hors vacances) :
+ * une ligne par cours et par jour, jamais stockée (P8, P15).
+ */
+async function listClassItems(db: Db, from: string, to: string): Promise<AgendaItem[]> {
+  const slots = await listSlots(db);
+  if (slots.length === 0) return [];
+  const periods = await listPeriods(db);
+  return classesBetween(slots, periods, from, to).map(({ slot, day, start, end }) => ({
+    key: `class:${slot.id}:class:${day}`,
+    source: 'class',
+    id: slot.id,
+    kind: 'class',
+    title: slotTitle(slot),
+    detail: slotRoom(slot),
+    start,
+    end,
+    allDay: false,
+    projectId: null,
+    color: slot.subjectColor,
+    amountCents: null,
+    subjectId: slot.subjectId,
+  }));
 }
 
 // ─── Événements ─────────────────────────────────────────────────────────────

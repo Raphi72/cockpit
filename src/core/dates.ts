@@ -145,6 +145,11 @@ export function minutesToTime(minutes: number): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
+/** '14:30' + 90 → '16:00', sans dépasser 23:59 (un cours ne passe pas minuit). */
+export function addMinutesToTime(time: string, minutes: number): string {
+  return minutesToTime(Math.min(timeToMinutes(time) + minutes, 23 * 60 + 59));
+}
+
 function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }

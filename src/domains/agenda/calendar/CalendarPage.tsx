@@ -25,6 +25,7 @@ import {
   viewRange,
   viewTitle,
   type AgendaSource,
+  isShownInMonth,
 } from '../model';
 import { useOpenAgendaItem } from '../open-item';
 import { CalendarDnd } from './CalendarDnd';
@@ -92,7 +93,10 @@ export function CalendarPage() {
   const weekStartsOn = useWeekStartsOn();
   const days = useMemo(() => viewDays(view, anchor, weekStartsOn), [view, anchor, weekStartsOn]);
   const { data: items } = useAgenda(viewRange(days), { plainTasks });
-  const visible = useMemo(() => (items ?? []).filter((item) => !hidden.includes(item.source)), [items, hidden]);
+  const visible = useMemo(
+    () => (items ?? []).filter((item) => !hidden.includes(item.source) && (view !== 'month' || isShownInMonth(item))),
+    [items, hidden, view],
+  );
   const empty = items !== undefined && visible.length === 0;
 
   const goTo = (date: string) => void navigate({ search: date === today ? {} : { date } });
