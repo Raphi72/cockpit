@@ -1473,6 +1473,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - la clé se donne par un code à recopier ;
    - les données seulement : les réglages restent propres à chaque appareil.
 
+15. **Étape 10, « Application Android »** (26/11/2026) :
+   - Aujourd'hui à l'ouverture (bloc en cours, tâches et devoirs du jour, habitudes) ;
+   - tâches et devoirs ensemble, sans les modes ;
+   - la clé de synchronisation par un code QR affiché sur le PC ;
+   - l'essentiel modifiable (cocher, capturer, marquer un bloc fait, retoucher une page), le reste sur le PC.
+
 ### 9.7 Ordre de construction
 
 Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie sur les précédentes. Une branche `v2-…` par étape, validée une à une.
@@ -1486,6 +1492,6 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications. **Fait le 26/11/2026** (branche `v2-compagnon` ; détail au §7.3).
 8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda. **Fait le 26/11/2026** (branche `v2-google`, lecture seule ; connexion avec un vrai compte à essayer ; détail au §7.3).
 9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord. **Fait le 26/11/2026** (branche `v2-sync` ; échange réel par Drive à essayer ; détail au §7.3).
-10. **Application Android** : écrans du téléphone, synchro, notifications, widget.
+10. **Application Android** : écrans du téléphone, synchro, notifications, widget. **En cours** (branche `v2-android`) : écrans du téléphone (`src/mobile/`, essayables dans le navigateur avec `?mobile`) et code QR de la clé faits ; le reste attend l'outillage Android de ce PC ([docs/android.md](android.md)).
 
 La V2.5 (partage de projets, voir CONTRIBUTING.md) vient après.
