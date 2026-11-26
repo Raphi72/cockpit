@@ -51,9 +51,14 @@ export type Module = {
   durationMin: number;
   mode: BlockMode;
   sortOrder: number;
+  /**
+   * Un module « pour une fois » (« Courses · 1 h ») : il attend dans « À caser », les jours suivants
+   * aussi, jusqu'à être posé (il devient un bloc et disparaît) ou jeté. Absent : un module de la bibliothèque.
+   */
+  oneOff?: boolean;
 };
 
-export type ModuleInput = Pick<Module, 'name' | 'icon' | 'color' | 'durationMin' | 'mode'>;
+export type ModuleInput = Pick<Module, 'name' | 'icon' | 'color' | 'durationMin' | 'mode' | 'oneOff'>;
 
 export function validateModule(input: ModuleInput): Partial<Record<'name' | 'durationMin', string>> {
   const errors: Partial<Record<'name' | 'durationMin', string>> = {};
@@ -133,7 +138,8 @@ export function validateBlock(input: Pick<BlockInput, 'title' | 'date' | 'starts
 export function blockFromModule(module: Module, date: string, startMin: number): BlockInput {
   const start = Math.min(Math.max(snap(startMin), 0), DAY_MINUTES - MIN_BLOCK_MIN);
   return {
-    templateId: module.id,
+    // Un module « pour une fois » disparaît une fois posé : le bloc ne garde pas de lien vers lui.
+    templateId: module.oneOff ? null : module.id,
     date,
     startsAt: fromMinutes(start),
     endsAt: fromMinutes(Math.min(start + module.durationMin, DAY_MINUTES)),
@@ -200,8 +206,12 @@ export const blockInterval = (block: Pick<DayBlock, 'startsAt' | 'endsAt'>): Int
   end: toMinutes(block.endsAt),
 });
 
-/** Un moment déjà pris dans la journée : cours, rendez-vous, examen (affichés sous les blocs). */
-export type BusyItem = Interval & { key: string; title: string };
+/**
+ * Un moment déjà pris dans la journée : cours, rendez-vous, examen (affichés à côté des blocs), à la
+ * couleur de sa matière ou de son agenda. Un événement Google (un cours) s'ouvre au clic (`googleId`),
+ * et un cours montre les devoirs à rendre pour lui.
+ */
+export type BusyItem = Interval & { key: string; title: string; color?: AppColor | null; googleId?: string | null; homework?: string[] };
 
 /** Ce que le bloc chevauche (signalé, jamais interdit). */
 export function overlapsOf(block: Pick<DayBlock, 'startsAt' | 'endsAt'>, busy: BusyItem[]): BusyItem[] {

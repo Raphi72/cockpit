@@ -3,17 +3,19 @@ import type { BlockInput, BlockStatus, DayBlock, Module, ModuleInput, WeekTempla
 
 // ─── Modules ────────────────────────────────────────────────────────────────
 
-export function listModules(db: Db): Promise<Module[]> {
-  return db.query<Module>(
-    'SELECT id, name, icon, color, duration_min, mode, sort_order FROM block_templates ORDER BY sort_order, name',
+/** Les modules de la bibliothèque et ceux « pour une fois » (à caser), dans l'ordre de création. */
+export async function listModules(db: Db): Promise<Module[]> {
+  const rows = await db.query<Omit<Module, 'oneOff'> & { oneOff: number }>(
+    'SELECT id, name, icon, color, duration_min, mode, sort_order, one_off FROM block_templates ORDER BY sort_order, name',
   );
+  return rows.map((row) => ({ ...row, oneOff: row.oneOff === 1 }));
 }
 
 export function insertModuleStatement(id: string, input: ModuleInput, now: string): Statement {
   return {
-    sql: `INSERT INTO block_templates (id, name, icon, color, duration_min, mode, sort_order, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT MAX(sort_order) FROM block_templates), 0) + 1, ?, ?)`,
-    params: [id, input.name.trim(), input.icon, input.color, input.durationMin, input.mode, now, now],
+    sql: `INSERT INTO block_templates (id, name, icon, color, duration_min, mode, one_off, sort_order, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT MAX(sort_order) FROM block_templates), 0) + 1, ?, ?)`,
+    params: [id, input.name.trim(), input.icon, input.color, input.durationMin, input.mode, input.oneOff ? 1 : 0, now, now],
   };
 }
 

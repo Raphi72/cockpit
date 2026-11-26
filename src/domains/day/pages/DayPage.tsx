@@ -109,6 +109,9 @@ export function DayPage() {
   if (!blocks || !modules || !agenda || !inBlocks || !open || !paused || startHour === undefined || endHour === undefined) return null;
 
   const hours = resolveDayHours(startHour, endHour);
+  // La bibliothèque d'un côté, les modules « pour une fois » (à caser) de l'autre.
+  const library = modules.filter((m) => !m.oneOff);
+  const oneOffs = modules.filter((m) => m.oneOff);
   const days = view === 'week' ? week : [day];
   const tasksByBlock = new Map<string, TaskItem[]>();
   for (const task of inBlocks) tasksByBlock.set(task.blockId!, [...(tasksByBlock.get(task.blockId!) ?? []), task]);
@@ -129,10 +132,10 @@ export function DayPage() {
         today,
         now,
         blocks,
-        busy: busyItemsOn(agenda, day),
+        busy: busyItemsOn(agenda, day, open),
         open,
         pausedProjectIds: new Set(paused.map((p) => p.id)),
-        modules,
+        modules: library,
       }),
     );
   const weekBlocks = blocks;
@@ -259,7 +262,7 @@ export function DayPage() {
                   hours={hours}
                   hourHeight={HOUR_HEIGHT[view]}
                   blocks={blocksOn(d)}
-                  busy={busyItemsOn(agenda, d)}
+                  busy={busyItemsOn(agenda, d, open)}
                   tasksByBlock={tasksByBlock}
                   now={d === today ? now : null}
                   currentBlockId={d === today ? (current?.block.id ?? null) : null}
@@ -271,11 +274,11 @@ export function DayPage() {
               ))}
             </div>
           </div>
-          <SidePanel modules={modules} mode={mode} toPlace={toPlace} />
+          <SidePanel modules={library} oneOffs={oneOffs} mode={mode} toPlace={toPlace} />
         </div>
       </DayDnd>
 
-      <BlockDialog state={dialog} onClose={() => setDialog(null)} modules={modules} mode={mode} tasksByBlock={tasksByBlock} />
+      <BlockDialog state={dialog} onClose={() => setDialog(null)} modules={library} mode={mode} tasksByBlock={tasksByBlock} />
       <FillGapsDialog open={fill !== null} onOpenChange={(next) => !next && setFill(null)} proposals={fill ?? []} />
       <ReviewDialog
         open={reviewOpen}

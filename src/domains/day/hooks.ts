@@ -12,6 +12,7 @@ import {
   type BlockInput,
   type BlockStatus,
   type DayBlock,
+  type Module,
   type ModuleInput,
 } from './model';
 import {
@@ -118,6 +119,29 @@ export function useCreateBlock() {
     onSuccess: (id, input) => {
       invalidateDay(queryClient);
       announce(queryClient, `« ${shorten(input.title)} » posé à ${input.startsAt}.`, [deleteBlockStatement(id)]);
+    },
+  });
+}
+
+/**
+ * Pose un module « pour une fois » : il devient un bloc et quitte « À caser », dans le même lot.
+ * « Annuler » retire le bloc et le remet à caser.
+ */
+export function usePlaceOneOff() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ module, input }: { module: Module; input: BlockInput }) => {
+      const [row] = await rawRows(db, 'block_templates', 'id', module.id);
+      const id = newId();
+      await db.batch([insertBlockStatement(id, input, nowTimestamp()), deleteModuleStatement(module.id)]);
+      return { id, row };
+    },
+    onSuccess: ({ id, row }, { input }) => {
+      invalidateDay(queryClient);
+      announce(queryClient, `« ${shorten(input.title)} » posé à ${input.startsAt}.`, [
+        deleteBlockStatement(id),
+        ...(row ? [reinsertRowStatement('block_templates', row)] : []),
+      ]);
     },
   });
 }

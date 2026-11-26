@@ -57,11 +57,12 @@ function ToPlaceRow({ task }: { task: TaskItem }) {
 
 /**
  * À droite de la journée : la bibliothèque de modules (on les glisse sur la journée) et, en vue jour,
- * les tâches et devoirs du jour pas encore dans un bloc (on les glisse dans un bloc ; on les y reprend
- * en les déposant ici).
+ * « À caser » : les modules « pour une fois » (glissés sur la journée, ils deviennent un bloc et
+ * disparaissent), puis les tâches et devoirs du jour pas encore dans un bloc (on les glisse dans un
+ * bloc ; on les y reprend en les déposant ici).
  */
-export function SidePanel({ modules, mode, toPlace }: { modules: Module[]; mode: AppMode; toPlace: TaskItem[] | null }) {
-  const [editing, setEditing] = useState<{ module?: Module } | null>(null);
+export function SidePanel({ modules, oneOffs, mode, toPlace }: { modules: Module[]; oneOffs: Module[]; mode: AppMode; toPlace: TaskItem[] | null }) {
+  const [editing, setEditing] = useState<{ module?: Module; oneOff?: boolean } | null>(null);
   const [showAll, setShowAll] = useState(false);
   const drop = useDroppable({ id: 'to-place', data: { kind: 'to-place' } satisfies DayDropData });
   const shown = showAll ? modules : modulesOfMode(modules, mode);
@@ -100,8 +101,26 @@ export function SidePanel({ modules, mode, toPlace }: { modules: Module[]; mode:
           ref={drop.setNodeRef}
           className={`-m-2 rounded-lg p-2 transition-colors duration-[120ms] ease-soft ${drop.isOver ? 'bg-accent-soft/40' : ''}`}
         >
-          <h2 className="mb-1.5 font-semibold">À caser</h2>
-          {toPlace.length === 0 ? (
+          <div className="mb-1.5 flex items-baseline gap-2">
+            <h2 className="font-semibold">À caser</h2>
+            <button
+              type="button"
+              onClick={() => setEditing({ oneOff: true })}
+              title="Un module pour une fois (« Courses · 1 h ») : il attend ici jusqu’à ce que tu le poses"
+              className="ml-auto flex items-center gap-1 text-meta text-ink-3 transition-colors hover:text-ink"
+            >
+              <Plus className="size-3.5" strokeWidth={2} />
+              Ajouter
+            </button>
+          </div>
+          {oneOffs.length > 0 && (
+            <ul className="mb-1">
+              {oneOffs.map((module) => (
+                <ModuleRow key={module.id} module={module} onEdit={() => setEditing({ module })} />
+              ))}
+            </ul>
+          )}
+          {toPlace.length === 0 && oneOffs.length === 0 ? (
             <p className="text-meta text-ink-3">Tout ce qui est prévu ce jour-là est dans un bloc.</p>
           ) : (
             <ul>
@@ -114,7 +133,13 @@ export function SidePanel({ modules, mode, toPlace }: { modules: Module[]; mode:
         </section>
       )}
 
-      <ModuleDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} module={editing?.module} defaultMode={mode} />
+      <ModuleDialog
+        open={editing !== null}
+        onOpenChange={(open) => !open && setEditing(null)}
+        module={editing?.module}
+        oneOff={editing?.oneOff ?? editing?.module?.oneOff ?? false}
+        defaultMode={mode}
+      />
     </aside>
   );
 }

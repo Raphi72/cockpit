@@ -15,15 +15,35 @@ import {
   type Module,
 } from './model';
 
-/** Ce qui occupe déjà une journée, sous les blocs : rendez-vous à heure fixe, cours, examens à heure fixe. */
-export function busyItemsOn(agenda: AgendaItem[], day: string): BusyItem[] {
+/**
+ * Ce qui occupe déjà une journée, à côté des blocs : rendez-vous à heure fixe, cours, examens à heure
+ * fixe. Un cours porte les devoirs pas encore faits à rendre pour lui (`openTasks`) : ceux reliés à cette
+ * séance, ou, sans séance précise, ceux de sa matière à rendre ce jour-là. Ils restent aussi « à caser ».
+ */
+export function busyItemsOn(agenda: AgendaItem[], day: string, openTasks: TaskItem[] = []): BusyItem[] {
   return agenda
     .filter((item) => !item.allDay && item.start.slice(0, 10) === day)
     .filter((item) => item.source === 'event' || item.source === 'class' || item.source === 'exam' || item.source === 'google')
     .map((item) => {
       const start = toMinutes(item.start.slice(11, 16));
       const end = item.end && item.end.slice(0, 10) === day ? toMinutes(item.end.slice(11, 16)) : start + 60;
-      return { key: item.key, title: item.title, start, end: Math.max(end, start + 15) };
+      const isCourse = item.source === 'google' && item.kind === 'class';
+      const homework = isCourse
+        ? openTasks
+            .filter((task) =>
+              task.courseEvent ? task.courseEvent === item.id : Boolean(item.subjectId) && task.subjectId === item.subjectId && task.dueDate === day,
+            )
+            .map((task) => task.title)
+        : [];
+      return {
+        key: item.key,
+        title: item.title,
+        start,
+        end: Math.max(end, start + 15),
+        color: item.color,
+        googleId: item.source === 'google' ? item.id : null,
+        homework,
+      };
     });
 }
 
@@ -31,7 +51,8 @@ export function busyItemsOn(agenda: AgendaItem[], day: string): BusyItem[] {
 function lookFor(modules: Module[], homework: boolean): Pick<BlockInput, 'templateId' | 'title' | 'icon' | 'color' | 'mode'> {
   const mode = homework ? 'school' : 'work';
   const preferred = homework ? 'module-devoirs' : 'module-deepwork';
-  const module = modules.find((m) => m.id === preferred) ?? modules.find((m) => m.mode === mode);
+  const library = modules.filter((m) => !m.oneOff);
+  const module = library.find((m) => m.id === preferred) ?? library.find((m) => m.mode === mode);
   if (module) return { templateId: module.id, title: module.name, icon: module.icon, color: module.color, mode: module.mode };
   return homework
     ? { templateId: null, title: 'Devoirs', icon: 'notebook', color: 'blue', mode: 'school' }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { listAgenda } from '@/domains/agenda/repository';
 import { buildShiftBatch } from '@/domains/agenda/service';
 import { accepts } from '@/domains/day/components/drag';
+import type { TaskItem } from '@/domains/tasks/model';
 import {
   blockFromModule,
   blockLoad,
@@ -27,7 +28,9 @@ import {
 } from '@/domains/day/model';
 import {
   deleteBlockStatement,
+  deleteModuleStatement,
   insertBlockStatement,
+  insertModuleStatement,
   listBlocks,
   listModules,
   setTasksBlockStatement,
@@ -225,12 +228,27 @@ describe('journée : semaines types', () => {
 describe('journée : base', () => {
   it('propose quatre modules au départ', async () => {
     const { db } = createTestDb();
-    expect((await listModules(db)).map((m) => [m.name, m.durationMin, m.mode])).toEqual([
-      ['Sport', 180, 'both'],
-      ['Devoirs', 90, 'school'],
-      ['Deep work', 120, 'work'],
-      ['Révision', 60, 'school'],
+    expect((await listModules(db)).map((m) => [m.name, m.durationMin, m.mode, m.oneOff])).toEqual([
+      ['Sport', 180, 'both', false],
+      ['Devoirs', 90, 'school', false],
+      ['Deep work', 120, 'work', false],
+      ['Révision', 60, 'school', false],
     ]);
+  });
+
+  it('un module « pour une fois » devient un bloc sans lien et quitte « À caser »', async () => {
+    const { db } = createTestDb();
+    await db.batch([insertModuleStatement('courses', { name: 'Courses', icon: 'sparkles', color: 'teal', durationMin: 60, mode: 'both', oneOff: true }, NOW)]);
+    const once = (await listModules(db)).find((m) => m.id === 'courses')!;
+    expect(once.oneOff).toBe(true);
+    const input = blockFromModule(once, TODAY, 17 * 60);
+    expect(input).toMatchObject({ templateId: null, title: 'Courses', startsAt: '17:00', endsAt: '18:00' });
+    // Ce que fait usePlaceOneOff, en un lot.
+    await db.batch([insertBlockStatement('posé', input, NOW), deleteModuleStatement('courses')]);
+    expect((await listModules(db)).some((m) => m.id === 'courses')).toBe(false);
+    expect((await listBlocks(db, TODAY, '2026-11-27')).map((b) => b.title)).toEqual(['Courses']);
+    // Un module de la bibliothèque, lui, reste relié à ses blocs.
+    expect(blockFromModule(sport, TODAY, 9 * 60).templateId).toBe('module-sport');
   });
 
   it('une tâche dans un bloc prend son jour ; supprimer le bloc la libère', async () => {
@@ -272,7 +290,33 @@ describe('journée : base', () => {
       ],
       TODAY,
     );
-    expect(busy).toEqual([{ key: 'e', title: 'Réunion', start: 540, end: 630 }]);
+    expect(busy).toEqual([{ key: 'e', title: 'Réunion', start: 540, end: 630, color: null, googleId: null, homework: [] }]);
+  });
+
+  it('un cours de Google montre les devoirs à rendre pour lui', () => {
+    const course = {
+      key: 'g',
+      source: 'google' as const,
+      id: 'cal|optim',
+      kind: 'class' as const,
+      title: 'Optimisation sous contraintes',
+      detail: null,
+      start: `${TODAY}T14:00`,
+      end: `${TODAY}T16:00`,
+      allDay: false,
+      projectId: null,
+      color: 'violet' as const,
+      amountCents: null,
+      subjectId: 'optim',
+    };
+    const homework = (title: string, extra: Record<string, unknown>) => ({ title, subjectId: 'optim', dueDate: null, courseEvent: null, ...extra }) as unknown as TaskItem;
+    const busy = busyItemsOn([course], TODAY, [
+      homework('revoir', { courseEvent: 'cal|optim' }),
+      homework('autre séance', { courseEvent: 'cal|autre' }),
+      homework('sans séance, ce jour', { dueDate: TODAY }),
+      homework('sans séance, demain', { dueDate: '2026-11-27' }),
+    ]);
+    expect(busy[0]).toMatchObject({ googleId: 'cal|optim', color: 'violet', homework: ['revoir', 'sans séance, ce jour'] });
   });
 });
 

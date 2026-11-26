@@ -26,6 +26,7 @@ pub const MIGRATIONS: &[&str] = &[
     include_str!("../../migrations/0016_courses_colors.sql"),
     include_str!("../../migrations/0017_course_homework.sql"),
     include_str!("../../migrations/0018_inbox_to_pages.sql"),
+    include_str!("../../migrations/0019_one_off_modules.sql"),
 ];
 
 pub fn run(conn: &mut Connection, backup_dir: &Path) -> Result<(), Box<dyn Error>> {

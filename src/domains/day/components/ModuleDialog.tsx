@@ -19,11 +19,15 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function ModuleForm({ module, defaultMode, onDone }: { module?: Module; defaultMode: BlockMode; onDone: () => void }) {
+/**
+ * Un module : de la bibliothèque, ou « pour une fois » (`oneOff`) : celui-là attend dans « À caser »
+ * jusqu'à être posé, et n'a pas de mode (il est fait pour ce que tu prévois maintenant).
+ */
+function ModuleForm({ module, oneOff, defaultMode, onDone }: { module?: Module; oneOff: boolean; defaultMode: BlockMode; onDone: () => void }) {
   const [input, setInput] = useState<ModuleInput>(
     module
-      ? { name: module.name, icon: module.icon, color: module.color, durationMin: module.durationMin, mode: module.mode }
-      : { name: '', icon: 'sparkles', color: 'teal', durationMin: 60, mode: defaultMode },
+      ? { name: module.name, icon: module.icon, color: module.color, durationMin: module.durationMin, mode: module.mode, oneOff: module.oneOff }
+      : { name: '', icon: 'sparkles', color: 'teal', durationMin: 60, mode: oneOff ? 'both' : defaultMode, oneOff },
   );
   const [submitted, setSubmitted] = useState(false);
   const save = useSaveModule();
@@ -51,7 +55,13 @@ function ModuleForm({ module, defaultMode, onDone }: { module?: Module; defaultM
     >
       <div className="grid grid-cols-[92px_minmax(0,1fr)] gap-x-4 gap-y-3">
         <Row label="Nom">
-          <Input autoFocus value={input.name} onChange={(e) => set('name', e.target.value)} placeholder="Sport, Lecture, Admin…" aria-label="Nom du module" />
+          <Input
+            autoFocus
+            value={input.name}
+            onChange={(e) => set('name', e.target.value)}
+            placeholder={oneOff ? 'Courses, Rendez-vous médecin, Ménage…' : 'Sport, Lecture, Admin…'}
+            aria-label="Nom du module"
+          />
           {submitted && errors.name && <p className="mt-1.5 text-meta text-danger">{errors.name}</p>}
         </Row>
         <Row label="Durée">
@@ -86,16 +96,21 @@ function ModuleForm({ module, defaultMode, onDone }: { module?: Module; defaultM
         <Row label="Couleur">
           <ColorChoice value={input.color} onChange={(color) => set('color', color)} label="Couleur" />
         </Row>
-        <Row label="Mode">
-          <ChoiceChips
-            label="Mode"
-            options={(['work', 'school', 'both'] as BlockMode[]).map((mode) => ({ value: mode, label: BLOCK_MODE_LABELS[mode] }))}
-            value={input.mode}
-            onChange={(mode) => set('mode', mode)}
-          />
-          <p className="mt-1.5 text-meta text-ink-3">Le mode où le module est proposé. La journée, elle, montre tout.</p>
-        </Row>
+        {!oneOff && (
+          <Row label="Mode">
+            <ChoiceChips
+              label="Mode"
+              options={(['work', 'school', 'both'] as BlockMode[]).map((mode) => ({ value: mode, label: BLOCK_MODE_LABELS[mode] }))}
+              value={input.mode}
+              onChange={(mode) => set('mode', mode)}
+            />
+            <p className="mt-1.5 text-meta text-ink-3">Le mode où le module est proposé. La journée, elle, montre tout.</p>
+          </Row>
+        )}
       </div>
+      {oneOff && (
+        <p className="mt-4 text-meta text-ink-3">Il attend dans « À caser », les jours suivants aussi ; glisse-le sur la journée pour le poser.</p>
+      )}
       <DialogFooter>
         {module && (
           <Button variant="ghost" className="mr-auto !text-danger" onClick={() => remove.mutate(module.id, { onSuccess: onDone })}>
@@ -106,20 +121,23 @@ function ModuleForm({ module, defaultMode, onDone }: { module?: Module; defaultM
           Annuler
         </Button>
         <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={save.isPending}>
-          {module ? 'Enregistrer' : 'Créer le module'}
+          {module ? 'Enregistrer' : oneOff ? 'Ajouter à caser' : 'Créer le module'}
         </Button>
       </DialogFooter>
     </form>
   );
 }
 
-export function ModuleDialog(props: { open: boolean; onOpenChange: (open: boolean) => void; module?: Module; defaultMode: BlockMode }) {
+export function ModuleDialog(props: { open: boolean; onOpenChange: (open: boolean) => void; module?: Module; oneOff?: boolean; defaultMode: BlockMode }) {
+  const oneOff = props.oneOff ?? false;
+  const title = props.module ? props.module.name : oneOff ? 'À caser, pour une fois' : 'Nouveau module';
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange} title={props.module ? props.module.name : 'Nouveau module'} restoreFocus={Boolean(props.module)}>
+    <Dialog open={props.open} onOpenChange={props.onOpenChange} title={title} restoreFocus={Boolean(props.module)}>
       {props.open && (
         <ModuleForm
-          key={props.module?.id ?? 'new'}
+          key={props.module?.id ?? (oneOff ? 'new-once' : 'new')}
           module={props.module}
+          oneOff={oneOff}
           defaultMode={props.defaultMode}
           onDone={() => props.onOpenChange(false)}
         />
