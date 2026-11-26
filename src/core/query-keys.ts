@@ -39,6 +39,19 @@ export const queryKeys = {
     all: ['inbox'] as const,
     list: ['inbox', 'list'] as const,
   },
+  /**
+   * Espace Cours : matières, calendrier scolaire, emploi du temps, examens et notes. Peu de lignes :
+   * toute écriture invalide la racine `school` (et l’agenda, qui montre les cours et les examens).
+   */
+  school: {
+    all: ['school'] as const,
+    subjects: ['school', 'subjects'] as const,
+    subject: (id: string) => ['school', 'subject', id] as const,
+    periods: ['school', 'periods'] as const,
+    slots: ['school', 'slots'] as const,
+    exams: (filter: object) => ['school', 'exams', filter] as const,
+    grades: (filter: object) => ['school', 'grades', filter] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

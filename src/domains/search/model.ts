@@ -1,14 +1,25 @@
 import { normalizeText } from '@/core/text';
 
 /** Ce que la recherche globale sait retrouver (une ligne de l'index `search_index` par élément). */
-export type SearchEntity = 'project' | 'task' | 'idea' | 'inbox' | 'client' | 'event' | 'payment' | 'transaction';
+export type SearchEntity = 'project' | 'subject' | 'task' | 'idea' | 'inbox' | 'client' | 'event' | 'payment' | 'transaction';
 
 /** Ordre des groupes à pertinence égale. */
-export const SEARCH_ENTITIES: SearchEntity[] = ['project', 'task', 'idea', 'inbox', 'client', 'event', 'payment', 'transaction'];
+export const SEARCH_ENTITIES: SearchEntity[] = [
+  'project',
+  'subject',
+  'task',
+  'idea',
+  'inbox',
+  'client',
+  'event',
+  'payment',
+  'transaction',
+];
 
 export const SEARCH_GROUP_LABELS: Record<SearchEntity, string> = {
   project: 'Projets',
-  task: 'Tâches',
+  subject: 'Matières',
+  task: 'Tâches et devoirs',
   idea: 'Idées',
   inbox: 'Boîte de réception',
   client: 'Clients',
@@ -26,7 +37,7 @@ export type SearchResult = {
   title: string;
   /** Projet de rattachement : c'est lui qu'ouvre une idée. */
   projectId: string | null;
-  /** Rattachement affiché en gris : projet, client, compte ou e-mail. */
+  /** Rattachement affiché en gris : projet, matière, client, compte, e-mail ou prof. */
   context: string | null;
   /** Couleur du type de projet, pour la pastille. */
   color: string | null;

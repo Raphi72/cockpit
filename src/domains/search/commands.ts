@@ -1,5 +1,6 @@
 import {
   ArrowRightLeft,
+  BookOpen,
   CalendarPlus,
   CircleCheck,
   FolderClosed,
@@ -50,20 +51,32 @@ export type PaletteCommand = {
   suggested?: boolean;
 };
 
-const CREATE_COMMANDS: PaletteCommand[] = [
-  { kind: 'task', label: 'Nouvelle tâche', icon: SquareCheck, shortcut: 'N', suggested: true },
-  { kind: 'event', label: 'Nouvel événement', icon: CalendarPlus, keywords: 'rendez-vous réunion', suggested: true },
-  { kind: 'project', label: 'Nouveau projet', icon: FolderClosed, suggested: true },
+type CreateCommand = Omit<PaletteCommand, 'id' | 'group' | 'action' | 'suggested'> & {
+  kind: CreateKind;
+  /** Mode où elle est suggérée d'emblée ; `both` : les deux. Toutes se trouvent en tapant. */
+  suggestedIn?: AppMode | 'both';
+};
+
+const CREATE: CreateCommand[] = [
+  { kind: 'task', label: 'Nouvelle tâche', icon: SquareCheck, shortcut: 'N', suggestedIn: 'work' },
+  { kind: 'event', label: 'Nouvel événement', icon: CalendarPlus, keywords: 'rendez-vous réunion', suggestedIn: 'both' },
+  { kind: 'project', label: 'Nouveau projet', icon: FolderClosed, suggestedIn: 'work' },
   { kind: 'client', label: 'Nouveau client', icon: User, keywords: 'organisation' },
   { kind: 'payment', label: 'Nouvel encaissement', icon: HandCoins, keywords: 'paiement facture argent' },
   { kind: 'transaction', label: 'Nouvelle transaction', icon: ArrowRightLeft, keywords: 'dépense revenu virement' },
-].map(({ kind, ...command }) => ({
-  ...command,
-  id: `create-${kind}`,
-  group: 'create' as const,
-  keywords: `créer ajouter ${command.keywords ?? ''}`,
-  action: { type: 'create' as const, kind: kind as CreateKind },
-}));
+  { kind: 'subject', label: 'Nouvelle matière', icon: BookOpen, keywords: 'cours école discipline', suggestedIn: 'school' },
+];
+
+function createCommands(mode: AppMode): PaletteCommand[] {
+  return CREATE.map(({ kind, suggestedIn, ...command }) => ({
+    ...command,
+    id: `create-${kind}`,
+    group: 'create' as const,
+    keywords: `créer ajouter ${command.keywords ?? ''}`,
+    action: { type: 'create' as const, kind },
+    suggested: suggestedIn === 'both' || suggestedIn === mode,
+  }));
+}
 
 /**
  * Les pages des deux modes : ouvrir une page de l'autre mode y fait passer (useModeFollowsPage).
@@ -157,7 +170,7 @@ export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: b
       action: { type: 'quit' },
     });
   }
-  return [...CREATE_COMMANDS, ...actions, ...goCommands(context.mode)];
+  return [...createCommands(context.mode), ...actions, ...goCommands(context.mode)];
 }
 
 /** Sans saisie : les suggestions. En tapant : les commandes dont le libellé ou les synonymes contiennent chaque mot. */

@@ -16,6 +16,7 @@ import { SelectionBar } from '@/domains/tasks/components/SelectionBar';
 import { TaskSheet } from '@/domains/tasks/components/TaskSheet';
 import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
+import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
 import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -64,6 +65,7 @@ export function AppShell() {
         <CreateEventDialog />
         <CreateProjectDialog />
         <CreateClientDialog />
+        <CreateSubjectDialog />
         <CreatePaymentDialog />
         <CreateTransactionDialog />
         <ReceivePaymentDialog />

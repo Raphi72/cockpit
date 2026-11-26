@@ -3,6 +3,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { Command } from 'cmdk';
 import {
   ArrowRightLeft,
+  BookOpen,
   CalendarDays,
   Circle,
   CircleCheck,
@@ -50,6 +51,7 @@ const groupClass =
 
 const ENTITY_ICONS: Record<SearchEntity, LucideIcon> = {
   project: FolderClosed,
+  subject: BookOpen,
   task: Circle,
   idea: Lightbulb,
   inbox: Inbox,
@@ -72,7 +74,7 @@ function dateLabel(date: string, today: string): string {
 function resultDetail(result: SearchResult, today: string): string | null {
   if (result.entity === 'payment' && result.amountCents !== null) return formatMoney(result.amountCents);
   if (result.entity === 'transaction' && result.amountCents !== null) return formatSignedMoney(result.amountCents);
-  if (result.entity === 'client' || !result.date) return null;
+  if (result.entity === 'client' || result.entity === 'subject' || !result.date) return null;
   return dateLabel(result.date, today);
 }
 
@@ -155,6 +157,9 @@ function usePaletteActions(close: () => void) {
     switch (result.entity) {
       case 'project':
         void navigate({ to: '/projects/$projectId', params: { projectId: result.id } });
+        break;
+      case 'subject':
+        void navigate({ to: '/subjects/$subjectId', params: { subjectId: result.id } });
         break;
       case 'task':
         openTask(result.id);

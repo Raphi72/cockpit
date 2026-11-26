@@ -50,6 +50,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
   const rows = await db.query<SearchRow>(
     `WITH hits AS MATERIALIZED (${hits.sql}),
      matched_clients AS (SELECT id FROM hits WHERE entity = 'client'),
+     matched_subjects AS (SELECT id FROM hits WHERE entity = 'subject'),
      scope AS (
        SELECT id FROM hits WHERE entity = 'project'
        UNION
@@ -68,13 +69,21 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE p.id IN (SELECT id FROM scope)
 
        UNION ALL
-       SELECT 'task', t.id, t.title, t.project_id, p.name, pt.color, COALESCE(t.due_date, t.scheduled_date),
-              NULL, t.status = 'done', h.id IS NOT NULL, h.score
+       -- Un devoir (tâche d'une matière) montre sa matière.
+       SELECT 'task', t.id, t.title, t.project_id, COALESCE(p.name, sub.name), COALESCE(pt.color, sub.color),
+              COALESCE(t.due_date, t.scheduled_date), NULL, t.status = 'done', h.id IS NOT NULL, h.score
        FROM tasks t
        LEFT JOIN projects p ON p.id = t.project_id
        LEFT JOIN project_types pt ON pt.id = p.type_id
+       LEFT JOIN subjects sub ON sub.id = t.subject_id
        LEFT JOIN hits h ON h.entity = 'task' AND h.id = t.id
-       WHERE h.id IS NOT NULL OR t.project_id IN (SELECT id FROM scope)
+       WHERE h.id IS NOT NULL OR t.project_id IN (SELECT id FROM scope) OR t.subject_id IN (SELECT id FROM matched_subjects)
+
+       UNION ALL
+       SELECT 'subject', s.id, s.name, NULL, s.teacher, s.color, NULL, NULL, 0, 1, h.score
+       FROM hits h
+       JOIN subjects s ON s.id = h.id
+       WHERE h.entity = 'subject'
 
        UNION ALL
        SELECT 'idea', i.id, i.title, i.project_id, p.name, pt.color, NULL, NULL,

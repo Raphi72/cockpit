@@ -1,28 +1,50 @@
 import { useRouterState } from '@tanstack/react-router';
-import { ArrowRightLeft, CalendarPlus, FolderClosed, HandCoins, Plus, Search, SquareCheck, User } from 'lucide-react';
-import type { KeyboardEvent } from 'react';
+import {
+  ArrowRightLeft,
+  BookOpen,
+  CalendarPlus,
+  FolderClosed,
+  HandCoins,
+  Plus,
+  Search,
+  SquareCheck,
+  User,
+  type LucideIcon,
+} from 'lucide-react';
+import { Fragment, type KeyboardEvent } from 'react';
 import { todayISO } from '@/core/dates';
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { Kbd } from '@/ui/primitives/Kbd';
 import { createDefaultsFor, useCreateStore, type CreateKind } from '../create-store';
+import type { AppMode } from '../modes';
 import { useUiStore } from '../ui-store';
 
-/** Lettres actives dans le menu « Nouveau » (C puis T, E, P, L, R ou D). */
-const MENU_KEYS: Record<string, CreateKind> = {
-  t: 'task',
-  e: 'event',
-  p: 'project',
-  l: 'client',
-  r: 'payment',
-  d: 'transaction',
+type MenuEntry = { kind: CreateKind; key: string; label: string; icon: LucideIcon; separatorBefore?: boolean };
+
+/** Le menu « Nouveau » de chaque mode (C, puis la lettre de la ligne). */
+export const NEW_MENU: Record<AppMode, MenuEntry[]> = {
+  work: [
+    { kind: 'task', key: 'T', label: 'Nouvelle tâche', icon: SquareCheck },
+    { kind: 'event', key: 'E', label: 'Nouvel événement', icon: CalendarPlus },
+    { kind: 'project', key: 'P', label: 'Nouveau projet', icon: FolderClosed },
+    { kind: 'client', key: 'L', label: 'Nouveau client', icon: User },
+    { kind: 'payment', key: 'R', label: 'Nouvel encaissement', icon: HandCoins, separatorBefore: true },
+    { kind: 'transaction', key: 'D', label: 'Nouvelle transaction', icon: ArrowRightLeft },
+  ],
+  school: [
+    { kind: 'event', key: 'E', label: 'Nouvel événement', icon: CalendarPlus },
+    { kind: 'subject', key: 'M', label: 'Nouvelle matière', icon: BookOpen, separatorBefore: true },
+  ],
 };
 
 function NewMenu() {
   const open = useUiStore((state) => state.newMenuOpen);
   const setOpen = useUiStore((state) => state.setNewMenuOpen);
+  const mode = useUiStore((state) => state.mode);
   const openCreate = useCreateStore((state) => state.openCreate);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const entries = NEW_MENU[mode];
 
   const create = (kind: CreateKind) => {
     setOpen(false);
@@ -30,10 +52,10 @@ function NewMenu() {
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
-    const kind = MENU_KEYS[event.key.toLowerCase()];
-    if (kind && !event.ctrlKey && !event.altKey) {
+    const entry = entries.find((e) => e.key.toLowerCase() === event.key.toLowerCase());
+    if (entry && !event.ctrlKey && !event.altKey) {
       event.preventDefault();
-      create(kind);
+      create(entry.kind);
     }
   };
 
@@ -45,25 +67,14 @@ function NewMenu() {
         </Button>
       </MenuTrigger>
       <MenuContent align="end" onKeyDown={onKeyDown}>
-        <MenuItem icon={SquareCheck} shortcut="T" onSelect={() => create('task')}>
-          Nouvelle tâche
-        </MenuItem>
-        <MenuItem icon={CalendarPlus} shortcut="E" onSelect={() => create('event')}>
-          Nouvel événement
-        </MenuItem>
-        <MenuItem icon={FolderClosed} shortcut="P" onSelect={() => create('project')}>
-          Nouveau projet
-        </MenuItem>
-        <MenuItem icon={User} shortcut="L" onSelect={() => create('client')}>
-          Nouveau client
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem icon={HandCoins} shortcut="R" onSelect={() => create('payment')}>
-          Nouvel encaissement
-        </MenuItem>
-        <MenuItem icon={ArrowRightLeft} shortcut="D" onSelect={() => create('transaction')}>
-          Nouvelle transaction
-        </MenuItem>
+        {entries.map((entry) => (
+          <Fragment key={entry.kind}>
+            {entry.separatorBefore && <MenuSeparator />}
+            <MenuItem icon={entry.icon} shortcut={entry.key} onSelect={() => create(entry.kind)}>
+              {entry.label}
+            </MenuItem>
+          </Fragment>
+        ))}
       </MenuContent>
     </Menu>
   );

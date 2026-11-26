@@ -1,6 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { ColorDot, paletteKeys, type PaletteKey } from '@/ui/data/ColorDot';
+import { ColorDot, PALETTE_NAMES as COLOR_NAMES, paletteKeys, type PaletteKey } from '@/ui/data/ColorDot';
 import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '@/ui/overlays/Menu';
 import { Button } from '@/ui/primitives/Button';
 import { InlineText } from '@/ui/primitives/InlineFields';
@@ -11,18 +11,6 @@ import {
   useProjectTypesWithUsage,
   useUpdateProjectType,
 } from '../hooks';
-
-const COLOR_NAMES: Record<PaletteKey, string> = {
-  slate: 'Ardoise',
-  blue: 'Bleu',
-  violet: 'Violet',
-  pink: 'Rose',
-  red: 'Rouge',
-  orange: 'Orange',
-  amber: 'Ambre',
-  green: 'Vert',
-  teal: 'Turquoise',
-};
 
 /** Types de projet : renommer, recolorer, ajouter ; supprimer seulement s'ils ne servent pas. */
 export function ProjectTypesEditor() {

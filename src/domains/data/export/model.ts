@@ -37,6 +37,7 @@ export const EXPORT_TABLES = [
   { table: 'accounts', key: 'accounts' },
   { table: 'clients', key: 'clients' },
   { table: 'projects', key: 'projects' },
+  { table: 'subjects', key: 'subjects' },
   { table: 'tasks', key: 'tasks' },
   { table: 'ideas', key: 'ideas' },
   { table: 'events', key: 'events' },
@@ -44,6 +45,10 @@ export const EXPORT_TABLES = [
   { table: 'payments', key: 'payments' },
   { table: 'transactions', key: 'transactions' },
   { table: 'inbox_items', key: 'inboxItems' },
+  { table: 'school_periods', key: 'schoolPeriods' },
+  { table: 'timetable_slots', key: 'timetableSlots' },
+  { table: 'exams', key: 'exams' },
+  { table: 'grades', key: 'grades' },
 ] as const;
 
 export type ExportTableKey = (typeof EXPORT_TABLES)[number]['key'];

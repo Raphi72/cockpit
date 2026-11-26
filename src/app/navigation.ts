@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   CalendarDays,
   ChartGantt,
   FolderClosed,
@@ -21,7 +22,8 @@ export type AppPath =
   | '/planning'
   | '/finances'
   | '/clients'
-  | '/settings';
+  | '/settings'
+  | '/subjects';
 
 export type NavItem = {
   to: AppPath;
@@ -58,7 +60,7 @@ export const NAV: Record<AppMode, ModeNav> = {
     secondary: [{ to: '/clients', label: 'Clients', icon: Users }, settings],
   },
   school: {
-    main: [today, inbox, calendar],
+    main: [today, inbox, { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' }, calendar],
     secondary: [settings],
   },
 };
