@@ -8,7 +8,6 @@ import {
   FileText,
   FolderClosed,
   Inbox,
-  Layers,
   LayoutDashboard,
   NotebookPen,
   Repeat,
@@ -38,7 +37,6 @@ export type AppPath =
   | '/grades'
   | '/day'
   | '/pages'
-  | '/revisions'
   | '/habits';
 
 export type NavItem = {
@@ -94,7 +92,6 @@ export const NAV: Record<AppMode, ModeNav> = {
       calendar,
       { to: '/timetable', label: 'Emploi du temps', icon: CalendarClock, shortcut: '5' },
       { to: '/exams', label: 'Examens', icon: FileCheck },
-      { to: '/revisions', label: 'Révisions', icon: Layers },
       { to: '/grades', label: 'Notes', icon: Award, shortcut: '6' },
     ],
     secondary: [settings],

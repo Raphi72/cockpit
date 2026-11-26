@@ -11,7 +11,7 @@ import {
   startPomodoro,
   type ClosureState,
 } from '@/domains/companion/model';
-import { eveningReviewNotice, examNotices, flashcardsNotice, homeworkNotices } from '@/domains/notifications/model';
+import { eveningReviewNotice, examNotices, homeworkNotices } from '@/domains/notifications/model';
 
 const TODAY = '2026-11-26';
 
@@ -101,9 +101,7 @@ describe('compagnon : notifications', () => {
     expect(examNotices(exams, TODAY)).toEqual([{ key: 'exam:e1:2026-11-29', title: 'Examen dans 3 jours : Maths', body: 'Contrôle, dimanche 29 novembre à 10:00' }]);
   });
 
-  it('annonce les cartes à revoir et le bilan du soir', () => {
-    expect(flashcardsNotice(0, TODAY)).toBeNull();
-    expect(flashcardsNotice(12, TODAY)?.title).toBe('12 cartes à revoir aujourd’hui');
+  it('annonce le bilan du soir', () => {
     expect(eveningReviewNotice(2, { today: TODAY, time: '19:59' })).toBeNull();
     expect(eveningReviewNotice(2, { today: TODAY, time: '20:05' })).toMatchObject({ key: 'evening-review:2026-11-26', title: 'Bilan du soir' });
     expect(eveningReviewNotice(0, { today: TODAY, time: '20:05' })).toBeNull();

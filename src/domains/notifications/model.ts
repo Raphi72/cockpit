@@ -15,7 +15,6 @@ export type NotificationRule =
   | 'eveningReview'
   | 'homework'
   | 'exams'
-  | 'flashcards'
   | 'deadlines'
   | 'priorityTasks'
   | 'payments'
@@ -30,7 +29,6 @@ export const NOTIFICATION_RULES: { rule: NotificationRule; label: string; hint: 
   { rule: 'eveningReview', label: 'Bilan du soir', hint: 'à 20 h, s’il reste des blocs à marquer' },
   { rule: 'homework', label: 'Devoirs', hint: 'la veille du jour où ils sont à rendre' },
   { rule: 'exams', label: 'Examens', hint: '3 jours avant' },
-  { rule: 'flashcards', label: 'Cartes à revoir', hint: 'le matin, s’il y en a' },
   { rule: 'deadlines', label: 'Deadlines', hint: 'projets et échéances, 3 jours avant puis le jour même' },
   { rule: 'priorityTasks', label: 'Tâches prioritaires', hint: 'la veille de leur deadline' },
   { rule: 'payments', label: 'Encaissements', hint: 'la veille de la date prévue, puis s’ils sont en retard' },
@@ -236,16 +234,6 @@ export function examNotices(exams: ExamSoon[], today: string): Notice[] {
       title: `Examen dans 3 jours : ${exam.subjectName}`,
       body: `${exam.title}, ${longDay(exam.date)}${exam.startsAt ? ` à ${exam.startsAt}` : ''}`,
     }));
-}
-
-/** Cartes à revoir : le matin, s'il y en a. */
-export function flashcardsNotice(count: number, today: string): Notice | null {
-  if (count === 0) return null;
-  return {
-    key: `flashcards:${today}`,
-    title: `${plural(count, 'carte')} à revoir aujourd’hui`,
-    body: 'Quelques minutes dans Révisions suffisent.',
-  };
 }
 
 /**

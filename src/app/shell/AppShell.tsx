@@ -27,7 +27,6 @@ import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDial
 import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
 import { CreateGradeDialog, GradeEditorDialog } from '@/domains/school/grades/components/GradeDialog';
 import { RevisionPlanDialog } from '@/domains/school/exams/components/RevisionPlanDialog';
-import { RevisionSessionDialog } from '@/domains/school/flashcards/components/RevisionSession';
 import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -87,7 +86,6 @@ export function AppShell() {
         <CreateGradeDialog />
         <GradeEditorDialog />
         <CreatePageOnDemand />
-        <RevisionSessionDialog />
         <RevisionPlanDialog />
         <WorkoutDialog />
         <CreatePaymentDialog />

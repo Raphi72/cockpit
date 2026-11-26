@@ -4,8 +4,6 @@ import { listAgenda } from '@/domains/agenda/repository';
 import { listBlocks } from '@/domains/day/repository';
 import { blocksToReview, toMinutes } from '@/domains/day/model';
 import { listExams } from '@/domains/school/exams/repository';
-import { todayQueue } from '@/domains/school/flashcards/model';
-import { listFlashcards } from '@/domains/school/flashcards/repository';
 import { doneDays, isScheduled, weekProgress } from '@/domains/habits/model';
 import { listDoneBlocks, listHabitLogs, listHabits } from '@/domains/habits/repository';
 import { nextTimedEvent } from '@/domains/dashboard/model';
@@ -24,7 +22,6 @@ import {
   eveningReviewNotice,
   eventNotices,
   examNotices,
-  flashcardsNotice,
   habitNotices,
   homeworkNotices,
   paymentNotices,
@@ -129,10 +126,6 @@ export async function collectNotices(db: Db, moment: Moment, round: Round): Prom
     notices.push(...homeworkNotices(homework, today));
   }
   if (rules.exams) notices.push(...examNotices(await listExams(db), today));
-  if (rules.flashcards) {
-    const cards = flashcardsNotice(todayQueue(await listFlashcards(db), today).length, today);
-    if (cards) notices.push(cards);
-  }
   return notices;
 }
 

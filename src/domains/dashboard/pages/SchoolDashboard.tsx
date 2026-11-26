@@ -9,9 +9,6 @@ import { UPCOMING_AGENDA_DAYS, useAgenda } from '@/domains/agenda';
 import { useExamEditor } from '@/domains/school/exams/components/ExamDialog';
 import { countdownTone } from '@/domains/school/exams/components/ExamRow';
 import { useExams } from '@/domains/school/exams/hooks';
-import { useRevisionSession } from '@/domains/school/flashcards/components/RevisionSession';
-import { useFlashcards } from '@/domains/school/flashcards/hooks';
-import { dueSummary, isNew, todayQueue } from '@/domains/school/flashcards/model';
 import { examCountdown, examWhen, splitExams, type Exam } from '@/domains/school/exams/model';
 import { usePeriods } from '@/domains/school/periods/hooks';
 import { holidayOn } from '@/domains/school/periods/model';
@@ -33,7 +30,7 @@ import { UpcomingDays } from '../components/UpcomingDays';
 import { dayMarks, dayTasksHeading, upcomingWithTasks } from '../model';
 import { homeworkForDay, schoolDaySummary, schoolUpcomingItems } from '../school-model';
 
-function SectionHeading({ title, link }: { title: string; link?: { to: '/timetable' | '/homework' | '/exams' | '/revisions'; label: string } }) {
+function SectionHeading({ title, link }: { title: string; link?: { to: '/timetable' | '/homework' | '/exams'; label: string } }) {
   return (
     <div className="mb-1.5 flex items-baseline gap-2.5">
       <h2 className="font-semibold">{title}</h2>
@@ -202,31 +199,6 @@ function NextExamSection({ exams, today }: { exams: Exam[]; today: string }) {
   );
 }
 
-/** Les flashcards du jour : combien à revoir (dont nouvelles), et une session d'un clic. Rien sans cartes. */
-function DueCardsSection({ today }: { today: string }) {
-  const { data: cards = [] } = useFlashcards();
-  const start = useRevisionSession((state) => state.start);
-  if (cards.length === 0) return null;
-  const queue = todayQueue(cards, today);
-  const fresh = queue.filter(isNew).length;
-  return (
-    <section className="mt-12">
-      <SectionHeading title="Cartes à revoir" link={{ to: '/revisions', label: 'Révisions' }} />
-      <div className="flex items-center gap-3 py-1">
-        <span className="text-ink-2">
-          {dueSummary(queue.length)}
-          {fresh > 0 && <span className="text-ink-3"> · dont {fresh} nouvelle{fresh > 1 ? 's' : ''}</span>}
-        </span>
-        {queue.length > 0 && (
-          <Button variant="secondary" className="ml-auto" onClick={() => start(queue, 'Révision du jour')}>
-            Réviser
-          </Button>
-        )}
-      </div>
-    </section>
-  );
-}
-
 /** Aujourd’hui en mode Cours : la journée de cours (P13). Deux colonnes, comme en mode Travail. */
 export function SchoolDashboard() {
   const today = useToday();
@@ -316,7 +288,6 @@ export function SchoolDashboard() {
 
         <div className="min-w-0">
           <NextExamSection exams={exams} today={today} />
-          <DueCardsSection today={today} />
           <div className="mt-12">
             <UpcomingDays
               days={upcomingWithTasks(schoolUpcomingItems(agenda), open, today, day)}

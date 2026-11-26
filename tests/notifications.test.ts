@@ -36,7 +36,6 @@ describe('règles et moments', () => {
       eveningReview: true,
       homework: true,
       exams: true,
-      flashcards: true,
       deadlines: true,
       priorityTasks: true,
       payments: true,

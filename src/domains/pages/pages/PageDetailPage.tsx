@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
-import { ChevronRight, Copy, Download, Ellipsis, FileText, FolderInput, Layers, Link2, Star, Trash2 } from 'lucide-react';
+import { ChevronRight, Copy, Download, Ellipsis, FileText, FolderInput, Link2, Star, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useDeleteShortcut } from '@/app/shortcuts';
 import { toast } from '@/ui/overlays/toast';
@@ -12,8 +12,7 @@ import { PageRow } from '../components/PageRows';
 import { PageEditor } from '../editor/PageEditor';
 import { exportPage } from '../export';
 import { useBacklinks, useDeletePage, usePage, usePages, useSaveAsTemplate, useUpdatePage } from '../hooks';
-import { useSyncPageCards } from '@/domains/school/flashcards/hooks';
-import { ENTITY_LABELS, ancestorsOf, pageTitle, parseDoc, plainTextOf, type Page } from '../model';
+import { ENTITY_LABELS, ancestorsOf, pageTitle, type Page } from '../model';
 
 /** Le titre de la page, modifiable sur place ; Entrée (ou flèche bas) passe au contenu. */
 function TitleField({ page, inputRef, onEnter }: { page: Page; inputRef: React.RefObject<HTMLTextAreaElement | null>; onEnter: () => void }) {
@@ -77,7 +76,6 @@ export function PageDetailPage() {
   const update = useUpdatePage();
   const remove = useDeletePage();
   const saveAsTemplate = useSaveAsTemplate();
-  const syncCards = useSyncPageCards();
   const navigate = useNavigate();
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const editorFocus = useRef<() => void>(() => undefined);
@@ -150,14 +148,6 @@ export function PageDetailPage() {
               >
                 Exporter en Markdown…
               </MenuItem>
-              {page.entityType === 'subject' && page.entityId && (
-                <MenuItem
-                  icon={Layers}
-                  onSelect={() => syncCards.mutate({ pageId: page.id, subjectId: page.entityId!, text: plainTextOf(parseDoc(page.content)) })}
-                >
-                  Créer les flashcards (lignes « question :: réponse »)
-                </MenuItem>
-              )}
               {!page.isTemplate && (
                 <MenuItem icon={Copy} onSelect={() => saveAsTemplate.mutate({ title: pageTitle(page), content: page.content })}>
                   Enregistrer comme modèle

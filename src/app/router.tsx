@@ -117,11 +117,6 @@ const routes = [
   }),
   createRoute({
     getParentRoute: () => rootRoute,
-    path: '/revisions',
-    component: lazyRouteComponent(() => import('@/domains/school/pages/RevisionsPage'), 'RevisionsPage'),
-  }),
-  createRoute({
-    getParentRoute: () => rootRoute,
     path: '/habits',
     validateSearch: validateHabitsSearch,
     component: lazyRouteComponent(() => import('@/domains/habits/pages/HabitsPage'), 'HabitsPage'),
