@@ -1,10 +1,8 @@
 import { Link, Outlet, useRouterState } from '@tanstack/react-router';
-import { FileText, LayoutDashboard, Plus, Repeat, Settings2, Sunrise, type LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { FileText, LayoutDashboard, Repeat, Settings2, Sunrise, type LucideIcon } from 'lucide-react';
 import { useGoogleAutoSync } from '@/domains/google/hooks';
 import { useAutoSync } from '@/domains/sync/hooks';
 import { Toaster } from '@/ui/overlays/Toaster';
-import { CaptureSheet } from './screens/CaptureSheet';
 
 type Tab = { to: '/' | '/day' | '/habits' | '/pages' | '/settings'; label: string; icon: LucideIcon };
 
@@ -36,9 +34,8 @@ function TabBar() {
   );
 }
 
-/** La coquille du téléphone : l'écran, le bouton de capture, les onglets. Synchro et Google Agenda tournent ici aussi. */
+/** La coquille du téléphone : l'écran et les onglets. Synchro et Google Agenda tournent ici aussi. */
 export function MobileShell() {
-  const [capturing, setCapturing] = useState(false);
   useAutoSync();
   useGoogleAutoSync();
   return (
@@ -46,16 +43,7 @@ export function MobileShell() {
       <main className="relative min-h-0 flex-1 overflow-y-auto pt-[env(safe-area-inset-top)]">
         <Outlet />
       </main>
-      <button
-        type="button"
-        onClick={() => setCapturing(true)}
-        aria-label="Capturer quelque chose"
-        className="fixed right-5 bottom-[calc(4rem+env(safe-area-inset-bottom)+1rem)] z-30 grid size-14 place-items-center rounded-full bg-ink text-canvas shadow-overlay active:scale-95"
-      >
-        <Plus className="size-6" strokeWidth={2} />
-      </button>
       <TabBar />
-      <CaptureSheet open={capturing} onClose={() => setCapturing(false)} />
       <Toaster />
     </div>
   );

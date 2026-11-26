@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { useCreateStore } from '@/app/create-store';
+import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { useUiStore } from '@/app/ui-store';
 import { formatShortDate, todayISO } from '@/core/dates';
 import { formatMoney, parseMoneyInput } from '@/core/money';
@@ -43,7 +43,7 @@ function FieldError({ message }: { message?: string }) {
   return message ? <p className="mt-1.5 text-meta text-danger">{message}</p> : null;
 }
 
-function CreateProjectForm({ onDone }: { onDone: () => void }) {
+function CreateProjectForm({ defaults, onDone }: { defaults: CreateDefaults; onDone: () => void }) {
   const navigate = useNavigate();
   const { data: types = [] } = useProjectTypes();
   const lastTypeId = useUiStore((state) => state.lastProjectTypeId);
@@ -51,7 +51,7 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
   const createProject = useCreateProject();
   const today = todayISO();
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState(defaults.fromLine?.text ?? '');
   const [typeId, setTypeId] = useState<string | null>(null);
   const [client, setClient] = useState<ClientChoice>({ kind: 'none' });
   const [status, setStatus] = useState<ProjectStatus>('active');
@@ -95,6 +95,11 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
       onSuccess: (projectId) => {
         setLastTypeId(selectedType.id);
         onDone();
+        // Né d'une ligne de page : on reste sur la page, qui retire la ligne et l'annonce (avec « Annuler »).
+        if (defaults.fromLine) {
+          defaults.fromLine.onCreated({ kind: 'project', id: projectId, message: 'Projet créé.' });
+          return;
+        }
         toast('Projet créé.');
         void navigate({ to: '/projects/$projectId', params: { projectId } });
       },
@@ -267,11 +272,11 @@ function CreateProjectForm({ onDone }: { onDone: () => void }) {
 
 /** Monté une seule fois dans l'AppShell ; ouvert via le store de création. */
 export function CreateProjectDialog() {
-  const open = useCreateStore((state) => state.open?.kind === 'project');
+  const open = useCreateStore((state) => (state.open?.kind === 'project' ? state.open : null));
   const close = useCreateStore((state) => state.close);
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && close()} title="Nouveau projet" restoreFocus={false}>
-      {open && <CreateProjectForm onDone={close} />}
+    <Dialog open={open !== null} onOpenChange={(next) => !next && close()} title="Nouveau projet" restoreFocus={false}>
+      {open && <CreateProjectForm defaults={open.defaults} onDone={close} />}
     </Dialog>
   );
 }

@@ -1,9 +1,8 @@
 //! Coquille native de Cockpit, volontairement fine : toute la logique métier est côté TypeScript.
 //! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite, exports,
-//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, capture rapide, mini-fenêtre « En ce moment », connexion Google et synchronisation.
+//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, mini-fenêtre « En ce moment », connexion Google et synchronisation.
 
 mod backup;
-mod capture;
 mod data;
 mod google;
 mod notion;
@@ -39,19 +38,14 @@ pub fn run() {
         .plugin(
             tauri_plugin_window_state::Builder::default()
                 .with_state_flags(StateFlags::all() - StateFlags::VISIBLE)
-                // La petite fenêtre de capture se place toute seule à chaque ouverture.
-                .with_denylist(&[capture::WINDOW])
                 .build(),
         )
-        // Raccourci global de la capture rapide.
-        .plugin(capture::plugin())
         // Lancé par Windows, Cockpit reçoit `--autostart` et démarre caché.
         .plugin(tauri_plugin_autostart::Builder::new().app_name("Cockpit").arg(presence::AUTOSTART_ARG).build())
         .manage(Presence::from_args())
         .manage(google::GoogleSession::default())
         .on_window_event(|window, event| {
             presence::on_window_event(window, event);
-            capture::on_window_event(window, event);
         })
         .setup(|app| {
             // En développement, une base séparée : les essais ne touchent jamais les vraies données.
@@ -77,7 +71,6 @@ pub fn run() {
 
             presence::create_tray(app)?;
             presence::start_heartbeat(app.handle());
-            capture::init(app.handle());
             // La fenêtre est affichée par l'interface après son premier rendu (`window_ready`).
             // Filet de sécurité : si ce rendu échoue, on l'affiche quand même.
             presence::reveal_after_timeout(app.handle());
@@ -104,9 +97,6 @@ pub fn run() {
             presence::quit,
             presence::autostart_get,
             presence::autostart_set,
-            capture::capture_done,
-            capture::capture_shortcut_get,
-            capture::capture_shortcut_set,
             now::now_toggle,
             now::now_changed,
             google::google_status,

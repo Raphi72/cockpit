@@ -47,7 +47,6 @@ export const EXPORT_TABLES = [
   { table: 'event_exceptions', key: 'eventExceptions' },
   { table: 'payments', key: 'payments' },
   { table: 'transactions', key: 'transactions' },
-  { table: 'inbox_items', key: 'inboxItems' },
   { table: 'school_periods', key: 'schoolPeriods' },
   { table: 'timetable_slots', key: 'timetableSlots' },
   { table: 'exams', key: 'exams' },

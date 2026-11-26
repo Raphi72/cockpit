@@ -5,7 +5,6 @@
 //! l'inscription au démarrage de Windows et le battement d'une minute qui réveille l'interface.
 
 use crate::backup;
-use crate::capture;
 use crate::db::{self, Database};
 use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -110,12 +109,11 @@ pub fn quit(app: AppHandle) {
 
 // ─── Zone de notification ───────────────────────────────────────────────────
 
-/// L'icône près de l'horloge : un clic rouvre la fenêtre, le clic droit propose la capture rapide et « Quitter ».
+/// L'icône près de l'horloge : un clic rouvre la fenêtre, le clic droit propose « Ouvrir Cockpit » et « Quitter ».
 pub fn create_tray(app: &App) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Ouvrir Cockpit", true, None::<&str>)?;
-    let note = MenuItem::with_id(app, "capture", "Capture rapide", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &note, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let menu = Menu::with_items(app, &[&open, &PredefinedMenuItem::separator(app)?, &quit])?;
 
     let mut tray = TrayIconBuilder::with_id("cockpit")
         // Pour distinguer l'app de développement de l'app installée, qui peuvent tourner ensemble.
@@ -124,7 +122,6 @@ pub fn create_tray(app: &App) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => show_main(app),
-            "capture" => capture::open(app),
             "quit" => app.exit(0),
             _ => {}
         })

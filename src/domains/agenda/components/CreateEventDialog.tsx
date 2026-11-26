@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { isISODate, todayISO } from '@/core/dates';
-import { useInboxToEvent } from '@/domains/inbox/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { FormRow } from '@/ui/layout/FormRow';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
@@ -31,11 +30,9 @@ import { RecurrenceField } from './RecurrenceField';
 
 function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDone: () => void }) {
   const createEvent = useCreateEvent();
-  // Tri de la boîte de réception : la capture quitte la boîte avec la création, dans le même lot.
-  const fromInbox = useInboxToEvent();
   const today = todayISO();
 
-  const [title, setTitle] = useState(defaults.inboxItem?.text ?? '');
+  const [title, setTitle] = useState(defaults.fromLine?.text ?? '');
   const [kind, setKind] = useState<EventKind>('appointment');
   const [timing, setTiming] = useState<EventTiming>(() => initialTiming(defaults, today, new Date()));
   const [recurrence, setRecurrence] = useState<Recurrence | null>(null);
@@ -61,13 +58,11 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
     event?.preventDefault();
     setSubmitted(true);
     if (Object.keys(errors).length > 0) return;
-    if (defaults.inboxItem) {
-      fromInbox.mutate({ item: defaults.inboxItem, input }, { onSuccess: onDone });
-      return;
-    }
     createEvent.mutate(input, {
-      onSuccess: () => {
-        toast('Événement ajouté.');
+      onSuccess: (eventId) => {
+        // Né d'une ligne de page : la page la retire et l'annonce, avec « Annuler ».
+        if (defaults.fromLine) defaults.fromLine.onCreated({ kind: 'event', id: eventId, message: 'Événement ajouté.' });
+        else toast('Événement ajouté.');
         onDone();
       },
     });
@@ -180,7 +175,7 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
         <Button variant="ghost" onClick={onDone}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createEvent.isPending || fromInbox.isPending}>
+        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createEvent.isPending}>
           Ajouter l’événement
         </Button>
       </DialogFooter>

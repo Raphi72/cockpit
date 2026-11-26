@@ -87,7 +87,7 @@ export function isHomework(task: Pick<TaskItem, 'subjectId'>): boolean {
 
 /**
  * Chaque mode montre les siens (P13) : les devoirs en Cours, toutes les autres tâches en Travail.
- * Le calendrier et la boîte de réception, eux, montrent tout.
+ * Le calendrier, lui, montre tout.
  */
 export function tasksOfMode<T extends Pick<TaskItem, 'subjectId'>>(tasks: T[], mode: AppMode): T[] {
   return tasks.filter((task) => isHomework(task) === (mode === 'school'));

@@ -6,7 +6,6 @@ import {
   FileCheck,
   FileText,
   FolderClosed,
-  Inbox,
   LayoutDashboard,
   NotebookPen,
   Repeat,
@@ -21,7 +20,6 @@ import type { AppMode } from './modes';
 
 export type AppPath =
   | '/'
-  | '/inbox'
   | '/projects'
   | '/tasks'
   | '/calendar'
@@ -55,8 +53,6 @@ const dayPage: NavItem = { to: '/day', label: 'Journée', icon: Sunrise };
 const pagesPage: NavItem = { to: '/pages', label: 'Pages', icon: FileText };
 // Habitudes (étape 6) : habitudes, objectifs, séances et revue de la semaine, communes aux deux modes.
 const habitsPage: NavItem = { to: '/habits', label: 'Habitudes', icon: Repeat };
-// Sans chiffre : Ctrl+1…6 gardent leurs pages. Son compteur est posé par la barre latérale.
-const inbox: NavItem = { to: '/inbox', label: 'Boîte de réception', icon: Inbox };
 // Même chiffre dans les deux modes : Ctrl+4 ouvre toujours le calendrier.
 const calendar: NavItem = { to: '/calendar', label: 'Calendrier', icon: CalendarDays, shortcut: '4' };
 const settings: NavItem = { to: '/settings', label: 'Paramètres', icon: SlidersHorizontal };
@@ -65,11 +61,10 @@ const settings: NavItem = { to: '/settings', label: 'Paramètres', icon: Sliders
  * Les pages communes aux deux modes, en une rangée d'icônes sous Aujourd'hui (le nom au survol) :
  * la barre latérale garde de la place pour les projets en cours et les favoris.
  */
-export const NAV_ROW: NavItem[] = [dayPage, inbox, pagesPage, habitsPage];
+export const NAV_ROW: NavItem[] = [dayPage, pagesPage, habitsPage];
 
 /**
- * La barre latérale de chaque mode. Aujourd'hui, la boîte de réception, le calendrier et les paramètres
- * sont dans les deux ; le reste n'appartient qu'à un mode (voir modeOfPath).
+ * La barre latérale de chaque mode. Aujourd'hui, le calendrier et les paramètres sont dans les deux ; le reste n'appartient qu'à un mode (voir modeOfPath).
  */
 export const NAV: Record<AppMode, ModeNav> = {
   work: {

@@ -1,4 +1,4 @@
-import { Check, type LucideIcon } from 'lucide-react';
+import { Check, ChevronRight, type LucideIcon } from 'lucide-react';
 import { DropdownMenu } from 'radix-ui';
 import type { ComponentProps, ReactNode } from 'react';
 
@@ -6,6 +6,7 @@ import type { ComponentProps, ReactNode } from 'react';
 export const Menu = DropdownMenu.Root;
 export const MenuTrigger = DropdownMenu.Trigger;
 export const MenuRadioGroup = DropdownMenu.RadioGroup;
+export const MenuSub = DropdownMenu.Sub;
 
 export function MenuContent({
   children,
@@ -96,4 +97,34 @@ export function MenuSeparator() {
 
 export function MenuLabel({ children }: { children: ReactNode }) {
   return <DropdownMenu.Label className="px-2 pt-2 pb-1 text-meta text-ink-3">{children}</DropdownMenu.Label>;
+}
+
+/** Entrée qui ouvre un sous-menu (flèche droite au clavier, ou survol). */
+export function MenuSubTrigger({
+  icon: Icon,
+  children,
+  className = '',
+  ...props
+}: ComponentProps<typeof DropdownMenu.SubTrigger> & { icon?: LucideIcon }) {
+  return (
+    <DropdownMenu.SubTrigger className={`${itemClass} data-[state=open]:bg-hover ${className}`} {...props}>
+      {Icon && <Icon className="size-4 text-ink-2" strokeWidth={1.75} />}
+      <span className="flex-1 truncate">{children}</span>
+      <ChevronRight className="size-3.5 text-ink-3" strokeWidth={1.75} />
+    </DropdownMenu.SubTrigger>
+  );
+}
+
+export function MenuSubContent({ children, className = '', ...props }: ComponentProps<typeof DropdownMenu.SubContent>) {
+  return (
+    <DropdownMenu.Portal>
+      <DropdownMenu.SubContent
+        sideOffset={4}
+        className={`z-50 min-w-[200px] rounded-lg bg-elevated p-1 shadow-overlay animate-pop focus:outline-none ${className}`}
+        {...props}
+      >
+        {children}
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Portal>
+  );
 }

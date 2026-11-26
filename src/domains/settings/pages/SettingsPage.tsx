@@ -18,7 +18,6 @@ import {
 } from '@/domains/data';
 import { AccountsEditor } from '@/domains/finance/accounts/components/AccountsEditor';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
-import { CaptureSettings } from '@/domains/inbox';
 import { CompanionSettings } from '@/domains/companion/components/CompanionSettings';
 import { GoogleSettings } from '@/domains/google/components/GoogleSettings';
 import { SyncSettings } from '@/domains/sync/components/SyncSettings';
@@ -289,7 +288,6 @@ export function SettingsPage() {
       <DashboardSection />
       <DaySection />
       <PresenceSettings />
-      <CaptureSettings />
       <CompanionSettings />
       <GoogleSettings />
       <SyncSettings />

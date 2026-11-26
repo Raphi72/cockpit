@@ -12,7 +12,7 @@ describe('modes Travail et Cours', () => {
     expect(modeOfPath('/homework')).toBe('school');
     expect(modeOfPath('/')).toBeNull();
     expect(modeOfPath('/calendar')).toBeNull();
-    expect(modeOfPath('/inbox')).toBeNull();
+    expect(modeOfPath('/pages')).toBeNull();
     expect(modeOfPath('/settings')).toBeNull();
     // Un préfixe seul ne suffit pas.
     expect(modeOfPath('/projectsx')).toBeNull();

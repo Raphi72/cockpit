@@ -33,11 +33,14 @@ export type CreateDefaults = {
   /** Clic dans la ligne « journée » d'un jour. */
   eventAllDay?: boolean;
   /**
-   * Capture de la boîte de réception en train d'être triée (tâche ou événement) : son texte sert de
-   * titre, et elle quitte la boîte quand la création aboutit.
+   * Ligne d'une page qu'on transforme (clic droit) : son texte sert de titre ; quand la création
+   * aboutit, `onCreated` retire la ligne de la page et annonce la création (avec « Annuler »).
    */
-  inboxItem?: { id: string; text: string; createdAt: string };
+  fromLine?: { text: string; onCreated: (created: CreatedFromLine) => void };
 };
+
+/** Ce qu'une ligne de page est devenue : de quoi l'annoncer, et l'annuler. */
+export type CreatedFromLine = { kind: 'task' | 'event' | 'project' | 'idea'; id: string; message: string };
 
 type CreateState = {
   open: { kind: CreateKind; defaults: CreateDefaults } | null;

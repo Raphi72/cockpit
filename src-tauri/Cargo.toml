@@ -23,7 +23,6 @@ tauri-plugin-notification = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
-tauri-plugin-global-shortcut = "2"
 # Connexion Google (V2, étape 8) : HTTP, coffre d'identifiants de Windows, PKCE.
 ureq = { version = "3", features = ["json"] }
 keyring = { version = "3", features = ["windows-native"] }

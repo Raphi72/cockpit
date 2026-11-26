@@ -1,7 +1,7 @@
 /**
  * Aide des raccourcis (touche ?). Chaque entrée décrit un raccourci réellement branché :
  * ceux de partout dans shortcuts.ts, ceux des listes dans ui/data/row-keys.ts,
- * ceux de la boîte de réception dans InboxPage (sur la ligne qui a le focus),
+ * ceux des pages dans l'éditeur (src/domains/pages/editor),
  * ceux du dashboard et du calendrier dans DashboardPage et CalendarPage (usePageShortcuts).
  */
 export type ShortcutEntry = {
@@ -12,7 +12,7 @@ export type ShortcutEntry = {
 
 export type ShortcutSection = { title: string; entries: ShortcutEntry[] };
 
-/** Nombre de sections de la colonne de gauche (Partout, Fenêtres, Boîte de réception) ; les autres vont à droite. */
+/** Nombre de sections de la colonne de gauche (Partout, Fenêtres, Pages) ; les autres vont à droite. */
 export const LEFT_COLUMN_SECTIONS = 3;
 
 export const SHORTCUT_SECTIONS: ShortcutSection[] = [
@@ -21,7 +21,6 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     entries: [
       { keys: ['Ctrl K'], label: 'Rechercher ou lancer une commande' },
       { keys: ['N', 'Ctrl N'], label: 'Nouvelle tâche (un devoir en mode Cours)' },
-      { keys: ['Ctrl Maj Espace'], label: 'Capture rapide, même hors de Cockpit (réglable)' },
       { keys: ['C'], label: 'Nouveau…, puis la lettre du menu (T, E, P… ; en Cours : D, X, N…)' },
       { keys: ['Ctrl 1 … 6'], label: 'Aller aux pages principales du mode' },
       { keys: ['Ctrl M'], label: 'Passer du mode Travail au mode Cours, et inversement' },
@@ -41,13 +40,13 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     ],
   },
   {
-    title: 'Boîte de réception',
+    title: 'Pages',
     entries: [
-      { keys: ['T'], label: 'En faire une tâche' },
-      { keys: ['I'], label: 'En faire une idée de projet' },
-      { keys: ['E'], label: 'En faire un événement' },
-      { keys: ['D'], label: 'En faire un devoir' },
-      { keys: ['Entrée'], label: 'Reformuler' },
+      { keys: ['Clic droit'], label: 'Faire d’une ligne une tâche, un devoir, un événement, une idée ou un projet' },
+      { keys: ['/'], label: 'Insérer un bloc (titre, liste, cases, tableau, image…)' },
+      { keys: ['[['], label: 'Lien vers une page (ou une nouvelle)' },
+      { keys: ['# ', '- ', '[ ] '], label: 'Titre, liste ou case, en tapant' },
+      { keys: ['Ctrl Entrée'], label: 'Faire d’une case une vraie tâche' },
     ],
   },
   {
@@ -78,15 +77,6 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['←', '→'], label: 'Période précédente ou suivante' },
       { keys: ['T'], label: 'Revenir à aujourd’hui' },
       { keys: ['M', 'S', 'J'], label: 'Vue mois, semaine ou jour' },
-    ],
-  },
-  {
-    title: 'Pages',
-    entries: [
-      { keys: ['/'], label: 'Insérer un bloc (titre, liste, cases, tableau, image…)' },
-      { keys: ['[['], label: 'Lien vers une page (ou une nouvelle)' },
-      { keys: ['# ', '- ', '[ ] '], label: 'Titre, liste ou case, en tapant' },
-      { keys: ['Ctrl Entrée'], label: 'Faire d’une case une vraie tâche' },
     ],
   },
   {

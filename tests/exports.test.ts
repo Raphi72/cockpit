@@ -15,7 +15,7 @@ import type { TransactionInput } from '@/domains/finance/transactions/model';
 import { buildCreateTransactionBatch } from '@/domains/finance/transactions/service';
 import { buildCreateProjectBatch } from '@/domains/projects/service';
 import { setSettingStatement } from '@/domains/settings/repository';
-import { createTestDb } from './support/test-db';
+import { createTestDb, readMigrations } from './support/test-db';
 
 const NOW = '2026-09-26T10:00:00.000Z';
 const TODAY = '2026-09-26';
@@ -142,7 +142,7 @@ describe('exports', () => {
     const db = await setup();
     const data = JSON.parse(await buildExport(db, 'data', NOW)) as DataExport;
 
-    expect(data).toMatchObject({ application: 'Cockpit', format: 1, schemaVersion: 17, exportedAt: NOW });
+    expect(data).toMatchObject({ application: 'Cockpit', format: 1, schemaVersion: readMigrations().length, exportedAt: NOW });
     expect(Object.keys(data.tables)).toEqual(EXPORT_TABLES.map((t) => t.key));
     expect(data.tables.projects.map((p) => p.name)).toEqual(['Site vitrine', 'Refonte']);
     expect(data.tables.payments).toHaveLength(3);

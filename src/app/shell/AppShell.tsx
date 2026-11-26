@@ -7,7 +7,6 @@ import { announceRestoreIfDone } from '@/domains/data';
 import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/payments/components/PaymentDialog';
 import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
 import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
-import { useInboxSync } from '@/domains/inbox';
 import { useNotificationScheduler } from '@/domains/notifications';
 import { usePresence } from '@/domains/presence';
 import { CreateProjectDialog } from '@/domains/projects/components/CreateProjectDialog';
@@ -49,7 +48,6 @@ export function AppShell() {
   useModeFollowsPage();
   useNotificationScheduler();
   usePresence();
-  useInboxSync();
   // Google Agenda : relu au lancement puis toutes les 15 minutes, s'il est connecté.
   useGoogleAutoSync();
   // Synchronisation entre appareils : chaque minute et à la fermeture de la fenêtre, si elle est activée.

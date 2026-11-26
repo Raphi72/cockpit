@@ -4,7 +4,6 @@ import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { addDaysISO, formatDateField, toISODate, todayISO } from '@/core/dates';
 import { CoursePicker } from '@/domains/google/components/CoursePicker';
 import { useHasSchoolCalendar } from '@/domains/google/hooks';
-import { useInboxToTask } from '@/domains/inbox/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { SubjectMenu } from '@/domains/school/subjects/components/SubjectMenu';
@@ -64,12 +63,10 @@ function DayChoice(props: {
  */
 function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaults; homework: boolean; onDone: () => void }) {
   const createTask = useCreateTask();
-  // Tri de la boîte de réception : la capture quitte la boîte avec la création, dans le même lot.
-  const fromInbox = useInboxToTask();
   const today = todayISO();
   const tomorrow = toISODate(addDays(parseISO(today), 1));
 
-  const [title, setTitle] = useState(defaults.inboxItem?.text ?? '');
+  const [title, setTitle] = useState(defaults.fromLine?.text ?? '');
   const [projectId, setProjectId] = useState<string | null>(defaults.projectId ?? null);
   const [subjectId, setSubjectId] = useState<string | null>(defaults.subjectId ?? null);
   const [courseEvent, setCourseEvent] = useState<string | null>(homework ? (defaults.courseEvent ?? null) : null);
@@ -106,13 +103,12 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
     event?.preventDefault();
     setSubmitted(true);
     if (hasErrors) return;
-    if (defaults.inboxItem) {
-      fromInbox.mutate({ item: defaults.inboxItem, input }, { onSuccess: onDone });
-      return;
-    }
     createTask.mutate(input, {
-      onSuccess: () => {
-        toast(homework ? 'Devoir ajouté.' : scheduledDate === today ? 'Tâche ajoutée à aujourd’hui.' : 'Tâche ajoutée.');
+      onSuccess: (taskId) => {
+        const message = homework ? 'Devoir ajouté.' : scheduledDate === today ? 'Tâche ajoutée à aujourd’hui.' : 'Tâche ajoutée.';
+        // Née d'une ligne de page : la page la retire et l'annonce, avec « Annuler ».
+        if (defaults.fromLine) defaults.fromLine.onCreated({ kind: 'task', id: taskId, message });
+        else toast(message);
         onDone();
       },
     });
@@ -279,7 +275,7 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
         <Button variant="ghost" onClick={onDone}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createTask.isPending || fromInbox.isPending}>
+        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createTask.isPending}>
           {homework ? 'Ajouter le devoir' : 'Ajouter la tâche'}
         </Button>
       </DialogFooter>
