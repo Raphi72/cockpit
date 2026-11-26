@@ -6,7 +6,7 @@ const COLUMNS = `
   t.id, t.project_id, p.name AS project_name, COALESCE(p.color, pt.color) AS project_color,
   t.title, t.notes, t.status, t.priority, t.scheduled_date, t.due_date, t.estimate_min,
   t.sort_order, t.completed_at, t.created_at, t.parent_id, par.title AS parent_title, t.planned_on,
-  t.subject_id, s.name AS subject_name, s.color AS subject_color, t.block_id, blk.date AS block_date,
+  t.subject_id, s.name AS subject_name, s.color AS subject_color, t.course_event, t.block_id, blk.date AS block_date,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id) AS subtasks_total,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id AND c.status = 'done') AS subtasks_done`;
 
@@ -117,8 +117,8 @@ export function insertTaskStatement(id: string, input: NewTaskInput, now: string
   return {
     sql: `INSERT INTO tasks
             (id, project_id, subject_id, parent_id, title, notes, status, priority, scheduled_date, due_date,
-             estimate_min, sort_order, created_at, updated_at)
-          VALUES (?, ${project}, ${subject}, ?, ?, ?, 'todo', ?, ?, ?, ?, ${order}, ?, ?)`,
+             estimate_min, sort_order, created_at, updated_at, course_event)
+          VALUES (?, ${project}, ${subject}, ?, ?, ?, 'todo', ?, ?, ?, ?, ${order}, ?, ?, ?)`,
     params: [
       id,
       parentId ?? projectId,
@@ -133,6 +133,7 @@ export function insertTaskStatement(id: string, input: NewTaskInput, now: string
       ...(parentId ? [parentId] : [projectId, subjectId]),
       now,
       now,
+      parentId ? null : (input.courseEvent ?? null),
     ],
   };
 }
@@ -142,8 +143,8 @@ export function restoreTaskStatement(task: TaskItem, now: string): Statement {
   return {
     sql: `INSERT INTO tasks
             (id, project_id, subject_id, parent_id, title, notes, status, priority, scheduled_date, due_date,
-             estimate_min, sort_order, completed_at, planned_on, block_id, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT id FROM day_blocks WHERE id = ?), ?, ?)`,
+             estimate_min, sort_order, completed_at, planned_on, block_id, created_at, updated_at, course_event)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT id FROM day_blocks WHERE id = ?), ?, ?, ?)`,
     params: [
       task.id,
       task.projectId,
@@ -162,6 +163,7 @@ export function restoreTaskStatement(task: TaskItem, now: string): Statement {
       task.blockId,
       task.createdAt,
       now,
+      task.courseEvent ?? null,
     ],
   };
 }
@@ -171,6 +173,7 @@ const PATCH_COLUMNS: Record<keyof TaskPatch, string> = {
   notes: 'notes',
   projectId: 'project_id',
   subjectId: 'subject_id',
+  courseEvent: 'course_event',
   parentId: 'parent_id',
   status: 'status',
   priority: 'priority',

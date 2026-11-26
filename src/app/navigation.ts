@@ -1,6 +1,5 @@
 import {
   Award,
-  BookOpen,
   CalendarClock,
   CalendarDays,
   ChartGantt,
@@ -86,12 +85,12 @@ export const NAV: Record<AppMode, ModeNav> = {
   },
   school: {
     main: [
+      // Pas de page Matières (retours du 26/11/2026) : les matières se créent seules depuis les cours de Google.
       today,
-      { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' },
-      { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '3' },
+      { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '2' },
+      { to: '/timetable', label: 'Emploi du temps', icon: CalendarClock, shortcut: '3' },
       calendar,
-      { to: '/timetable', label: 'Emploi du temps', icon: CalendarClock, shortcut: '5' },
-      { to: '/exams', label: 'Examens', icon: FileCheck },
+      { to: '/exams', label: 'Examens', icon: FileCheck, shortcut: '5' },
       { to: '/grades', label: 'Notes', icon: Award, shortcut: '6' },
     ],
     secondary: [settings],

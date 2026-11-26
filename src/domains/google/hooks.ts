@@ -3,12 +3,13 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { db } from '@/core/db';
 import { nowTimestamp, todayISO } from '@/core/dates';
-import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import { humanizeError } from '@/core/db/errors';
 import type { AppColor } from '@/ui/data/ColorDot';
 import { toast } from '@/ui/overlays/toast';
-import { GOOGLE_SYNC_MINUTES, splitGoogleItemId, type GoogleStatus } from './model';
+import { setSettingStatement } from '@/domains/settings/repository';
+import { setSubjectColorStatement } from '@/domains/school/subjects/repository';
+import { GOOGLE_SYNC_MINUTES, SCHOOL_MANUAL_SETTING, splitGoogleItemId, type GoogleStatus } from './model';
 import {
   connectGoogle,
   disconnectGoogle,
@@ -21,12 +22,17 @@ import {
 } from './native';
 import {
   clearCalendarEventsStatement,
+  autoSubjectStatements,
   clearGoogleStatement,
+  deleteCourseLinkStatement,
+  getCourse,
   getGoogleEvent,
-  homeworkDueOn,
+  hasSchoolCalendar,
+  homeworkForCourse,
+  listCoursesBetween,
   listCoursesOn,
   listGoogleCalendars,
-  nextCourseDay,
+  nextCourseOccurrence,
   setCalendarColorStatement,
   setCalendarSchoolStatement,
   setCalendarShownStatement,
@@ -158,9 +164,12 @@ export function useCalendarActions() {
       await db.batch([setCalendarColorStatement(id, color, nowTimestamp())]);
       refresh(queryClient);
     },
-    /** L'agenda des cours : ses événements deviennent des cours, les matières se créent à la relecture. */
+    /**
+     * L'agenda des cours : ses événements deviennent des cours, les matières se créent à la relecture.
+     * Choisi à la main, il ne se reconnaît plus tout seul.
+     */
     setSchool: async (id: string, school: boolean) => {
-      await db.batch([setCalendarSchoolStatement(id, school, nowTimestamp())]);
+      await db.batch([setCalendarSchoolStatement(id, school, nowTimestamp()), setSettingStatement(SCHOOL_MANUAL_SETTING, true)]);
       refresh(queryClient);
       await runSync().catch((error: unknown) => toast(googleError(error), { tone: 'danger' }));
       refresh(queryClient);
@@ -175,40 +184,69 @@ export function useGoogleCourses(day: string) {
   return useQuery({ queryKey: queryKeys.google.courses(day), queryFn: () => listCoursesOn(db, day) });
 }
 
-/**
- * Pour un cours ouvert : le jour du cours suivant de sa matière (un devoir s'y rend par défaut) et les
- * devoirs déjà attendus pour ce cours-ci.
- */
-export function useCourseContext(itemId: string | null, subjectId: string | null, day: string | null) {
+/** Les cours de [from, to[ avec le nombre de devoirs à rendre pour chacun (Emploi du temps, choix d'un cours). */
+export function useCoursesBetween(from: string, to: string) {
+  return useQuery({ queryKey: queryKeys.agenda.courses(from, to), queryFn: () => listCoursesBetween(db, from, to) });
+}
+
+/** Un cours précis (celui d'un devoir), `null` s'il n'est plus dans la copie locale. */
+export function useCourse(itemId: string | null) {
   return useQuery({
-    queryKey: [...queryKeys.google.course(itemId ?? ''), subjectId, day],
-    enabled: itemId !== null && subjectId !== null && day !== null,
+    queryKey: queryKeys.agenda.course(itemId ?? ''),
+    enabled: itemId !== null,
+    queryFn: async () => (await getCourse(db, itemId!)) ?? null,
+  });
+}
+
+/** Y a-t-il un agenda des cours ? Sans lui, un devoir se rattache à une matière et une date, comme avant. */
+export function useHasSchoolCalendar() {
+  return useQuery({ queryKey: queryKeys.agenda.hasSchoolCalendar, queryFn: () => hasSchoolCalendar(db) });
+}
+
+/**
+ * Pour un cours ouvert : les devoirs à rendre pour lui, et l'occurrence suivante du même cours (un
+ * nouveau devoir s'y rend par défaut).
+ */
+export function useCourseHomework(itemId: string | null, course: string | null, subjectId: string | null, startsAt: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.agenda.courseHomework(itemId ?? ''), course, subjectId, startsAt],
+    enabled: itemId !== null && startsAt !== null,
     queryFn: async () => ({
-      nextDay: await nextCourseDay(db, subjectId!, day!),
-      homework: await homeworkDueOn(db, subjectId!, day!),
+      next: course ? ((await nextCourseOccurrence(db, course, startsAt!)) ?? null) : null,
+      homework: await homeworkForCourse(db, itemId!, subjectId, startsAt!.slice(0, 10)),
     }),
   });
 }
 
-/** Relier un intitulé de cours à une matière (ou « pas un cours »), ou créer sa matière. */
-export function useLinkCourse() {
+/** La couleur d'un cours : celle de sa matière (créée toute seule), partout où il s'affiche. */
+export function useSetCourseColor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ course, subjectId, newSubject }: { course: string; subjectId: string | null; newSubject?: { name: string; color: string } }) => {
+    mutationFn: ({ subjectId, color }: { subjectId: string; color: AppColor }) =>
+      db.batch([setSubjectColorStatement(subjectId, color, nowTimestamp())]),
+    onSuccess: () => {
+      refresh(queryClient);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+  });
+}
+
+/**
+ * « Ce n'est pas un cours » : l'intitulé est ignoré pour de bon (`ignored`), ou redevient un cours, avec
+ * sa matière retrouvée ou recréée toute seule.
+ */
+export function useIgnoreCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ course, ignored }: { course: string; ignored: boolean }) => {
       const now = nowTimestamp();
-      if (newSubject) {
-        const id = newId();
-        await db.batch([
-          {
-            sql: `INSERT INTO subjects (id, name, color, teacher, room, coefficient, sort_order, created_at, updated_at)
-                  VALUES (?, ?, ?, NULL, NULL, 1, COALESCE((SELECT MAX(sort_order) FROM subjects), 0) + 1, ?, ?)`,
-            params: [id, newSubject.name, newSubject.color, now, now],
-          },
-          setCourseLinkStatement(course, id, now),
-        ]);
+      if (ignored) {
+        await db.batch([setCourseLinkStatement(course, null, now)]);
         return;
       }
-      await db.batch([setCourseLinkStatement(course, subjectId, now)]);
+      await db.batch([deleteCourseLinkStatement(course)]);
+      const subjects = await autoSubjectStatements(db, now);
+      if (subjects.statements.length) await db.batch(subjects.statements);
     },
     onSuccess: () => refresh(queryClient),
   });

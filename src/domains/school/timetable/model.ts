@@ -74,7 +74,10 @@ export function slotTitle(slot: Pick<TimetableSlot, 'subjectName' | 'label'>): s
   return slot.label ? `${slot.subjectName} · ${slot.label}` : slot.subjectName;
 }
 
-const bySlotTime = (a: TimetableSlot, b: TimetableSlot) => a.startsAt.localeCompare(b.startsAt) || a.endsAt.localeCompare(b.endsAt);
+/** Un moment dans une journée de la grille : un créneau de la semaine type, ou un cours de Google. */
+export type TimeSpan = { startsAt: string; endsAt: string };
+
+const bySlotTime = (a: TimeSpan, b: TimeSpan) => a.startsAt.localeCompare(b.startsAt) || a.endsAt.localeCompare(b.endsAt);
 
 /** Un cours un jour donné : le créneau et son moment ('YYYY-MM-DDTHH:MM'). */
 export type ClassOccurrence = { slot: TimetableSlot; day: string; start: string; end: string };
@@ -125,16 +128,16 @@ export function gridHours(slots: Pick<TimetableSlot, 'startsAt' | 'endsAt'>[]): 
   return { first, last };
 }
 
-export type SlotBlock = { slot: TimetableSlot; lane: number; lanes: number };
+export type SlotBlock<T extends TimeSpan = TimetableSlot> = { slot: T; lane: number; lanes: number };
 
 /**
  * Les créneaux d'un jour de la grille, côte à côte quand ils se chevauchent (un cours par couloir).
  * Un chevauchement n'est pas interdit : deux options au choix, par exemple.
  */
-export function layoutDay(slots: TimetableSlot[]): SlotBlock[] {
+export function layoutDay<T extends TimeSpan>(slots: T[]): SlotBlock<T>[] {
   const sorted = [...slots].sort(bySlotTime);
-  const blocks: SlotBlock[] = [];
-  let cluster: SlotBlock[] = [];
+  const blocks: SlotBlock<T>[] = [];
+  let cluster: SlotBlock<T>[] = [];
   let clusterEnd = '';
   const flush = () => {
     const lanes = Math.max(1, ...cluster.map((b) => b.lane + 1));

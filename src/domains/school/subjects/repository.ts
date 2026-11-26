@@ -34,6 +34,11 @@ export function updateSubjectStatement(id: string, subject: NormalizedSubject, n
   };
 }
 
+/** Seulement la couleur (celle d'un cours venant de Google, choisie dans la fenêtre du cours). */
+export function setSubjectColorStatement(id: string, color: string, now: string): Statement {
+  return { sql: 'UPDATE subjects SET color = ?, updated_at = ? WHERE id = ?', params: [color, now, id] };
+}
+
 export function deleteSubjectStatement(id: string): Statement {
   return { sql: 'DELETE FROM subjects WHERE id = ?', params: [id] };
 }

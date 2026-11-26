@@ -5,6 +5,8 @@ import { formatCompletedAt, formatShortDate, toISODate } from '@/core/dates';
 import { deadlineStatus } from '@/core/deadline';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { useToday } from '@/core/use-today';
+import { CoursePicker } from '@/domains/google/components/CoursePicker';
+import { useHasSchoolCalendar } from '@/domains/google/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { SubjectMenu } from '@/domains/school/subjects/components/SubjectMenu';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
@@ -60,6 +62,7 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
   const complete = useCompleteTask();
   const toggle = useToggleTask();
   const today = useToday();
+  const { data: hasSchoolCalendar = false } = useHasSchoolCalendar();
   const save = (patch: TaskPatch) => update.mutate({ id: task.id, patch });
   const checking = useCompletingTasks((state) => state.ids.includes(task.id)) && task.status !== 'done';
   const done = task.status === 'done' || checking;
@@ -150,11 +153,32 @@ function TaskSheetContent({ task, onClose, remove }: { task: TaskItem; onClose: 
             onChange={(status) => (status === 'done' ? complete(task, COMPLETE_IN_PANEL_DELAY_MS) : save({ status }))}
           />
         </PropertyRow>
-        {/* Un devoir a une matière à la place d'un projet (P14). */}
+        {/*
+          Un devoir a une matière à la place d'un projet (P14). Avec un agenda des cours, il est à rendre
+          pour un cours précis, qui donne sa matière et son jour.
+        */}
         {isHomework(task) ? (
-          <PropertyRow label="Matière">
-            <SubjectMenu value={task.subjectId} onChange={(subjectId) => save({ subjectId })} />
-          </PropertyRow>
+          <>
+            {(hasSchoolCalendar || task.courseEvent) && (
+              <PropertyRow label="Pour le cours">
+                <CoursePicker
+                  value={task.courseEvent ?? null}
+                  onChange={(course) =>
+                    save(
+                      course
+                        ? { courseEvent: course.itemId, subjectId: course.subjectId ?? task.subjectId, dueDate: course.startsAt.slice(0, 10) }
+                        : { courseEvent: null },
+                    )
+                  }
+                />
+              </PropertyRow>
+            )}
+            {!task.courseEvent && (
+              <PropertyRow label="Matière">
+                <SubjectMenu value={task.subjectId} onChange={(subjectId) => save({ subjectId })} />
+              </PropertyRow>
+            )}
+          </>
         ) : (
           <PropertyRow label="Projet">
             <ProjectMenu value={task.projectId} currentName={task.projectName} onChange={(projectId) => save({ projectId })} />

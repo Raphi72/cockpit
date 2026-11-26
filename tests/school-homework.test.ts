@@ -60,7 +60,8 @@ describe('devoirs : une tâche rattachée à une matière', () => {
 
   it('ne garde jamais un projet et une matière ensemble', async () => {
     expect(exclusiveAttachment({ subjectId: 'maths' })).toEqual({ subjectId: 'maths', projectId: null });
-    expect(exclusiveAttachment({ projectId: 'p1' })).toEqual({ projectId: 'p1', subjectId: null });
+    // Rejoindre un projet, c'est quitter la matière et le cours du devoir.
+    expect(exclusiveAttachment({ projectId: 'p1' })).toEqual({ projectId: 'p1', subjectId: null, courseEvent: null });
     expect(exclusiveAttachment({ title: 'x' })).toEqual({ title: 'x' });
   });
 

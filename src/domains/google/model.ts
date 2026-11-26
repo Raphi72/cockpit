@@ -46,9 +46,17 @@ export type LocalEvent = {
   endsAt: string | null;
   allDay: boolean;
   htmlLink: string | null;
-  /** Pour un agenda des cours : l'intitulé ramené au cours (voir courseName). */
+  /** Pour un agenda des cours : l'intitulé ramené au cours (voir parseCourseTitle), son type et ses profs. */
   course?: string | null;
+  courseKind?: string | null;
+  teacher?: string | null;
 };
+
+/**
+ * Réglage : l'utilisateur a choisi lui-même l'agenda des cours dans Paramètres. Dès lors, Cockpit ne le
+ * reconnaît plus tout seul (sans quoi un agenda décoché reviendrait à la relecture suivante).
+ */
+export const SCHOOL_MANUAL_SETTING = 'google.schoolManual';
 
 /** Relecture : au lancement puis toutes les 15 minutes, tant que Cockpit tourne et que Google est connecté. */
 export const GOOGLE_SYNC_MINUTES = 15;
@@ -153,13 +161,61 @@ const TYPE_SEGMENT =
  * « R1.01 - Initiation au développement ». Tous les cours d'une matière partagent ainsi un intitulé.
  */
 export function courseName(title: string): string {
+  return parseCourseTitle(title).name;
+}
+
+/** Un cours lu dans son intitulé : la matière, le type de séance (« Cours », « Examen », « TD »…) et les profs. */
+export type CourseParts = { name: string; kind: string | null; teacher: string | null };
+
+/** Un type ou un groupe collé à la fin du nom : « Physique TD2 », « Anglais Groupe B ». */
+function withoutTrailingType(name: string): string {
+  return name.replace(/\s+(?:cm|td|tp|tds|tps|ds)\s*\d*$/i, '').replace(/\s+(?:gr(?:oupe|\.)?|g)\s*[\w-]+$/i, '').trim();
+}
+
+/**
+ * L'intitulé d'un cours. Les emplois du temps d'école exportés en iCal l'écrivent souvent
+ * « Matière | Type | Prof {école} » : la matière est le premier morceau, le type le deuxième (vide parfois),
+ * les profs le reste (sans « {…} », sans doublon). Sinon, l'intitulé est ramené à sa matière par les
+ * séparateurs habituels (voir legacyCourseName).
+ */
+export function parseCourseTitle(title: string): CourseParts {
+  const clean = title.replace(/\s+/g, ' ').trim();
+  if (!clean.includes('|')) return { name: legacyCourseName(clean), kind: null, teacher: null };
+  const [first = '', kind = '', ...rest] = clean.split('|').map((part) => part.trim());
+  const teachers = [
+    ...new Set(
+      rest
+        .join(',')
+        .split(',')
+        .map((t) => t.replace(/\{[^}]*\}/g, '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean),
+    ),
+  ];
+  const name = withoutTrailingType(first) || first || clean;
+  return { name, kind: kind || null, teacher: teachers.length ? teachers.join(', ') : null };
+}
+
+/** Un intitulé à la forme d'un emploi du temps d'école : « Matière | Type | Prof ». */
+const TIMETABLE_TITLE = /^[^|]+\|[^|]*\|/;
+
+/**
+ * L'agenda d'un emploi du temps : au moins 5 événements à l'heure, et 60 % d'entre eux à la forme
+ * « Matière | Type | Prof ». Les journées entières (jours fériés…) ne comptent pas.
+ */
+export function looksLikeTimetable(events: Pick<LocalEvent, 'title' | 'allDay'>[]): boolean {
+  const timed = events.filter((event) => !event.allDay);
+  const matching = timed.filter((event) => TIMETABLE_TITLE.test(event.title.trim())).length;
+  return matching >= 5 && matching >= timed.length * 0.6;
+}
+
+/** L'ancienne règle, pour les intitulés sans « | » : sans le type de séance ni le groupe. */
+function legacyCourseName(title: string): string {
   let text = title.replace(/\s+/g, ' ').trim();
   text = text.replace(/\s*[([]\s*([^)\]]*?)\s*[)\]]/g, (whole, inner: string) => (TYPE_SEGMENT.test(inner.trim()) ? '' : whole)).trim();
   const parts = text.split(/\s+[-–—:|/]\s+/).map((p) => p.trim()).filter(Boolean);
   const kept = parts.filter((p) => !TYPE_SEGMENT.test(p));
-  let name = (kept.length ? kept : parts).join(' - ');
   // Type ou groupe collé à la fin : « Physique TD2 », « Anglais Groupe B ».
-  name = name.replace(/\s+(?:cm|td|tp|tds|tps|ds)\s*\d*$/i, '').replace(/\s+(?:gr(?:oupe|\.)?|g)\s*[\w-]+$/i, '').trim();
+  const name = withoutTrailingType((kept.length ? kept : parts).join(' - '));
   return name || title.trim();
 }
 

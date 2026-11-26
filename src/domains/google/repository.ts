@@ -1,3 +1,4 @@
+import { addDaysISO } from '@/core/dates';
 import type { Db, Statement } from '@/core/db';
 import { newId } from '@/core/ids';
 import { freeSubjectColor, nearestPaletteKey, planCalendars, sameName, type GoogleCalendar, type LocalEvent, type RemoteCalendar } from './model';
@@ -44,9 +45,22 @@ export function replaceEventsStatements(calendarId: string, events: LocalEvent[]
     { sql: 'DELETE FROM google_events WHERE calendar_id = ?', params: [calendarId] },
     ...events.map(
       (e): Statement => ({
-        sql: `INSERT OR REPLACE INTO google_events (calendar_id, id, title, location, starts_at, ends_at, all_day, html_link, course)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        params: [calendarId, e.id, e.title, e.location, e.startsAt, e.endsAt, e.allDay ? 1 : 0, e.htmlLink, e.course ?? null],
+        sql: `INSERT OR REPLACE INTO google_events
+                (calendar_id, id, title, location, starts_at, ends_at, all_day, html_link, course, course_kind, teacher)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [
+          calendarId,
+          e.id,
+          e.title,
+          e.location,
+          e.startsAt,
+          e.endsAt,
+          e.allDay ? 1 : 0,
+          e.htmlLink,
+          e.course ?? null,
+          e.courseKind ?? null,
+          e.teacher ?? null,
+        ],
       }),
     ),
     { sql: 'UPDATE google_calendars SET synced_at = ? WHERE id = ?', params: [now, calendarId] },
@@ -85,6 +99,11 @@ export function setCourseLinkStatement(course: string, subjectId: string | null,
           ON CONFLICT (course) DO UPDATE SET subject_id = excluded.subject_id, updated_at = excluded.updated_at`,
     params: [course, subjectId, now, now],
   };
+}
+
+/** Oublie ce qui a été dit d'un intitulé : à la relecture, il redevient un cours avec sa matière. */
+export function deleteCourseLinkStatement(course: string): Statement {
+  return { sql: 'DELETE FROM course_links WHERE course = ?', params: [course] };
 }
 
 /**
@@ -127,40 +146,90 @@ export type CourseOnDay = {
   itemId: string;
   title: string;
   course: string | null;
+  courseKind: string | null;
+  teacher: string | null;
   startsAt: string;
   endsAt: string | null;
   location: string | null;
   subjectId: string | null;
   subjectName: string | null;
   subjectColor: string | null;
+  /** Devoirs pas encore faits, à rendre pour ce cours. */
+  homeworkOpen: number;
 };
 
-/** Les cours d'un jour venant de l'agenda des cours (affiché), sauf les intitulés ignorés. */
-export function listCoursesOn(db: Db, day: string): Promise<CourseOnDay[]> {
+/** Les cours de l'agenda des cours (affiché) dont le jour est dans [from, to[, sauf les intitulés ignorés. */
+export function listCoursesBetween(db: Db, from: string, to: string): Promise<CourseOnDay[]> {
   return db.query<CourseOnDay>(
-    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, g.course, g.starts_at, g.ends_at, g.location,
-            cl.subject_id, s.name AS subject_name, s.color AS subject_color
+    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, g.course, g.course_kind, g.teacher,
+            g.starts_at, g.ends_at, g.location, cl.subject_id, s.name AS subject_name, s.color AS subject_color,
+            (SELECT COUNT(*) FROM tasks t
+             WHERE t.parent_id IS NULL AND t.status <> 'done'
+               AND (t.course_event = g.calendar_id || '|' || g.id
+                    OR (t.course_event IS NULL AND t.subject_id = cl.subject_id AND t.due_date = substr(g.starts_at, 1, 10)))
+            ) AS homework_open
      FROM google_events g
      JOIN google_calendars c ON c.id = g.calendar_id
      LEFT JOIN course_links cl ON cl.course = g.course
      LEFT JOIN subjects s ON s.id = cl.subject_id
-     WHERE c.is_school = 1 AND c.shown = 1 AND g.all_day = 0 AND substr(g.starts_at, 1, 10) = ?
+     WHERE c.is_school = 1 AND c.shown = 1 AND g.all_day = 0 AND g.course IS NOT NULL
+       AND substr(g.starts_at, 1, 10) >= ? AND substr(g.starts_at, 1, 10) < ?
        AND NOT (cl.course IS NOT NULL AND cl.subject_id IS NULL)
-     ORDER BY g.starts_at`,
-    [day],
+     ORDER BY g.starts_at, g.course`,
+    [from, to],
   );
 }
 
-/** Le jour du prochain cours d'une matière après `after` (pour rendre un devoir au cours suivant). */
-export async function nextCourseDay(db: Db, subjectId: string, after: string): Promise<string | null> {
-  const row = await db.queryOne<{ day: string | null }>(
-    `SELECT MIN(substr(g.starts_at, 1, 10)) AS day FROM google_events g
+/** Les cours d'un jour (voir listCoursesBetween). */
+export function listCoursesOn(db: Db, day: string): Promise<CourseOnDay[]> {
+  return listCoursesBetween(db, day, addDaysISO(day, 1));
+}
+
+/** Y a-t-il un agenda des cours affiché (sinon, l'emploi du temps et les devoirs se passent de Google) ? */
+export async function hasSchoolCalendar(db: Db): Promise<boolean> {
+  const row = await db.queryOne<{ n: number }>('SELECT COUNT(*) AS n FROM google_calendars WHERE is_school = 1 AND shown = 1');
+  return (row?.n ?? 0) > 0;
+}
+
+/** L'occurrence suivante d'un même cours (même intitulé ramené), après un moment 'YYYY-MM-DDTHH:MM'. */
+export function nextCourseOccurrence(db: Db, course: string, after: string): Promise<{ itemId: string; startsAt: string } | undefined> {
+  return db.queryOne(
+    `SELECT g.calendar_id || '|' || g.id AS item_id, g.starts_at FROM google_events g
      JOIN google_calendars c ON c.id = g.calendar_id
-     JOIN course_links cl ON cl.course = g.course
-     WHERE c.is_school = 1 AND cl.subject_id = ? AND substr(g.starts_at, 1, 10) > ?`,
-    [subjectId, after],
+     WHERE c.is_school = 1 AND g.all_day = 0 AND g.course = ? AND g.starts_at > ?
+     ORDER BY g.starts_at LIMIT 1`,
+    [course, after],
   );
-  return row?.day ?? null;
+}
+
+/** Un cours copié, pour l'afficher là où un devoir y est relié (fiche du devoir, choix du cours). */
+export function getCourse(db: Db, itemId: string): Promise<CourseOnDay | undefined> {
+  return db.queryOne<CourseOnDay>(
+    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, g.course, g.course_kind, g.teacher,
+            g.starts_at, g.ends_at, g.location, cl.subject_id, s.name AS subject_name, s.color AS subject_color,
+            0 AS homework_open
+     FROM google_events g
+     LEFT JOIN course_links cl ON cl.course = g.course
+     LEFT JOIN subjects s ON s.id = cl.subject_id
+     WHERE g.calendar_id || '|' || g.id = ?`,
+    [itemId],
+  );
+}
+
+/**
+ * Un devoir relié à un cours suit son jour : si le cours a changé de jour dans Google (et qu'il est encore
+ * dans la copie locale), le devoir pas encore fait est à rendre ce jour-là.
+ */
+export function followCourseDatesStatement(now: string): Statement {
+  return {
+    sql: `UPDATE tasks
+          SET due_date = (SELECT substr(g.starts_at, 1, 10) FROM google_events g WHERE g.calendar_id || '|' || g.id = tasks.course_event),
+              updated_at = ?
+          WHERE course_event IS NOT NULL AND status <> 'done'
+            AND EXISTS (SELECT 1 FROM google_events g
+                        WHERE g.calendar_id || '|' || g.id = tasks.course_event AND substr(g.starts_at, 1, 10) IS NOT tasks.due_date)`,
+    params: [now],
+  };
 }
 
 export type GoogleEventDetail = LocalEvent & {
@@ -179,7 +248,7 @@ export function getGoogleEvent(db: Db, calendarId: string, eventId: string): Pro
   type Row = Omit<GoogleEventDetail, 'allDay' | 'isSchool' | 'ignored'> & { allDay: number; isSchool: number; linked: number };
   return db
     .queryOne<Row>(
-      `SELECT g.id, g.title, g.location, g.starts_at, g.ends_at, g.all_day, g.html_link, g.course,
+      `SELECT g.id, g.title, g.location, g.starts_at, g.ends_at, g.all_day, g.html_link, g.course, g.course_kind, g.teacher,
               c.name AS calendar_name, COALESCE(s.color, c.color) AS color, c.is_school,
               cl.subject_id, s.name AS subject_name, cl.course IS NOT NULL AS linked
        FROM google_events g
@@ -200,11 +269,22 @@ export function getGoogleEvent(db: Db, calendarId: string, eventId: string): Pro
     );
 }
 
-/** Les devoirs d'une matière à rendre un jour donné (ce qui est attendu pour ce cours). */
-export function homeworkDueOn(db: Db, subjectId: string, day: string): Promise<{ id: string; title: string; status: string }[]> {
+/**
+ * Les devoirs à rendre pour un cours : ceux qui y sont reliés, et les anciens (sans cours précis) de la
+ * même matière à rendre ce jour-là.
+ */
+export function homeworkForCourse(
+  db: Db,
+  itemId: string,
+  subjectId: string | null,
+  day: string,
+): Promise<{ id: string; title: string; status: string }[]> {
   return db.query(
-    `SELECT id, title, status FROM tasks WHERE subject_id = ? AND due_date = ? AND parent_id IS NULL ORDER BY status = 'done', sort_order`,
-    [subjectId, day],
+    `SELECT id, title, status FROM tasks
+     WHERE parent_id IS NULL
+       AND (course_event = ? OR (course_event IS NULL AND subject_id = ? AND due_date = ?))
+     ORDER BY status = 'done', sort_order`,
+    [itemId, subjectId, day],
   );
 }
 

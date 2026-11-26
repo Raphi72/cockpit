@@ -115,6 +115,14 @@ export const queryKeys = {
     all: ['agenda'] as const,
     range: (from: string, to: string) => ['agenda', 'range', from, to] as const,
     event: (id: string) => ['agenda', 'event', id] as const,
+    /**
+     * Les cours de Google Agenda avec leurs devoirs : rangés sous l'agenda, que relisent à la fois la
+     * relecture de Google et toute écriture d'une tâche.
+     */
+    courses: (from: string, to: string) => ['agenda', 'courses', from, to] as const,
+    course: (itemId: string) => ['agenda', 'course', itemId] as const,
+    courseHomework: (itemId: string) => ['agenda', 'course-homework', itemId] as const,
+    hasSchoolCalendar: ['agenda', 'has-school-calendar'] as const,
   },
   /**
    * Recherche globale (palette Ctrl+K) : elle lit tous les domaines, donc elle n'est jamais

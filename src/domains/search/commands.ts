@@ -1,8 +1,6 @@
 import {
   ArrowRightLeft,
   Award,
-  BookOpen,
-  CalendarClock,
   CalendarPlus,
   CircleCheck,
   Dumbbell,
@@ -79,8 +77,6 @@ const CREATE: CreateCommand[] = [
   { kind: 'homework', label: 'Nouveau devoir', icon: NotebookPen, keywords: 'exercice rendre cours école', suggestedIn: 'school' },
   { kind: 'exam', label: 'Nouvel examen', icon: FileCheck, keywords: 'contrôle partiel oral interro', suggestedIn: 'school' },
   { kind: 'grade', label: 'Nouvelle note', icon: Award, keywords: 'résultat moyenne bulletin', suggestedIn: 'school' },
-  { kind: 'class', label: 'Nouveau cours', icon: CalendarClock, keywords: 'emploi du temps créneau semaine' },
-  { kind: 'subject', label: 'Nouvelle matière', icon: BookOpen, keywords: 'cours école discipline', suggestedIn: 'school' },
 ];
 
 function createCommands(mode: AppMode): PaletteCommand[] {

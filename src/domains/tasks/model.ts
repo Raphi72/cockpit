@@ -52,6 +52,11 @@ export type TaskItem = {
   subjectName: string | null;
   subjectColor: AppColor | null;
   /**
+   * Devoir relié à un cours précis de Google Agenda ('agenda|événement') : il est à rendre pour ce cours,
+   * dont il suit le jour (`dueDate`, gardé si le cours sort de la copie locale).
+   */
+  courseEvent?: string | null;
+  /**
    * Bloc de la journée où la tâche est placée (P17) : elle prend son jour (`blockDate`), qui n'est pas
    * recopié. Déplacer le bloc déplace donc la tâche.
    */
@@ -64,6 +69,7 @@ export type TaskPatch = Partial<{
   notes: string | null;
   projectId: string | null;
   subjectId: string | null;
+  courseEvent: string | null;
   parentId: string | null;
   status: TaskStatus;
   priority: Priority;
@@ -102,7 +108,7 @@ export function taskContext(
  */
 export function exclusiveAttachment(patch: TaskPatch): TaskPatch {
   if (patch.subjectId) return { ...patch, projectId: null };
-  if (patch.projectId) return { ...patch, subjectId: null };
+  if (patch.projectId) return { ...patch, subjectId: null, courseEvent: null };
   return patch;
 }
 
@@ -494,6 +500,8 @@ export type NewTaskInput = {
   projectId: string | null;
   /** Devoir : sa matière (jamais avec un projet). */
   subjectId?: string | null;
+  /** Devoir relié à un cours précis de Google Agenda ('agenda|événement'). */
+  courseEvent?: string | null;
   /** Sous-tâche : elle rejoint le projet (ou la matière) de sa parente. */
   parentId?: string | null;
   scheduledDate: string | null;

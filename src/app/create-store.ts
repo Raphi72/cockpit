@@ -23,6 +23,8 @@ export type CreateDefaults = {
   scheduledDate?: string | null;
   /** Devoir : le jour où il est à rendre. */
   dueDate?: string | null;
+  /** Devoir à rendre pour un cours précis de Google Agenda ('agenda|événement'). */
+  courseEvent?: string | null;
   /** Note saisie depuis un examen passé : l'examen, et son jour comme date de la note. */
   examId?: string | null;
   gradeDate?: string;

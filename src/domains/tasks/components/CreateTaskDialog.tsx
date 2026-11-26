@@ -1,7 +1,9 @@
 import { addDays, parseISO } from 'date-fns';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
-import { addDaysISO, toISODate, todayISO } from '@/core/dates';
+import { addDaysISO, formatDateField, toISODate, todayISO } from '@/core/dates';
+import { CoursePicker } from '@/domains/google/components/CoursePicker';
+import { useHasSchoolCalendar } from '@/domains/google/hooks';
 import { useInboxToTask } from '@/domains/inbox/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
@@ -56,7 +58,9 @@ function DayChoice(props: {
 
 /**
  * Nouvelle tâche, ou nouveau devoir (`homework`, P14) : un devoir a une matière à la place du projet,
- * et sa date principale est le jour où il est à rendre (la deadline).
+ * et sa date principale est le jour où il est à rendre (la deadline). Avec un agenda des cours, il est à
+ * rendre pour un cours précis : le cours donne sa matière et son jour. Sans cours précis (ou sans
+ * Google), on choisit la matière et la date comme avant.
  */
 function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaults; homework: boolean; onDone: () => void }) {
   const createTask = useCreateTask();
@@ -68,6 +72,11 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
   const [title, setTitle] = useState(defaults.inboxItem?.text ?? '');
   const [projectId, setProjectId] = useState<string | null>(defaults.projectId ?? null);
   const [subjectId, setSubjectId] = useState<string | null>(defaults.subjectId ?? null);
+  const [courseEvent, setCourseEvent] = useState<string | null>(homework ? (defaults.courseEvent ?? null) : null);
+  const { data: hasSchoolCalendar = false } = useHasSchoolCalendar();
+  // « Sans cours précis » : on repasse à une matière et une date, comme sans Google.
+  const [withoutCourse, setWithoutCourse] = useState(false);
+  const byCourse = homework && !withoutCourse && (hasSchoolCalendar || courseEvent !== null);
   const [scheduledDate, setScheduledDate] = useState<string | null>(homework ? null : (defaults.scheduledDate ?? null));
   const [dueDate, setDueDate] = useState<string | null>(defaults.dueDate ?? null);
   const [moreOptions, setMoreOptions] = useState(false);
@@ -82,6 +91,7 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
     title,
     projectId: homework ? null : projectId,
     subjectId: homework ? subjectId : null,
+    courseEvent: homework ? courseEvent : null,
     scheduledDate,
     dueDate,
     priority,
@@ -89,7 +99,7 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
     notes: notes || null,
   };
   const errors: Record<string, string | undefined> = { ...validateNewTask(input) };
-  if (homework && !subjectId) errors.subjectId = 'Choisis la matière du devoir.';
+  if (homework && !subjectId) errors.subjectId = byCourse && !courseEvent ? 'Choisis le cours du devoir.' : 'Choisis la matière du devoir.';
   const hasErrors = Object.values(errors).some(Boolean);
 
   const submit = (event?: FormEvent) => {
@@ -134,22 +144,59 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
       <div className="mt-5 grid grid-cols-[92px_minmax(0,1fr)] gap-x-4 gap-y-3">
         {homework ? (
           <>
-            <Row label="Matière">
-              <SubjectMenu variant="field" value={subjectId} onChange={setSubjectId} />
-              {error('subjectId')}
-            </Row>
-            <Row label="À rendre">
-              <DayChoice
-                label="À rendre"
-                value={dueDate}
-                onChange={setDueDate}
-                options={[
-                  { value: tomorrow, label: 'Demain' },
-                  { value: addDaysISO(today, 7), label: 'Dans une semaine' },
-                ]}
-              />
-              {error('dueDate')}
-            </Row>
+            {byCourse ? (
+              <>
+                <Row label="Pour le cours">
+                  <CoursePicker
+                    variant="field"
+                    value={courseEvent}
+                    onChange={(course) => {
+                      setCourseEvent(course?.itemId ?? null);
+                      if (!course) {
+                        setWithoutCourse(true);
+                        return;
+                      }
+                      setSubjectId(course.subjectId);
+                      setDueDate(course.startsAt.slice(0, 10));
+                    }}
+                  />
+                  {error('subjectId')}
+                </Row>
+                {courseEvent && dueDate && (
+                  <Row label="À rendre">
+                    <p className="pt-2 first-letter:uppercase">{formatDateField(dueDate, today)}, le jour du cours</p>
+                  </Row>
+                )}
+              </>
+            ) : (
+              <>
+                <Row label="Matière">
+                  <SubjectMenu variant="field" value={subjectId} onChange={setSubjectId} />
+                  {error('subjectId')}
+                  {withoutCourse && hasSchoolCalendar && (
+                    <button
+                      type="button"
+                      onClick={() => setWithoutCourse(false)}
+                      className="mt-1.5 text-meta text-ink-3 transition-colors hover:text-ink"
+                    >
+                      Relier plutôt à un cours
+                    </button>
+                  )}
+                </Row>
+                <Row label="À rendre">
+                  <DayChoice
+                    label="À rendre"
+                    value={dueDate}
+                    onChange={setDueDate}
+                    options={[
+                      { value: tomorrow, label: 'Demain' },
+                      { value: addDaysISO(today, 7), label: 'Dans une semaine' },
+                    ]}
+                  />
+                  {error('dueDate')}
+                </Row>
+              </>
+            )}
             <Row label="À faire le">
               <DayChoice
                 label="À faire le"

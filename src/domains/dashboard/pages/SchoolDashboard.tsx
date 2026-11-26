@@ -72,9 +72,10 @@ function googleLine(course: CourseOnDay): CourseLine {
     start,
     end: course.endsAt?.slice(11, 16) ?? start,
     subjectId: course.subjectId,
-    subjectName: course.subjectName ?? course.title,
+    subjectName: course.subjectName ?? course.course ?? course.title,
     subjectColor: course.subjectColor ?? 'slate',
-    label: course.subjectName && course.title !== course.subjectName ? course.title : null,
+    // Le type de séance quand ce n'est pas un simple cours (« Examen », « TD ») ; jamais l'intitulé brut.
+    label: course.courseKind && course.courseKind.toLowerCase() !== 'cours' ? course.courseKind : null,
     room: course.location,
     googleItemId: course.itemId,
   };

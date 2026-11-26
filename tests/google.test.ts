@@ -6,7 +6,10 @@ import { googleWhen } from '@/domains/google/components/GoogleEventDialog';
 import {
   courseName,
   googleItemId,
+  looksLikeTimetable,
   nearestPaletteKey,
+  parseCourseTitle,
+  SCHOOL_MANUAL_SETTING,
   planCalendars,
   splitGoogleItemId,
   syncWindow,
@@ -17,10 +20,11 @@ import {
 import {
   clearGoogleStatement,
   getGoogleEvent,
-  homeworkDueOn,
+  homeworkForCourse,
+  listCoursesBetween,
   listCoursesOn,
   listGoogleCalendars,
-  nextCourseDay,
+  nextCourseOccurrence,
   setCalendarColorStatement,
   setCalendarSchoolStatement,
   setCalendarShownStatement,
@@ -28,6 +32,8 @@ import {
 } from '@/domains/google/repository';
 import { syncGoogle, type GoogleSource } from '@/domains/google/service';
 import { listTimedEventsBetween } from '@/domains/notifications/repository';
+import { setSettingStatement } from '@/domains/settings/repository';
+import { insertTaskStatement } from '@/domains/tasks/repository';
 import { createTestDb } from './support/test-db';
 
 const NOW = '2026-11-26T10:00:00.000Z';
@@ -181,6 +187,36 @@ describe('Google Agenda : l’agenda des cours', () => {
     expect(courseName('TD')).toBe('TD');
   });
 
+  it('lit les intitulés « Matière | Type | Prof » des emplois du temps d’école', () => {
+    expect(parseCourseTitle('Machine Learning |  | DUPONT Marie ')).toEqual({ name: 'Machine Learning', kind: null, teacher: 'DUPONT Marie' });
+    expect(parseCourseTitle('Réseaux informatiques | Cours | MARTIN Paul {ecole}')).toEqual({
+      name: 'Réseaux informatiques',
+      kind: 'Cours',
+      teacher: 'MARTIN Paul',
+    });
+    // Un « : » ou un « - » fait partie du nom ; les profs en double ne comptent qu'une fois.
+    expect(parseCourseTitle('Gestion de projets : déployer un projet IA | Cours | DURAND Léa, DURAND Léa, ROUX Jean')).toEqual({
+      name: 'Gestion de projets : déployer un projet IA',
+      kind: 'Cours',
+      teacher: 'DURAND Léa, ROUX Jean',
+    });
+    expect(parseCourseTitle('Atelier - Sécurité (obligatoire) |  |  ')).toEqual({ name: 'Atelier - Sécurité (obligatoire)', kind: null, teacher: null });
+    expect(parseCourseTitle('Physique TD2 | TD | LEROY Anne')).toMatchObject({ name: 'Physique', kind: 'TD' });
+    expect(courseName('Comptabilité | Examen | PETIT Luc')).toBe('Comptabilité');
+    expect(parseCourseTitle('Maths - TD')).toEqual({ name: 'Maths', kind: null, teacher: null });
+  });
+
+  it('reconnaît un agenda d’emploi du temps', () => {
+    const timed = (title: string) => ({ title, allDay: false });
+    const piped = ['A | Cours | X', 'B |  | Y', 'C | TD | Z', 'A | Cours | X', 'D | Examen | W'].map(timed);
+    expect(looksLikeTimetable(piped)).toBe(true);
+    expect(looksLikeTimetable(piped.slice(0, 4))).toBe(false);
+    // Moins de 60 % : un agenda personnel qui aurait quelques « | ».
+    expect(looksLikeTimetable([...piped, ...['Dentiste', 'Sport', 'Courses', 'Ciné', 'Repas'].map(timed)])).toBe(false);
+    // Les journées entières (jours fériés…) ne comptent pas.
+    expect(looksLikeTimetable([...piped, { title: 'Jour férié |  | ', allDay: true }, { title: 'Pont', allDay: true }])).toBe(true);
+  });
+
   it('crée les matières toutes seules, relie les cours, et ouvre les devoirs au cours suivant', async () => {
     const { db } = createTestDb();
     await db.batch([sql`INSERT INTO subjects (id, name, color, sort_order, created_at, updated_at) VALUES ('fr', 'Francais', 'red', 1, ${NOW}, ${NOW})`]);
@@ -214,11 +250,13 @@ describe('Google Agenda : l’agenda des cours', () => {
       ['Maths - CM', '2026-11-26T08:00', 'Maths', 'Amphi A'],
       ['Français (TD)', '2026-11-26T14:00', 'Francais', null],
     ]);
-    expect(await nextCourseDay(db, maths.id, TODAY)).toBe('2026-11-27');
-    expect(await nextCourseDay(db, maths.id, '2026-11-27')).toBeNull();
+    expect(await nextCourseOccurrence(db, 'Maths', '2026-11-26T08:00')).toEqual({ itemId: `${school.id}|c2`, startsAt: '2026-11-27T10:00' });
+    expect(await nextCourseOccurrence(db, 'Maths', '2026-11-27T10:00')).toBeUndefined();
 
     const agenda = (await listAgenda(db, TODAY, '2026-11-28')).filter((i) => i.source === 'google');
-    const cm = agenda.find((i) => i.title === 'Maths - CM')!;
+    // Un cours s'affiche sous son nom ramené, pas sous l'intitulé brut.
+    const cm = agenda.find((i) => i.id === `${school.id}|c1`)!;
+    expect(cm.title).toBe('Maths');
     expect(cm).toMatchObject({ kind: 'class', subjectId: maths.id, color: maths.color });
     expect(isShownInMonth(cm)).toBe(false);
     expect(agenda.find((i) => i.title === 'Pause déjeuner')).toMatchObject({ kind: 'google', subjectId: null });
@@ -231,8 +269,83 @@ describe('Google Agenda : l’agenda des cours', () => {
       sql`INSERT INTO tasks (id, title, status, priority, sort_order, subject_id, due_date, created_at, updated_at)
           VALUES ('h1', 'Exercices p. 42', 'todo', 1, 1, ${maths.id}, '2026-11-27', ${NOW}, ${NOW})`,
     ]);
-    expect(await homeworkDueOn(db, maths.id, '2026-11-27')).toEqual([{ id: 'h1', title: 'Exercices p. 42', status: 'todo' }]);
+    // Un ancien devoir (sans cours précis) de la matière, à rendre ce jour-là, est attendu pour ce cours.
+    expect(await homeworkForCourse(db, `${school.id}|c2`, maths.id, '2026-11-27')).toEqual([{ id: 'h1', title: 'Exercices p. 42', status: 'todo' }]);
     // Les cours ne déclenchent pas le rappel « Rendez-vous ».
     expect(await listTimedEventsBetween(db, '2026-11-26T07:50', '2026-11-26T08:05')).toEqual([]);
+  });
+});
+
+describe('Google Agenda : emploi du temps reconnu seul et devoirs reliés à un cours', () => {
+  const perso: RemoteCalendar = { id: 'moi@gmail.com', name: 'Perso', color: '#16a765', primary: true, selected: true };
+  const school: RemoteCalendar = { id: 'edt@import.calendar.google.com', name: 'Emploi du temps', color: '#4986e7', primary: false, selected: true };
+  const course = (id: string, title: string, day: string, hour = '09') =>
+    remoteEvent({ id, title, start: `${day}T${hour}:00:00+01:00`, end: `${day}T${hour === '09' ? '11' : '16'}:00:00+01:00` });
+  const timetable = (moved = false): RemoteEvent[] => [
+    course('m1', 'Machine Learning |  | DUPONT Marie ', '2026-11-26'),
+    course('m2', 'Machine Learning |  | DUPONT Marie ', moved ? '2026-12-04' : '2026-12-03'),
+    course('r1', 'Réseaux | Cours | MARTIN Paul {ecole}', '2026-11-27'),
+    course('r2', 'Réseaux | Cours | MARTIN Paul {ecole}', '2026-12-04'),
+    course('x1', 'Comptabilité | Examen | PETIT Luc', '2026-11-30', '14'),
+    remoteEvent({ id: 'f1', title: 'Jour Férié |  |  ', allDay: true, start: '2026-12-25', end: '2026-12-26' }),
+  ];
+  const source = (moved = false): GoogleSource => ({
+    calendars: async () => [perso, school],
+    events: async (calendarId) => (calendarId === school.id ? timetable(moved) : [remoteEvent({ id: 'p1', title: 'Dentiste' })]),
+  });
+
+  it('reconnaît l’agenda des cours et crée les matières sous un nom propre', async () => {
+    const { db } = createTestDb();
+    await syncGoogle(db, source(), TODAY, 'Europe/Paris', NOW);
+    expect((await listGoogleCalendars(db)).map((c) => [c.name, c.isSchool])).toEqual([
+      ['Perso', false],
+      ['Emploi du temps', true],
+    ]);
+    expect((await db.query<{ name: string }>('SELECT name FROM subjects ORDER BY name')).map((s) => s.name)).toEqual([
+      'Comptabilité',
+      'Machine Learning',
+      'Réseaux',
+    ]);
+    const exam = (await listCoursesBetween(db, '2026-11-30', '2026-12-01'))[0]!;
+    expect(exam).toMatchObject({ course: 'Comptabilité', courseKind: 'Examen', teacher: 'PETIT Luc', homeworkOpen: 0 });
+    // Le jour férié (journée entière) n'est pas un cours.
+    expect(await db.query("SELECT course FROM google_events WHERE id = 'f1'")).toEqual([{ course: null }]);
+    const titles = (await listAgenda(db, '2026-11-26', '2026-12-01')).filter((i) => i.kind === 'class').map((i) => i.title);
+    expect(titles).toEqual(['Machine Learning', 'Réseaux', 'Comptabilité · Examen']);
+  });
+
+  it('ne reconnaît plus seul l’agenda des cours une fois choisi à la main', async () => {
+    const { db } = createTestDb();
+    await db.batch([setSettingStatement(SCHOOL_MANUAL_SETTING, true)]);
+    await syncGoogle(db, source(), TODAY, 'Europe/Paris', NOW);
+    expect((await listGoogleCalendars(db)).some((c) => c.isSchool)).toBe(false);
+    expect(await db.query('SELECT id FROM subjects')).toEqual([]);
+  });
+
+  it('relie un devoir à un cours précis, qui le suit s’il change de jour', async () => {
+    const { db } = createTestDb();
+    await syncGoogle(db, source(), TODAY, 'Europe/Paris', NOW);
+    const [ml] = await listCoursesBetween(db, '2026-12-03', '2026-12-04');
+    expect(ml).toMatchObject({ itemId: `${school.id}|m2`, course: 'Machine Learning' });
+    const base = { projectId: null, scheduledDate: null, priority: 1 as const, estimateMin: null, notes: null };
+    await db.batch([
+      insertTaskStatement('h1', { ...base, title: 'TP noté', subjectId: ml!.subjectId, courseEvent: ml!.itemId, dueDate: '2026-12-03' }, NOW),
+      insertTaskStatement('h2', { ...base, title: 'Relire le cours', subjectId: ml!.subjectId, courseEvent: ml!.itemId, dueDate: '2026-12-03' }, NOW),
+      sql`UPDATE tasks SET status = 'done', completed_at = ${NOW} WHERE id = 'h2'`,
+    ]);
+    expect((await listCoursesBetween(db, '2026-12-03', '2026-12-04'))[0]?.homeworkOpen).toBe(1);
+    expect(await homeworkForCourse(db, ml!.itemId, ml!.subjectId, '2026-12-03')).toEqual([
+      { id: 'h1', title: 'TP noté', status: 'todo' },
+      { id: 'h2', title: 'Relire le cours', status: 'done' },
+    ]);
+    // L'occurrence d'avant propose ce cours-ci comme le suivant.
+    expect(await nextCourseOccurrence(db, 'Machine Learning', '2026-11-26T09:00')).toMatchObject({ itemId: ml!.itemId });
+
+    // Le cours passe au 4 décembre dans Google : le devoir à faire suit, pas celui déjà fait.
+    await syncGoogle(db, source(true), TODAY, 'Europe/Paris', NOW);
+    expect(await db.query('SELECT id, due_date, course_event FROM tasks ORDER BY id')).toEqual([
+      { id: 'h1', dueDate: '2026-12-04', courseEvent: ml!.itemId },
+      { id: 'h2', dueDate: '2026-12-03', courseEvent: ml!.itemId },
+    ]);
   });
 });
