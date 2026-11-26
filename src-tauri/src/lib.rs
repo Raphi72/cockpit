@@ -1,10 +1,11 @@
 //! Coquille native de Cockpit, volontairement fine : toute la logique métier est côté TypeScript.
 //! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite, exports,
-//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, capture rapide et mini-fenêtre « En ce moment ».
+//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, capture rapide, mini-fenêtre « En ce moment » et connexion Google.
 
 mod backup;
 mod capture;
 mod data;
+mod google;
 mod notion;
 mod db;
 mod notify;
@@ -46,6 +47,7 @@ pub fn run() {
         // Lancé par Windows, Cockpit reçoit `--autostart` et démarre caché.
         .plugin(tauri_plugin_autostart::Builder::new().app_name("Cockpit").arg(presence::AUTOSTART_ARG).build())
         .manage(Presence::from_args())
+        .manage(google::GoogleSession::default())
         .on_window_event(|window, event| {
             presence::on_window_event(window, event);
             capture::on_window_event(window, event);
@@ -106,6 +108,14 @@ pub fn run() {
             capture::capture_shortcut_set,
             now::now_toggle,
             now::now_changed,
+            google::google_status,
+            google::google_set_client,
+            google::google_connect,
+            google::google_disconnect,
+            google::google_forget,
+            google::google_calendars,
+            google::google_events,
+            google::google_open_link,
         ])
         .run(tauri::generate_context!())
         .expect("impossible de lancer Cockpit");

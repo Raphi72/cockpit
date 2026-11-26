@@ -54,7 +54,7 @@ function MorningContent({ onClose }: { onClose: () => void }) {
 
   const groups = selectToday(tasksOfMode(open, mode), today);
   const classes = mode === 'school' ? classesOn(slots, periods, today) : [];
-  const events = agenda.filter((item) => item.source === 'event');
+  const events = agenda.filter((item) => item.source === 'event' || item.source === 'google');
   const sentence = morningSentence({ blocks: blocks.length, classes: classes.length, events: events.length, tasks: groups.overdue.length + groups.today.length });
   const firstBlock = [...blocks].sort((a, b) => a.startsAt.localeCompare(b.startsAt)).find((b) => toMinutes(b.endsAt) > minutes);
   const homework = open

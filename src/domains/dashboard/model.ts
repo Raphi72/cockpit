@@ -251,7 +251,7 @@ const EVENT_WORDS: Partial<Record<AgendaKind, string>> = {
 /** Prochain événement à heure fixe de la journée, pas encore commencé (`minutes` : l'heure actuelle). */
 export function nextTimedEvent(items: AgendaItem[], today: string, minutes: number): AgendaItem | null {
   const upcoming = items
-    .filter((item) => item.source === 'event' && !item.allDay && item.start.slice(0, 10) === today)
+    .filter((item) => (item.source === 'event' || item.source === 'google') && !item.allDay && item.start.slice(0, 10) === today)
     .filter((item) => timeToMinutes(item.start.slice(11, 16)) >= minutes)
     .sort((a, b) => a.start.localeCompare(b.start));
   return upcoming[0] ?? null;

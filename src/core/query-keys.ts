@@ -80,6 +80,13 @@ export const queryKeys = {
     workouts: ['habits', 'workouts'] as const,
     review: (monday: string) => ['habits', 'review', monday] as const,
   },
+  /** Google Agenda (étape 8) : l'état de la connexion, les agendas copiés, un événement. */
+  google: {
+    all: ['google'] as const,
+    status: ['google', 'status'] as const,
+    calendars: ['google', 'calendars'] as const,
+    event: (id: string) => ['google', 'event', id] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

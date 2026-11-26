@@ -19,7 +19,14 @@ export async function listTimedEventsBetween(db: Db, from: string, to: string): 
   const occurrences = recurring
     .filter((occurrence) => occurrence.startsAt >= from && occurrence.startsAt <= to)
     .map(({ event, startsAt }) => ({ id: event.id, title: event.title, startsAt, location: event.location }));
-  return [...single, ...occurrences].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  // Les rendez-vous de Google Agenda (agendas affichés) sont rappelés comme les autres.
+  const google = await db.query<TimedEvent>(
+    `SELECT g.calendar_id || '|' || g.id AS id, g.title, g.starts_at, g.location FROM google_events g
+     JOIN google_calendars c ON c.id = g.calendar_id
+     WHERE c.shown = 1 AND g.all_day = 0 AND g.starts_at >= ? AND g.starts_at <= ?`,
+    [from, to],
+  );
+  return [...single, ...occurrences, ...google].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
 
 /**

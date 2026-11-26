@@ -265,9 +265,9 @@ export function seriesChangeFromOccurrence(
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
 
 /** D'où vient une date : elle n'est stockée qu'à cet endroit. */
-export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'exam' | 'class' | 'block';
+export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'exam' | 'class' | 'block' | 'google';
 
-export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'exam', 'class', 'block'];
+export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'exam', 'class', 'block', 'google'];
 
 /** Filtres du calendrier. */
 export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
@@ -278,6 +278,7 @@ export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
   exam: 'Examens',
   class: 'Cours',
   block: 'Blocs',
+  google: 'Google Agenda',
 };
 
 export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
@@ -288,6 +289,7 @@ export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
   exam: 'contrôles, partiels, oraux',
   class: 'emploi du temps (vues semaine et jour)',
   block: 'organisateur de journée (vues semaine et jour)',
+  google: 'tes agendas Google, en lecture seule',
 };
 
 /** Option du filtre « Tâches » : les tâches ordinaires, sans deadline ni priorité, à leur début. */
@@ -303,7 +305,8 @@ export type AgendaKind =
   | 'payment_due'
   | 'exam'
   | 'class'
-  | 'block';
+  | 'block'
+  | 'google';
 
 export type AgendaItem = {
   /** `${source}:${id}:${kind}` */
@@ -340,6 +343,7 @@ const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
   exam: 'Examen',
   class: 'Cours',
   block: 'Bloc',
+  google: 'Google Agenda',
 };
 
 export function agendaKindLabel(kind: AgendaKind): string {
@@ -535,7 +539,8 @@ export function layoutRow(items: AgendaItem[], days: string[]): RowLayout {
  * Ce qui se glisse dans le calendrier. Un cours non : il vient de la semaine type (page Emploi du temps).
  */
 export function isMovable(item: Pick<AgendaItem, 'source'>): boolean {
-  return item.source !== 'class';
+  // Un cours vient de la semaine type ; un événement Google se change dans Google Agenda.
+  return item.source !== 'class' && item.source !== 'google';
 }
 
 /** La vue mois ne montre ni les cours ni les blocs de la journée : une routine qui cacherait le reste. */

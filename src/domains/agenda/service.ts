@@ -42,6 +42,8 @@ export function buildShiftBatch(item: AgendaItem, days: number, now: string): Mo
       case 'class':
         // Un cours vient de la semaine type : il ne se glisse pas (isMovable).
         throw new Error('Un cours se change dans l’emploi du temps.');
+      case 'google':
+        throw new Error('Un événement Google se change dans Google Agenda.');
     }
   };
   return { statements: [shift(days)], undo: [shift(-days)] };

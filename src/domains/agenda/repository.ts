@@ -144,8 +144,16 @@ export async function listAgenda(
             b.date || 'T' || CASE WHEN b.ends_at = '24:00' THEN '23:59' ELSE b.ends_at END,
             0, NULL, b.color, NULL, NULL, NULL
      FROM day_blocks b
-     WHERE b.date >= ? AND b.date < ?`,
-    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to, from, to, from, to],
+     WHERE b.date >= ? AND b.date < ?
+
+     UNION ALL
+     -- Un événement Google Agenda (copie locale, lecture seule) d'un agenda affiché.
+     SELECT 'google', g.calendar_id || '|' || g.id, 'google', g.title, g.location, g.starts_at, g.ends_at, g.all_day,
+            NULL, c.color, NULL, NULL, NULL
+     FROM google_events g
+     JOIN google_calendars c ON c.id = g.calendar_id
+     WHERE c.shown = 1 AND g.starts_at < ? AND COALESCE(g.ends_at, g.starts_at) >= ?`,
+    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to, from, to, from, to, to, from],
   );
   const recurring = rows.filter((row) => row.recurrence !== null);
   const [exceptions, classes] = await Promise.all([

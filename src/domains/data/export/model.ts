@@ -29,7 +29,7 @@ export function exportMimeType(kind: ExportKind): string {
 /**
  * Tables exportées, dans un ordre où chaque ligne ne renvoie qu'à des tables déjà lues (types avant
  * projets, projets avant tâches…). Ni les réglages, ni le journal des notifications, ni l'index de
- * recherche : ce ne sont pas des données saisies.
+ * recherche, ni la copie de Google Agenda : ce ne sont pas des données saisies.
  */
 export const EXPORT_TABLES = [
   { table: 'project_types', key: 'projectTypes' },

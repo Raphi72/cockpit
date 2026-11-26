@@ -19,7 +19,7 @@ import {
 export function busyItemsOn(agenda: AgendaItem[], day: string): BusyItem[] {
   return agenda
     .filter((item) => !item.allDay && item.start.slice(0, 10) === day)
-    .filter((item) => item.source === 'event' || item.source === 'class' || item.source === 'exam')
+    .filter((item) => item.source === 'event' || item.source === 'class' || item.source === 'exam' || item.source === 'google')
     .map((item) => {
       const start = toMinutes(item.start.slice(11, 16));
       const end = item.end && item.end.slice(0, 10) === day ? toMinutes(item.end.slice(11, 16)) : start + 60;
