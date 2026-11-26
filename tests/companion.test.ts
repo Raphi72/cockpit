@@ -1,14 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import {
+  allFocusDone,
+  clockRemaining,
   closureStep,
+  extendClock,
   formatCountdown,
+  formatFocusDuration,
+  isClockPaused,
   isStreakMilestone,
   morningSentence,
   msUntil,
   newlyAchieved,
-  nextPhase,
+  pauseClock,
+  pomodoroPhaseAt,
+  pomodoroTotalMs,
+  resumeClock,
   shouldShowMorning,
-  startPomodoro,
+  startClock,
   type ClosureState,
 } from '@/domains/companion/model';
 import { eveningReviewNotice, examNotices, homeworkNotices } from '@/domains/notifications/model';
@@ -34,12 +42,41 @@ describe('compagnon : écran du matin', () => {
 });
 
 describe('compagnon : mode focus', () => {
-  it('enchaîne travail et pause', () => {
-    const start = startPomodoro(0, 25);
-    expect(start).toEqual({ phase: 'work', endsAt: 25 * 60_000, round: 1 });
-    const pause = nextPhase(start, start.endsAt, 25, 5);
-    expect(pause).toEqual({ phase: 'break', endsAt: 30 * 60_000, round: 1 });
-    expect(nextPhase(pause, pause.endsAt, 25, 5)).toEqual({ phase: 'work', endsAt: 55 * 60_000, round: 2 });
+  const MIN = 60_000;
+
+  it('le minuteur se met en pause, reprend et se prolonge', () => {
+    let clock = startClock(45 * MIN, 0);
+    expect(clockRemaining(clock, 10 * MIN)).toBe(35 * MIN);
+    clock = pauseClock(clock, 10 * MIN);
+    expect(isClockPaused(clock)).toBe(true);
+    // En pause, le temps ne s'écoule plus.
+    expect(clockRemaining(clock, 30 * MIN)).toBe(35 * MIN);
+    clock = resumeClock(clock, 30 * MIN);
+    expect(clockRemaining(clock, 40 * MIN)).toBe(25 * MIN);
+    // Jamais en dessous de zéro, et « +10 min » repart de la fin.
+    expect(clockRemaining(clock, 90 * MIN)).toBe(0);
+    clock = extendClock(clock, 10 * MIN, 90 * MIN);
+    expect(clockRemaining(clock, 92 * MIN)).toBe(8 * MIN);
+  });
+
+  it('enchaîne les tours de Pomodoro, et la séance dure tous les tours', () => {
+    const pomodoro = { workMin: 25, breakMin: 5, rounds: 3 };
+    expect(pomodoroTotalMs(pomodoro)).toBe(85 * MIN);
+    expect(pomodoroPhaseAt(pomodoro, 0)).toEqual({ phase: 'work', round: 1, phaseEndsAtMs: 25 * MIN });
+    expect(pomodoroPhaseAt(pomodoro, 26 * MIN)).toEqual({ phase: 'break', round: 1, phaseEndsAtMs: 30 * MIN });
+    expect(pomodoroPhaseAt(pomodoro, 31 * MIN)).toEqual({ phase: 'work', round: 2, phaseEndsAtMs: 55 * MIN });
+    expect(pomodoroPhaseAt(pomodoro, 70 * MIN)).toEqual({ phase: 'work', round: 3, phaseEndsAtMs: 85 * MIN });
+    // Le temps ajouté après le dernier tour le prolonge.
+    expect(pomodoroPhaseAt(pomodoro, 90 * MIN)).toEqual({ phase: 'work', round: 3, phaseEndsAtMs: 90 * MIN });
+  });
+
+  it('tout est fait seulement quand chaque ligne est cochée', () => {
+    const items = [{ key: 'a' }, { key: 'b' }];
+    expect(allFocusDone(items, new Set(['a']))).toBe(false);
+    expect(allFocusDone(items, new Set(['a', 'b']))).toBe(true);
+    expect(allFocusDone([], new Set())).toBe(false);
+    expect(formatFocusDuration(32 * MIN)).toBe('32 min');
+    expect(formatFocusDuration(65 * MIN)).toBe('1 h 05');
   });
 
   it('affiche le temps qui reste', () => {

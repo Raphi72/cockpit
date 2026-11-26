@@ -46,6 +46,10 @@ export const SETTINGS = {
   /** Mode focus : durées d'un Pomodoro, en minutes. */
   pomodoroWork: { key: 'focus.pomodoroWork', fallback: 25 } as SettingDef<number>,
   pomodoroBreak: { key: 'focus.pomodoroBreak', fallback: 5 } as SettingDef<number>,
+  /** Mode focus : la dernière durée choisie (minutes), le Pomodoro ou non, et son nombre de tours. */
+  focusMinutes: { key: 'focus.minutes', fallback: 45 } as SettingDef<number>,
+  focusPomodoro: { key: 'focus.pomodoro', fallback: false } as SettingDef<boolean>,
+  pomodoroRounds: { key: 'focus.pomodoroRounds', fallback: 4 } as SettingDef<number>,
 };
 
 export const DAY_START_CHOICES = [5, 6, 7, 8, 9] as const;

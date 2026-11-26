@@ -125,6 +125,15 @@
     border-width: 0;
   }
 }
+/* Mode focus : la liste des tâches qui défile comme un générique (elle est écrite deux fois). */
+@keyframes focus-credits {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
