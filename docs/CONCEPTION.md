@@ -673,7 +673,7 @@ gestion_projets/
 
 **Sidebar** (232 px, réductible à 56 px avec Ctrl+B). Depuis la V2 (étape 2), elle dépend du mode, choisi en haut à gauche par un sélecteur à deux icônes (Travail, Cours ; `Ctrl M`) :
 
-- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), l'organisateur de journée en blocs ;
+- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), l'organisateur de journée en blocs, et **Pages** (V2, étape 4), sous la boîte de réception ; les pages favorites sont listées sous la navigation ;
 - **mode Travail** : Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
 - **mode Cours** : Aujourd'hui, Boîte de réception, Matières, Devoirs, Calendrier, Emploi du temps, Examens, Notes ; en bas, Paramètres.
 
@@ -927,8 +927,24 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 4, dans la vraie fenêtre** : vérifié dans le navigateur de test (créer une page, titre, enregistrement, « / », tableau, case, lien « [[ » qui crée une sous-page, liens entrants, favoris). Les raccourcis Markdown n'ont pu être essayés qu'en simulant la frappe : à vérifier au clavier. Pas encore essayés : coller ou déposer une image, l'export Markdown dans la vraie fenêtre « Enregistrer sous », et **l'import Notion** (seulement dans l'app ; couvert par des tests Rust et TypeScript).
 - **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 4 (« Pages »)**, à confirmer à l'usage :
+- **Éditeur** : TipTap 3 (`domains/pages/editor`), sans style imposé (styles dans `global.css`, classe `page-editor`). Le schéma des blocs (`editor/nodes.ts`) est séparé de leurs vues React (`editor/extensions.ts`) : l'import et l'export Markdown l'utilisent sans l'éditeur (`@tiptap/markdown`).
+- **Blocs** : titres (3 niveaux), paragraphes, listes à puces et numérotées, cases à cocher, citations, séparateurs, code, tableaux simples, images. « / » ouvre la liste des blocs (filtrée en tapant) ; les raccourcis Markdown marchent en tapant (`# `, `- `, `1. `, `[ ] `, `> `, ` ``` `, `---`, `**gras**`).
+- **Liens entre pages** : « [[ » puis quelques lettres ; « Nouvelle page « … » » crée une sous-page du même nom. Le lien montre le titre à jour de la page (barré si elle n'existe plus) et l'ouvre au clic. Les liens sont indexés à chaque enregistrement (`page_links`) pour « Pages qui renvoient ici ».
+- **Images** : collées, déposées ou choisies (`/` › Image), réduites à 1600 px (WebP) et gardées **dans la base** (table `attachments`, en data URL), au lieu d'un dossier `attachments\` à côté de la base comme le prévoyait le §9.4 : une sauvegarde contient tout, et la synchronisation (étape 9) les transportera comme le reste. Une image est référencée dans la page par `attachment:<id>`.
+- **Arborescence** : sous-pages sans limite de profondeur, « Déplacer dans une autre page… » (jamais dans une de ses propres sous-pages), fil d'Ariane. Supprimer une page emporte ses sous-pages ; « Annuler » remet tout, liens et images compris.
+- **Pages communes aux deux modes**, une page « Pages » (arbre, puis « Journal » et « Modèles » repliés) et les **favoris** (étoile) dans la barre latérale des deux modes.
+- **Rattachement** (P19) : à un projet, un client ou une matière (menu « … » de la page) ; la page apparaît dans la fiche du projet (« Pages ») et de la matière (« Fiches et pages »), d'où l'on peut aussi en créer. Une page créée depuis une fiche y est rattachée. L'entité n'a pas de clé étrangère : si elle disparaît, la page reste.
+- **Modèles** : trois proposés (Fiche de cours, Compte rendu client, Brief de projet), modifiables comme des pages ; « Enregistrer comme modèle » copie une page parmi eux ; « Nouvelle page » propose une page vierge ou un modèle.
+- **Journal du jour** : bouton « Journal » de la Journée ; la page du jour est créée au premier clic (« Journal du jeudi 26 novembre »).
+- **Case → tâche** : `Ctrl+Entrée` dans une case à cocher la transforme en vraie tâche (rattachée au projet ou à la matière de la page) et la retire de la page ; « Annuler » supprime la tâche et remet la case.
+- **Recherche** : titre et texte des pages dans `Ctrl K` (triggers de la migration `0010`).
+- **Export** : « Exporter en Markdown… » (`cockpit-export-page-<titre>-<date>.md`), liens en `[[Titre]]`, images incluses dans le fichier.
+- **Import Notion** : depuis la page Pages, on choisit le dossier d'un export Notion « Markdown & CSV » **décompressé** (commande native `notion_import_pick`, qui lit sans rien écrire, 5 000 fichiers et 400 Mo au plus). Tout arrive sous une page « Import Notion du … », en un seul lot : pages et sous-pages (d'après les dossiers de Notion), titres, images (réduites) et liens entre pages. Les bases de données Notion (CSV) ne sont pas reprises. Pas d'import dans le navigateur de développement.
 
 **Choix faits en V2, étape 3 (« Organisateur de journée »)**, à confirmer à l'usage :
 - **Page Journée** (`domains/day`, migration `0009`) : une page à part, commune aux deux modes, juste sous Aujourd'hui (qui reste l'accueil). Une colonne de 6 h à 24 h (Paramètres › Journée), ouverte sur l'heure qu'il est ; vue jour (avec la bibliothèque et « À caser ») ou semaine (`J`, `S`, `←` `→`, `T`, `D`). Les cours, les rendez-vous et les examens à heure fixe sont dessinés dessous, en pointillés ; un bloc qui les chevauche porte un triangle, sans être interdit.
@@ -1131,7 +1147,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1210,6 +1226,7 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - Dashboard en mode Cours : les cours du jour, les devoirs à rendre, le prochain examen, les cartes à revoir. *(Fait, étape 2, en deux colonnes, avec les prochains jours ; les cartes à revoir viendront avec l'étape 5.)*
 
 #### Pages
+- *(Fait, étape 4 ; détail au §7.3. Images gardées dans la base plutôt que dans un dossier.)*
 - **Éditeur en blocs** : titres, paragraphes, listes, cases à cocher, citations, séparateurs, code, tableaux simples, images collées ou glissées. La commande `/` insère un bloc, et la mise en forme courante se fait au clavier (`**gras**`, `#` titre…).
 - **Arborescence** : une page peut contenir des sous-pages.
 - **Rattachement** (P19) et **liens entre pages** avec `[[…]]`, avec la liste des pages qui pointent vers celle qu'on lit.
@@ -1276,6 +1293,8 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
 
 **Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
+
+**Fait à l'étape 4** (migration `0010`) : `pages` (arborescence, contenu JSON, texte brut pour la recherche, rattachement, favori, modèle, journal), `page_links` et `attachments` (images en data URL, dans la base). Trois modèles proposés.
 
 **Fait à l'étape 3** (migration `0009`) : `block_templates` (modules, quatre proposés), `day_blocks`, `tasks.block_id`, `week_templates` et `week_template_blocks`. Un bloc recopie le nom, l'icône, la couleur et le mode de son module (P16) ; il a un statut (prévu, fait, raté).
 
@@ -1364,9 +1383,14 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - plusieurs semaines types, nommées ;
    - « Remplir les trous » pose des blocs (Devoirs ou Travail) avec les tâches urgentes dans les créneaux libres, après validation.
 
+9. **Étape 4, « Pages »** (26/11/2026) :
+   - éditeur TipTap ;
+   - pages communes aux deux modes ;
+   - une page « Pages » et les favoris dans la barre latérale ;
+   - import d'un export Notion (pages, sous-pages, images).
+
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
-- Éditeur : TipTap (recommandé) ou BlockNote.
 
 ### 9.7 Ordre de construction
 
@@ -1375,7 +1399,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 1. **Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre, premières animations. **Fait le 25/11/2026** (branche `v2-toujours-la`, 8 sous-étapes ; détail au §7.3).
 2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes. **Fait le 26/11/2026** (branche `v2-modes-cours`, 8 sous-étapes ; détail au §7.3).
 3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir. **Fait le 26/11/2026** (branche `v2-journee` ; détail au §7.3).
-4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion.
+4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion. **Fait le 26/11/2026** (branche `v2-pages` ; détail au §7.3).
 5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens.
 6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine.
 7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications.
