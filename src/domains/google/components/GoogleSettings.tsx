@@ -4,7 +4,7 @@ import { useToday } from '@/core/use-today';
 import { Section } from '@/ui/layout/Section';
 import { Button } from '@/ui/primitives/Button';
 import { Checkbox } from '@/ui/primitives/Checkbox';
-import { ColorChoice } from '@/ui/primitives/ColorChoice';
+import { ColorButton } from '@/ui/primitives/ColorButton';
 import { Input } from '@/ui/primitives/Input';
 import {
   googleAvailable,
@@ -65,16 +65,33 @@ function CalendarList() {
     <>
       <ul className="flex flex-col">
         {calendars.map((calendar) => (
-          <li key={calendar.id} className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto] items-center gap-6">
+          <li key={calendar.id} className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4">
             <Checkbox checked={calendar.shown} onChange={(shown) => void actions.setShown(calendar.id, shown)}>
               <span className="truncate">{calendar.name}</span>
               {calendar.isPrimary && <span className="text-meta text-ink-3">principal</span>}
             </Checkbox>
-            {calendar.shown && <ColorChoice value={calendar.color} onChange={(color) => void actions.setColor(calendar.id, color)} label={`Couleur de ${calendar.name}`} />}
+            {calendar.shown ? (
+              <button
+                type="button"
+                aria-pressed={calendar.isSchool}
+                onClick={() => void actions.setSchool(calendar.id, !calendar.isSchool)}
+                title="Ses événements deviennent tes cours (une matière par intitulé, créée toute seule)"
+                className={`h-7 rounded-full border px-2.5 text-meta transition-colors duration-[120ms] ease-soft ${calendar.isSchool ? 'border-transparent bg-ink text-canvas' : 'border-line text-ink-3 hover:bg-hover hover:text-ink'}`}
+              >
+                {calendar.isSchool ? 'Agenda des cours' : 'Mes cours ?'}
+              </button>
+            ) : (
+              <span />
+            )}
+            {calendar.shown ? <ColorButton value={calendar.color} onChange={(color) => void actions.setColor(calendar.id, color)} label={`Couleur de ${calendar.name}`} /> : <span />}
           </li>
         ))}
       </ul>
-      {synced && <p className="mt-3 text-meta text-ink-3">Relu {formatCompletedAt(synced, today)}, puis toutes les 15 minutes tant que Cockpit tourne.</p>}
+      <p className="mt-3 max-w-xl text-meta text-ink-3">
+        L’agenda où arrive ton emploi du temps (lien iCal de l’intranet) : marque-le « Agenda des cours ». Ses cours apparaissent alors dans
+        Aujourd’hui en mode Cours, chaque intitulé reçoit sa matière (créée toute seule), et un clic sur un cours permet d’y ajouter un devoir.
+      </p>
+      {synced && <p className="mt-2 text-meta text-ink-3">Relu {formatCompletedAt(synced, today)}, puis toutes les 15 minutes tant que Cockpit tourne.</p>}
     </>
   );
 }

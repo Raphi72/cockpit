@@ -5,6 +5,7 @@ import { useApplyFill } from '../hooks';
 import { moduleIcon } from '../icons';
 import { formatMinutes, taskMinutes } from '../model';
 import type { FillProposal } from '../service';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /**
  * « Remplir les trous » : les blocs proposés dans les créneaux libres, chacun avec ses tâches. On
@@ -51,7 +52,7 @@ function FillForm({ proposals, onDone }: { proposals: FillProposal[]; onDone: ()
               />
               <div className={`min-w-0 flex-1 ${kept.has(index) ? '' : 'opacity-50'}`}>
                 <p className="flex items-center gap-2">
-                  <Icon className="size-3.5" style={{ color: `var(--p-${input.color})` }} strokeWidth={2} />
+                  <Icon className="size-3.5" style={{ color: colorVar(input.color) }} strokeWidth={2} />
                   <span className="font-medium">{input.title}</span>
                   <span className="tnum text-meta text-ink-3">
                     {input.startsAt} – {input.endsAt}

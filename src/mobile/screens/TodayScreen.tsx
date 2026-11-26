@@ -11,6 +11,7 @@ import { useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
 import { selectToday } from '@/domains/tasks/model';
 import { Button } from '@/ui/primitives/Button';
 import { ScreenHeader, ScreenSection, TaskLine } from './parts';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Le bloc en cours, ce qu'il en reste, « Fait » ; puis le suivant. */
 function NowCard() {
@@ -27,7 +28,7 @@ function NowCard() {
         <>
           <p className="text-meta text-ink-3">En ce moment</p>
           <div className="mt-1 flex items-center gap-2.5">
-            {Icon && <Icon className="size-5 shrink-0" strokeWidth={1.75} style={{ color: `var(--p-${current.block.color})` }} />}
+            {Icon && <Icon className="size-5 shrink-0" strokeWidth={1.75} style={{ color: colorVar(current.block.color) }} />}
             <span className="min-w-0 flex-1 truncate text-[17px] font-medium">{current.block.title}</span>
             {current.block.status === 'planned' && (
               <Button variant="secondary" icon={Check} onClick={() => update.mutate({ block: current.block, patch: { status: 'done' } })}>

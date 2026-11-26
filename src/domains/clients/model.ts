@@ -1,9 +1,13 @@
+import type { AppColor } from '@/ui/data/ColorDot';
+
 export type Client = {
   id: string;
   name: string;
   email: string | null;
   phone: string | null;
   notes: string | null;
+  /** Clé de la palette ou couleur libre ; `null` : pas de couleur. */
+  color: AppColor | null;
 };
 
 export type ClientListItem = Client & {
@@ -42,5 +46,5 @@ export function validateClient(input: ClientInput): Partial<Record<keyof ClientI
 /** Nettoie la saisie : espaces en trop retirés, champs vides → null. */
 export function normalizeClient(input: ClientInput): ClientInput {
   const clean = (value: string | null) => (value && value.trim() !== '' ? value.trim() : null);
-  return { name: input.name.trim(), email: clean(input.email), phone: clean(input.phone), notes: clean(input.notes) };
+  return { name: input.name.trim(), email: clean(input.email), phone: clean(input.phone), notes: clean(input.notes), color: input.color };
 }

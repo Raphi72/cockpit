@@ -6,7 +6,7 @@ import { newId } from '@/core/ids';
 import { queryKeys } from '@/core/query-keys';
 import { useToday } from '@/core/use-today';
 import { invalidateMoney } from '@/domains/finance/hooks';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 import { toast } from '@/ui/overlays/toast';
 import { statusOn, type ClientChoice, type NewProjectInput, type ProjectDetail, type ProjectPatch, type ProjectType } from './model';
 import {
@@ -166,7 +166,7 @@ function useInvalidateTypes() {
 export function useCreateProjectType() {
   const onSuccess = useInvalidateTypes();
   return useMutation({
-    mutationFn: (input: { name: string; color: PaletteKey; sortOrder: number }) =>
+    mutationFn: (input: { name: string; color: AppColor; sortOrder: number }) =>
       insertProjectType(db, { id: newId(), ...input }),
     onSuccess,
   });
@@ -175,7 +175,7 @@ export function useCreateProjectType() {
 export function useUpdateProjectType() {
   const onSuccess = useInvalidateTypes();
   return useMutation({
-    mutationFn: ({ id, ...patch }: { id: string; name?: string; color?: PaletteKey }) =>
+    mutationFn: ({ id, ...patch }: { id: string; name?: string; color?: AppColor }) =>
       updateProjectType(db, id, patch),
     onSuccess,
   });

@@ -1,6 +1,6 @@
 import { addDaysISO, isISODate } from '@/core/dates';
 import type { AppMode } from '@/core/app-mode';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 /**
  * Organisateur de journée (V2, étape 3). Un module est un modèle réutilisable (P16) ; un bloc est un
@@ -47,7 +47,7 @@ export type Module = {
   id: string;
   name: string;
   icon: IconKey;
-  color: PaletteKey;
+  color: AppColor;
   durationMin: number;
   mode: BlockMode;
   sortOrder: number;
@@ -79,7 +79,7 @@ export type DayBlock = {
   endsAt: string;
   title: string;
   icon: IconKey;
-  color: PaletteKey;
+  color: AppColor;
   mode: BlockMode;
   status: BlockStatus;
 };
@@ -328,7 +328,7 @@ export type WeekTemplateBlock = {
   endsAt: string;
   title: string;
   icon: IconKey;
-  color: PaletteKey;
+  color: AppColor;
   mode: BlockMode;
 };
 

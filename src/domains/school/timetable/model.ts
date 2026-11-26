@@ -1,6 +1,6 @@
 import { parseISO } from 'date-fns';
 import { addDaysISO, isTime, timeToMinutes } from '@/core/dates';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 import { hasClassesOn, type SchoolPeriod } from '../periods/model';
 
 /**
@@ -29,7 +29,7 @@ export type TimetableSlot = {
   id: string;
   subjectId: string;
   subjectName: string;
-  subjectColor: PaletteKey;
+  subjectColor: AppColor;
   /** Salle de la matière, quand le créneau n'en précise pas. */
   subjectRoom: string | null;
   weekday: Weekday;

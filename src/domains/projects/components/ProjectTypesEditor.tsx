@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { ColorDot, PALETTE_NAMES as COLOR_NAMES, paletteKeys, type PaletteKey } from '@/ui/data/ColorDot';
-import { Menu, MenuContent, MenuRadioGroup, MenuRadioItem, MenuTrigger } from '@/ui/overlays/Menu';
+import { paletteKeys } from '@/ui/data/ColorDot';
+import { ColorButton } from '@/ui/primitives/ColorButton';
 import { Button } from '@/ui/primitives/Button';
 import { InlineText } from '@/ui/primitives/InlineFields';
 import { Input } from '@/ui/primitives/Input';
@@ -34,29 +34,7 @@ export function ProjectTypesEditor() {
       <ul>
         {types.map((type) => (
           <li key={type.id} className="group grid min-h-11 grid-cols-[28px_minmax(0,1fr)_auto_32px] items-center gap-2">
-            <Menu>
-              <MenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={`Couleur de ${type.name}`}
-                  className="grid size-7 place-items-center rounded-md hover:bg-hover"
-                >
-                  <ColorDot color={type.color} />
-                </button>
-              </MenuTrigger>
-              <MenuContent>
-                <MenuRadioGroup
-                  value={type.color}
-                  onValueChange={(color) => updateType.mutate({ id: type.id, color: color as PaletteKey })}
-                >
-                  {paletteKeys.map((key) => (
-                    <MenuRadioItem key={key} value={key} leading={<ColorDot color={key} />}>
-                      {COLOR_NAMES[key]}
-                    </MenuRadioItem>
-                  ))}
-                </MenuRadioGroup>
-              </MenuContent>
-            </Menu>
+            <ColorButton value={type.color} onChange={(color) => updateType.mutate({ id: type.id, color })} label={`Couleur de ${type.name}`} />
             <InlineText
               value={type.name}
               onSave={(name) => updateType.mutate({ id: type.id, name })}

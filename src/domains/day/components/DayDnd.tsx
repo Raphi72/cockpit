@@ -18,6 +18,7 @@ import { useCreateBlock, useMoveTasksToBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import { blockFromModule, movedBlock } from '../model';
 import { accepts, type DayDragData, type DayDropData } from './drag';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Ne garde que les cibles qui acceptent ce qu'on tient (une tâche ne se pose pas dans une colonne). */
 const collision: CollisionDetection = (args) => {
@@ -145,7 +146,7 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
           {overlay && (
             <div
               className="flex h-9 w-max max-w-[320px] items-center gap-2 rounded-md border-l-[3px] bg-elevated px-2.5 text-meta shadow-overlay"
-              style={{ borderLeftColor: overlay.color ? `var(--p-${overlay.color})` : 'var(--text-3)' }}
+              style={{ borderLeftColor: overlay.color ? colorVar(overlay.color) : 'var(--text-3)' }}
             >
               {OverlayIcon && <OverlayIcon className="size-3.5 shrink-0" strokeWidth={2} />}
               <span className="truncate font-medium">{overlay.title}</span>

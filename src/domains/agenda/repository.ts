@@ -85,7 +85,7 @@ export async function listAgenda(
 ): Promise<AgendaItem[]> {
   const rows = await db.query<AgendaRow>(
     `SELECT 'event' AS source, e.id, e.kind, e.title, e.location AS detail,
-            e.starts_at AS "start", e.ends_at AS "end", e.all_day, e.project_id, pt.color, NULL AS amount_cents,
+            e.starts_at AS "start", e.ends_at AS "end", e.all_day, e.project_id, COALESCE(p.color, pt.color) AS color, NULL AS amount_cents,
             e.recurrence, NULL AS subject_id
      FROM events e
      LEFT JOIN projects p ON p.id = e.project_id
@@ -95,13 +95,13 @@ export async function listAgenda(
      WHERE e.starts_at < ? AND (e.recurrence IS NOT NULL OR COALESCE(e.ends_at, e.starts_at) >= ?)
 
      UNION ALL
-     SELECT 'project', p.id, 'project_start', p.name, NULL, p.start_date, NULL, 1, p.id, pt.color, NULL, NULL, NULL
+     SELECT 'project', p.id, 'project_start', p.name, NULL, p.start_date, NULL, 1, p.id, COALESCE(p.color, pt.color) AS color, NULL, NULL, NULL
      FROM projects p
      JOIN project_types pt ON pt.id = p.type_id
      WHERE p.start_date >= ? AND p.start_date < ? AND ${CONFIRMED_PROJECT}
 
      UNION ALL
-     SELECT 'project', p.id, 'project_deadline', p.name, NULL, p.deadline, NULL, 1, p.id, pt.color, NULL, NULL, NULL
+     SELECT 'project', p.id, 'project_deadline', p.name, NULL, p.deadline, NULL, 1, p.id, COALESCE(p.color, pt.color) AS color, NULL, NULL, NULL
      FROM projects p
      JOIN project_types pt ON pt.id = p.type_id
      WHERE p.deadline >= ? AND p.deadline < ? AND ${CONFIRMED_PROJECT}
@@ -109,7 +109,7 @@ export async function listAgenda(
      UNION ALL
      SELECT 'task', t.id, CASE WHEN t.due_date IS NULL THEN 'task_scheduled' ELSE 'task_due' END,
             t.title, COALESCE(p.name, s.name), ${TASK_FIRST_DAY}, CASE WHEN t.scheduled_date < t.due_date THEN t.due_date END,
-            1, t.project_id, COALESCE(pt.color, s.color), NULL, NULL, t.subject_id
+            1, t.project_id, COALESCE(p.color, pt.color, s.color), NULL, NULL, t.subject_id
      FROM tasks t
      LEFT JOIN projects p ON p.id = t.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
@@ -121,7 +121,7 @@ export async function listAgenda(
      UNION ALL
      SELECT 'payment', pay.id, 'payment_due', COALESCE(p.name, c.name, pay.label),
             CASE WHEN COALESCE(p.name, c.name) IS NULL THEN NULL ELSE pay.label END,
-            pay.due_date, NULL, 1, pay.project_id, pt.color, pay.amount_cents, NULL, NULL
+            pay.due_date, NULL, 1, pay.project_id, COALESCE(p.color, pt.color) AS color, pay.amount_cents, NULL, NULL
      FROM payments pay
      LEFT JOIN projects p ON p.id = pay.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
@@ -147,11 +147,14 @@ export async function listAgenda(
      WHERE b.date >= ? AND b.date < ?
 
      UNION ALL
-     -- Un événement Google Agenda (copie locale, lecture seule) d'un agenda affiché.
-     SELECT 'google', g.calendar_id || '|' || g.id, 'google', g.title, g.location, g.starts_at, g.ends_at, g.all_day,
-            NULL, c.color, NULL, NULL, NULL
+     -- Un événement Google Agenda (copie locale, lecture seule) d'un agenda affiché. Dans l'agenda des cours,
+     -- un intitulé relié à une matière en fait un cours, à la couleur de la matière.
+     SELECT 'google', g.calendar_id || '|' || g.id, CASE WHEN cl.subject_id IS NOT NULL THEN 'class' ELSE 'google' END,
+            g.title, g.location, g.starts_at, g.ends_at, g.all_day, NULL, COALESCE(s.color, c.color), NULL, NULL, cl.subject_id
      FROM google_events g
      JOIN google_calendars c ON c.id = g.calendar_id
+     LEFT JOIN course_links cl ON c.is_school = 1 AND cl.course = g.course
+     LEFT JOIN subjects s ON s.id = cl.subject_id
      WHERE c.shown = 1 AND g.starts_at < ? AND COALESCE(g.ends_at, g.starts_at) >= ?`,
     [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to, from, to, from, to, to, from],
   );
@@ -208,7 +211,7 @@ async function listClassItems(db: Db, from: string, to: string): Promise<AgendaI
 type EventRow = Omit<AgendaEvent, 'allDay'> & { allDay: number };
 
 const EVENT_COLUMNS = `e.id, e.title, e.kind, e.all_day, e.starts_at, e.ends_at, e.location, e.notes, e.project_id,
-            p.name AS project_name, pt.color AS project_color, e.created_at, e.recurrence`;
+            p.name AS project_name, COALESCE(p.color, pt.color) AS project_color, e.created_at, e.recurrence`;
 
 export async function getEvent(db: Db, id: string): Promise<AgendaEvent | undefined> {
   const row = await db.queryOne<EventRow>(

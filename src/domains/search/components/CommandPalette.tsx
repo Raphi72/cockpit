@@ -41,7 +41,7 @@ import { toggleNowWindow } from '@/domains/companion/native';
 import { useCompanion } from '@/domains/companion/store';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
-import { ColorDot, type PaletteKey } from '@/ui/data/ColorDot';
+import { ColorDot, type AppColor } from '@/ui/data/ColorDot';
 import { WindowErrorBoundary } from '@/ui/overlays/WindowErrorBoundary';
 import { Kbd } from '@/ui/primitives/Kbd';
 import { COMMAND_GROUP_LABELS, filterCommands, paletteCommands, type PaletteAction, type PaletteCommand } from '../commands';
@@ -93,7 +93,7 @@ function ResultItem({ result, today, onSelect }: { result: SearchResult; today: 
     <Command.Item value={`${result.entity}:${result.id}`} onSelect={onSelect} className={itemClass}>
       {result.entity === 'project' && result.color ? (
         <span className="grid size-4 shrink-0 place-items-center">
-          <ColorDot color={result.color as PaletteKey} />
+          <ColorDot color={result.color as AppColor} />
         </span>
       ) : (
         <ItemIcon icon={icon} />

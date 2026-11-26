@@ -38,6 +38,7 @@ export const EXPORT_TABLES = [
   { table: 'clients', key: 'clients' },
   { table: 'projects', key: 'projects' },
   { table: 'subjects', key: 'subjects' },
+  { table: 'course_links', key: 'courseLinks' },
   { table: 'block_templates', key: 'blockTemplates' },
   { table: 'day_blocks', key: 'dayBlocks' },
   { table: 'tasks', key: 'tasks' },

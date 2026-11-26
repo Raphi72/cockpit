@@ -27,6 +27,7 @@ const project = (overrides: Partial<ProjectListItem> = {}): ProjectListItem => (
   typeId: 'type-freelance',
   typeName: 'Freelance',
   typeColor: 'blue',
+  ownColor: null,
   clientId: null,
   clientName: null,
   // Par défaut, une tâche ouverte : pas d'alerte « aucune prochaine action ».

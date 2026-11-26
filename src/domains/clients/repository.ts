@@ -10,7 +10,7 @@ const CLIENT_PAYMENTS = `FROM payments pay
 /** Tous les clients, archivés compris (`archivedAt`), avec ce qu'ils ont payé et ce qu'on attend d'eux. */
 export function listClients(db: Db): Promise<ClientListItem[]> {
   return db.query<ClientListItem>(
-    `SELECT c.id, c.name, c.email, c.phone, c.notes, c.archived_at,
+    `SELECT c.id, c.name, c.email, c.phone, c.notes, c.color, c.archived_at,
             (SELECT COUNT(*) FROM projects p WHERE p.client_id = c.id) AS project_count,
             (SELECT COALESCE(SUM(pay.amount_cents), 0) ${CLIENT_PAYMENTS} AND ${EXPECTED_PAYMENT}) AS due_cents,
             (SELECT COALESCE(SUM(pay.amount_cents), 0) ${CLIENT_PAYMENTS} AND pay.status = 'received') AS received_cents
@@ -26,16 +26,16 @@ export function setClientArchivedStatement(id: string, archivedAt: string | null
 
 export function insertClientStatement(id: string, input: ClientInput, now: string): Statement {
   return {
-    sql: `INSERT INTO clients (id, name, email, phone, notes, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    params: [id, input.name, input.email, input.phone, input.notes, now, now],
+    sql: `INSERT INTO clients (id, name, email, phone, notes, color, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    params: [id, input.name, input.email, input.phone, input.notes, input.color, now, now],
   };
 }
 
 export function updateClient(db: Db, id: string, input: ClientInput, now: string) {
   return db.execute(
-    'UPDATE clients SET name = ?, email = ?, phone = ?, notes = ?, updated_at = ? WHERE id = ?',
-    [input.name, input.email, input.phone, input.notes, now, id],
+    'UPDATE clients SET name = ?, email = ?, phone = ?, notes = ?, color = ?, updated_at = ? WHERE id = ?',
+    [input.name, input.email, input.phone, input.notes, input.color, now, id],
   );
 }
 
@@ -46,16 +46,16 @@ export type ClientRow = Client & { archivedAt: string | null; createdAt: string 
 
 export function getClientRow(db: Db, id: string): Promise<ClientRow | undefined> {
   return db.queryOne<ClientRow>(
-    'SELECT id, name, email, phone, notes, archived_at, created_at FROM clients WHERE id = ?',
+    'SELECT id, name, email, phone, notes, color, archived_at, created_at FROM clients WHERE id = ?',
     [id],
   );
 }
 
 export function restoreClientStatement(row: ClientRow, now: string): Statement {
   return {
-    sql: `INSERT INTO clients (id, name, email, phone, notes, archived_at, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    params: [row.id, row.name, row.email, row.phone, row.notes, row.archivedAt, row.createdAt, now],
+    sql: `INSERT INTO clients (id, name, email, phone, notes, color, archived_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    params: [row.id, row.name, row.email, row.phone, row.notes, row.color, row.archivedAt, row.createdAt, now],
   };
 }
 

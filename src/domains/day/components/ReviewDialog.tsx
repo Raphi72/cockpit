@@ -5,6 +5,7 @@ import { Button } from '@/ui/primitives/Button';
 import { useReviewBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import type { BlockStatus, DayBlock } from '../model';
+import { colorVar } from '@/ui/data/ColorDot';
 
 const VERDICTS: { value: BlockStatus | 'tomorrow'; label: string; icon: typeof Check }[] = [
   { value: 'done', label: 'Fait', icon: Check },
@@ -32,7 +33,7 @@ export function ReviewDialog(props: { open: boolean; onOpenChange: (open: boolea
           const Icon = moduleIcon(block.icon);
           return (
             <li key={block.id} className="flex min-h-11 items-center gap-3">
-              <Icon className="size-4 shrink-0" style={{ color: `var(--p-${block.color})` }} strokeWidth={2} />
+              <Icon className="size-4 shrink-0" style={{ color: colorVar(block.color) }} strokeWidth={2} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{block.title}</span>
                 <span className="tnum block text-meta text-ink-3">

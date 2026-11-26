@@ -34,7 +34,10 @@ export function homeworkForDay(open: TaskItem[], day: string, today: string, day
 
 /** « Prochains jours » en mode Cours : les examens et les événements personnels (pas ceux d'un projet). */
 export function schoolUpcomingItems(items: AgendaItem[]): AgendaItem[] {
-  return items.filter((item) => item.source === 'exam' || item.source === 'google' || (item.source === 'event' && item.projectId === null));
+  // Pas les cours (ceux de l'agenda des cours non plus) : ils sont dans « Cours du jour ».
+  return items.filter(
+    (item) => item.source === 'exam' || (item.source === 'google' && item.kind !== 'class') || (item.source === 'event' && item.projectId === null),
+  );
 }
 
 const plural = (count: number, one: string, many: string) => `${count} ${count > 1 ? many : one}`;

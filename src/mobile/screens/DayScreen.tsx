@@ -11,6 +11,7 @@ import { BLOCK_STATUS_LABELS, toMinutes, type DayBlock } from '@/domains/day/mod
 import { busyItemsOn } from '@/domains/day/service';
 import { Button } from '@/ui/primitives/Button';
 import { ScreenHeader } from './parts';
+import { colorVar } from '@/ui/data/ColorDot';
 
 type Line = { key: string; start: string; end: string; title: string; block?: DayBlock };
 
@@ -61,7 +62,7 @@ export function DayScreen() {
                   {line.start} – {line.end === '24:00' ? '24:00' : line.end}
                 </span>
                 <span className="flex min-w-0 flex-1 items-center gap-2">
-                  {Icon && block && <Icon className="size-4 shrink-0" strokeWidth={1.75} style={{ color: `var(--p-${block.color})` }} />}
+                  {Icon && block && <Icon className="size-4 shrink-0" strokeWidth={1.75} style={{ color: colorVar(block.color) }} />}
                   <span className="truncate">{line.title}</span>
                 </span>
                 {block && block.status !== 'planned' && <span className="text-meta text-ink-3">{BLOCK_STATUS_LABELS[block.status]}</span>}

@@ -157,6 +157,7 @@ describe('bloc « Deadlines »', () => {
     typeId: 'type-freelance',
     typeName: 'Freelance',
     typeColor: 'blue',
+    ownColor: null,
     clientId: null,
     clientName: null,
     tasksTotal: 1,

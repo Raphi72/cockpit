@@ -12,7 +12,7 @@ export const EXPECTED_PAYMENT = `pay.status <> 'received' AND (p.status IS NULL 
 const LIST_SELECT = `
   SELECT pay.id, pay.project_id, pay.client_id, pay.label, pay.amount_cents, pay.due_date, pay.status,
          pay.received_date, pay.invoice_ref, pay.notes,
-         p.name AS project_name, pt.color AS project_color, COALESCE(c.name, dc.name) AS client_name,
+         p.name AS project_name, COALESCE(p.color, pt.color) AS project_color, COALESCE(c.name, dc.name) AS client_name,
          tx.id AS transaction_id, ta.name AS transaction_account_name
   FROM payments pay
   LEFT JOIN projects p ON p.id = pay.project_id

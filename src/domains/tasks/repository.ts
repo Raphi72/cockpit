@@ -3,7 +3,7 @@ import type { Db, SqlValue, Statement } from '@/core/db';
 import { exclusiveAttachment, type NewTaskInput, type TaskItem, type TaskPatch, type TreePlacement } from './model';
 
 const COLUMNS = `
-  t.id, t.project_id, p.name AS project_name, pt.color AS project_color,
+  t.id, t.project_id, p.name AS project_name, COALESCE(p.color, pt.color) AS project_color,
   t.title, t.notes, t.status, t.priority, t.scheduled_date, t.due_date, t.estimate_min,
   t.sort_order, t.completed_at, t.created_at, t.parent_id, par.title AS parent_title, t.planned_on,
   t.subject_id, s.name AS subject_name, s.color AS subject_color, t.block_id, blk.date AS block_date,

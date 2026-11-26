@@ -17,7 +17,7 @@ const ROW_COLUMNS = `t.id, t.account_id, t.kind, t.amount_cents, t.date, t.label
 
 const LIST_SELECT = `
   SELECT ${ROW_COLUMNS},
-         a.name AS account_name, c.name AS category_name, p.name AS project_name, pt.color AS project_color,
+         a.name AS account_name, c.name AS category_name, p.name AS project_name, COALESCE(p.color, pt.color) AS project_color,
          peer.account_id AS peer_account_id, pa.name AS peer_account_name
   FROM transactions t
   JOIN accounts a ON a.id = t.account_id

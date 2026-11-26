@@ -1,6 +1,6 @@
 import { daysBetween, isISODate } from '@/core/dates';
 import type { ClientChoice } from '@/domains/clients/model';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 /** Encaissement : argent attendu d'un client (échéance), puis reçu. */
 export type PaymentStatus = 'planned' | 'pending' | 'received';
@@ -30,7 +30,7 @@ export type Payment = {
 
 export type PaymentListItem = Payment & {
   projectName: string | null;
-  projectColor: PaletteKey | null;
+  projectColor: AppColor | null;
   /** Client du projet, ou client direct. */
   clientName: string | null;
   /** Transaction de revenu créée à la réception, s'il y en a une. */

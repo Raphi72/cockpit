@@ -10,6 +10,7 @@ import { useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import { blockDuration, blockLoad, formatMinutes, resizedEnd, toMinutes, type BusyItem, type DayBlock } from '../model';
 import type { DayDragData, DayDropData } from './drag';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Une tâche dans un bloc : sa case, son titre (un clic l'ouvre) ; on peut la glisser ailleurs. */
 function BlockTask({ task }: { task: TaskItem }) {
@@ -95,8 +96,8 @@ export const BlockCard = memo(function BlockCard(props: BlockCardProps) {
     height,
     left: `calc(${(props.lane / props.lanes) * 100}% + 3px)`,
     width: `calc(${100 / props.lanes}% - 6px)`,
-    borderLeftColor: `var(--p-${block.color})`,
-    backgroundColor: `color-mix(in srgb, var(--p-${block.color}) ${done || missed ? 6 : 13}%, var(--bg-elevated))`,
+    borderLeftColor: colorVar(block.color),
+    backgroundColor: `color-mix(in srgb, ${colorVar(block.color)} ${done || missed ? 6 : 13}%, var(--bg-elevated))`,
   };
 
   return (
@@ -129,7 +130,7 @@ export const BlockCard = memo(function BlockCard(props: BlockCardProps) {
       }
     >
       <span className="flex min-w-0 items-center gap-1.5">
-        <Icon className="size-3.5 shrink-0" style={{ color: `var(--p-${block.color})` }} strokeWidth={2} />
+        <Icon className="size-3.5 shrink-0" style={{ color: colorVar(block.color) }} strokeWidth={2} />
         <span className={`truncate font-medium ${missed ? 'line-through' : ''}`}>{block.title}</span>
         {done && <Check className="size-3.5 shrink-0 text-success" strokeWidth={2.25} aria-label="Fait" />}
         {props.overlaps.length > 0 && <TriangleAlert className="size-3.5 shrink-0 text-warning" strokeWidth={2} aria-label="Chevauchement" />}

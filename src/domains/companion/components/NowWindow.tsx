@@ -12,6 +12,7 @@ import { TaskCheckbox } from '@/domains/tasks/components/TaskCheckbox';
 import type { TaskItem } from '@/domains/tasks/model';
 import { listTasksInBlocks, updateTaskStatements } from '@/domains/tasks/repository';
 import { formatCountdown, msUntil } from '../model';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Relecture de la base : assez souvent pour suivre la fenêtre principale, sans la charger. */
 const REFRESH_MS = 15_000;
@@ -86,7 +87,7 @@ export function NowWindow() {
       {!data ? null : current ? (
         <>
           <div data-tauri-drag-region className="flex items-baseline gap-2.5">
-            {Icon && <Icon className="size-4 shrink-0 translate-y-0.5" strokeWidth={1.75} style={{ color: `var(--p-${current.block.color})` }} />}
+            {Icon && <Icon className="size-4 shrink-0 translate-y-0.5" strokeWidth={1.75} style={{ color: colorVar(current.block.color) }} />}
             <span data-tauri-drag-region className="min-w-0 flex-1 truncate font-medium">
               {current.block.title}
             </span>
@@ -105,7 +106,7 @@ export function NowWindow() {
             </p>
           )}
           <span className="absolute inset-x-0 bottom-0 h-[3px] bg-active">
-            <span className="block h-full" style={{ width: `${Math.min(100, elapsed * 100)}%`, backgroundColor: `var(--p-${current.block.color})` }} />
+            <span className="block h-full" style={{ width: `${Math.min(100, elapsed * 100)}%`, backgroundColor: colorVar(current.block.color) }} />
           </span>
         </>
       ) : (

@@ -4,6 +4,7 @@ import { useUiStore } from '@/app/ui-store';
 import { moduleIcon } from '@/domains/day/icons';
 import { useHabitHistory, useHabits, useToggleHabit } from '../hooks';
 import { doneDays, isoWeekday, isScheduled, mondayOf, weekProgress, type Habit } from '../model';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Une habitude du jour : une pastille qu'on coche d'un clic, pleine de sa couleur une fois faite. */
 function HabitPill({ habit, done, today, note }: { habit: Habit; done: boolean; today: string; note: string | null }) {
@@ -17,9 +18,9 @@ function HabitPill({ habit, done, today, note }: { habit: Habit; done: boolean; 
       onClick={() => toggle.mutate({ habitId: habit.id, day: today, done: !done })}
       title={done ? 'Fait aujourd’hui · cliquer pour décocher' : 'Cliquer quand c’est fait'}
       className={`flex h-8 items-center gap-2 rounded-full border px-3 text-meta transition-colors duration-[120ms] ease-soft ${done ? 'border-transparent text-ink' : 'border-line text-ink-2 hover:bg-hover hover:text-ink'}`}
-      style={done ? { backgroundColor: `color-mix(in srgb, var(--p-${habit.color}) 22%, transparent)` } : undefined}
+      style={done ? { backgroundColor: `color-mix(in srgb, ${colorVar(habit.color)} 22%, transparent)` } : undefined}
     >
-      <Icon className="size-3.5" strokeWidth={done ? 2.5 : 1.75} style={{ color: `var(--p-${habit.color})` }} />
+      <Icon className="size-3.5" strokeWidth={done ? 2.5 : 1.75} style={{ color: colorVar(habit.color) }} />
       <span className={done ? 'font-medium' : ''}>{habit.name}</span>
       {note && <span className="tnum text-ink-3">{note}</span>}
     </button>

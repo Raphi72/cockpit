@@ -1,10 +1,10 @@
-import { paletteKeys, type PaletteKey } from '@/ui/data/ColorDot';
+import { paletteKeys, type AppColor } from '@/ui/data/ColorDot';
 
 /** Une matière (V2, étape 2) : ses devoirs, ses cours, ses examens et ses notes s'y rattachent. */
 export type Subject = {
   id: string;
   name: string;
-  color: PaletteKey;
+  color: AppColor;
   teacher: string | null;
   /** Salle habituelle ; un cours de l'emploi du temps peut en avoir une autre. */
   room: string | null;
@@ -22,7 +22,7 @@ export type SubjectListItem = Subject & {
 
 export type SubjectInput = {
   name: string;
-  color: PaletteKey;
+  color: AppColor;
   teacher: string;
   room: string;
   /** Saisi en texte : « 1,5 » comme « 1.5 ». */
@@ -31,7 +31,7 @@ export type SubjectInput = {
 
 export type NormalizedSubject = {
   name: string;
-  color: PaletteKey;
+  color: AppColor;
   teacher: string | null;
   room: string | null;
   coefficient: number;
@@ -79,7 +79,7 @@ export function subjectToInput(subject: Subject): SubjectInput {
 }
 
 /** Couleur proposée pour une nouvelle matière : la première que n'utilise encore aucune autre. */
-export function nextSubjectColor(used: PaletteKey[]): PaletteKey {
+export function nextSubjectColor(used: AppColor[]): AppColor {
   const colors = paletteKeys.filter((key) => key !== 'slate');
   return colors.find((color) => !used.includes(color)) ?? colors[used.length % colors.length] ?? 'blue';
 }

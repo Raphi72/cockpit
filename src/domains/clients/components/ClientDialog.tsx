@@ -14,6 +14,7 @@ import { PROJECT_STATUSES, STATUS_LABELS } from '@/domains/projects/model';
 import { useClientEditor } from '../editor-store';
 import { useArchiveClient, useClients, useCreateClient, useDeleteClient, useUpdateClient } from '../hooks';
 import { validateClient, type ClientInput, type ClientListItem } from '../model';
+import { ColorChoice } from '@/ui/primitives/ColorChoice';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -74,6 +75,7 @@ function ClientForm({ client, onDone }: { client?: ClientListItem; onDone: () =>
     email: client?.email ?? '',
     phone: client?.phone ?? '',
     notes: client?.notes ?? '',
+    color: client?.color ?? null,
   });
   const [submitted, setSubmitted] = useState(false);
   const createClient = useCreateClient();
@@ -137,6 +139,9 @@ function ClientForm({ client, onDone }: { client?: ClientListItem; onDone: () =>
             placeholder="Facultatif"
             aria-label="Téléphone"
           />
+        </Row>
+        <Row label="Couleur">
+          <ColorChoice value={input.color ?? 'slate'} onChange={(color) => setInput((prev) => ({ ...prev, color }))} label="Couleur du client" />
         </Row>
         <Row label="Notes">
           <Textarea

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { AppMode } from '@/core/app-mode';
 import type { TaskItem } from '@/domains/tasks/model';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
-import { ColorDot } from '@/ui/data/ColorDot';
+import { ColorDot, colorVar } from '@/ui/data/ColorDot';
 import { moduleIcon } from '../icons';
 import { formatMinutes, modulesOfMode, taskMinutes, type Module } from '../model';
 import type { DayDragData, DayDropData } from './drag';
@@ -22,8 +22,8 @@ function ModuleRow({ module, onEdit }: { module: Module; onEdit: () => void }) {
       title="Glisser sur la journée pour le poser ; clic pour le modifier"
       className={`group -mx-2 flex h-10 cursor-grab items-center gap-2.5 rounded-md px-2 transition-colors duration-[120ms] ease-soft hover:bg-hover active:cursor-grabbing ${drag.isDragging ? 'opacity-40' : ''}`}
     >
-      <span className="grid size-6 shrink-0 place-items-center rounded-md" style={{ backgroundColor: `color-mix(in srgb, var(--p-${module.color}) 16%, transparent)` }}>
-        <Icon className="size-3.5" style={{ color: `var(--p-${module.color})` }} strokeWidth={2} />
+      <span className="grid size-6 shrink-0 place-items-center rounded-md" style={{ backgroundColor: `color-mix(in srgb, ${colorVar(module.color)} 16%, transparent)` }}>
+        <Icon className="size-3.5" style={{ color: colorVar(module.color) }} strokeWidth={2} />
       </span>
       <span className="min-w-0 flex-1 truncate">{module.name}</span>
       <span className="tnum text-meta text-ink-3">{formatMinutes(module.durationMin)}</span>

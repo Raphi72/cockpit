@@ -17,6 +17,7 @@ import {
 import { DayItems } from './AgendaChip';
 import { useAgendaDrag, useDayDrop, useSlotDrop } from './drag';
 import { SpanBars, lanesSpacer } from './SpanBars';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Une heure a la hauteur d'une ligne de liste. */
 const HOUR_HEIGHT = 44;
@@ -66,7 +67,7 @@ function TimedBlockButton({
         height,
         left: `calc(${(block.column / block.columns) * 100}% + 2px)`,
         width: `calc(${100 / block.columns}% - 4px)`,
-        borderLeftColor: item.color ? `var(--p-${item.color})` : 'var(--text-3)',
+        borderLeftColor: item.color ? colorVar(item.color) : 'var(--text-3)',
       }}
       className={
         'absolute z-[1] overflow-hidden rounded-md border-l-2 bg-hover px-1.5 text-left text-meta leading-snug ' +

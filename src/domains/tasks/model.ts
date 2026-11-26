@@ -4,7 +4,7 @@ import type { AppMode } from '@/core/app-mode';
 import { addDaysISO, daysBetween, isISODate, toISODate } from '@/core/dates';
 import { DEADLINE_HORIZON, deadlineStatus, relativeDayText, type DeadlineTone } from '@/core/deadline';
 import type { Priority } from '@/domains/projects/model';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
@@ -20,7 +20,7 @@ export type TaskItem = {
   id: string;
   projectId: string | null;
   projectName: string | null;
-  projectColor: PaletteKey | null;
+  projectColor: AppColor | null;
   title: string;
   notes: string | null;
   status: TaskStatus;
@@ -50,7 +50,7 @@ export type TaskItem = {
   /** Devoir (P14) : la matière à laquelle la tâche est rattachée. Jamais en même temps qu'un projet. */
   subjectId: string | null;
   subjectName: string | null;
-  subjectColor: PaletteKey | null;
+  subjectColor: AppColor | null;
   /**
    * Bloc de la journée où la tâche est placée (P17) : elle prend son jour (`blockDate`), qui n'est pas
    * recopié. Déplacer le bloc déplace donc la tâche.
@@ -90,7 +90,7 @@ export function tasksOfMode<T extends Pick<TaskItem, 'subjectId'>>(tasks: T[], m
 /** Projet ou matière : ce qui situe une tâche, sur sa ligne. */
 export function taskContext(
   task: Pick<TaskItem, 'projectName' | 'projectColor' | 'subjectName' | 'subjectColor'>,
-): { name: string; color: PaletteKey | null } | null {
+): { name: string; color: AppColor | null } | null {
   if (task.projectName) return { name: task.projectName, color: task.projectColor };
   if (task.subjectName) return { name: task.subjectName, color: task.subjectColor };
   return null;
@@ -208,8 +208,8 @@ export function selectPriority(open: TaskItem[]): TaskItem[] {
 }
 
 /** Toutes : regroupées par projet, les tâches libres en dernier. */
-export function groupByProject(tasks: TaskItem[]): { projectId: string | null; name: string; color: PaletteKey | null; tasks: TaskItem[] }[] {
-  const groups = new Map<string, { projectId: string | null; name: string; color: PaletteKey | null; tasks: TaskItem[] }>();
+export function groupByProject(tasks: TaskItem[]): { projectId: string | null; name: string; color: AppColor | null; tasks: TaskItem[] }[] {
+  const groups = new Map<string, { projectId: string | null; name: string; color: AppColor | null; tasks: TaskItem[] }>();
   for (const task of tasks) {
     const key = task.projectId ?? '';
     const group = groups.get(key) ?? { projectId: task.projectId, name: task.projectName ?? 'Sans projet', color: task.projectColor, tasks: [] };

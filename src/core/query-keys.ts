@@ -85,6 +85,8 @@ export const queryKeys = {
     status: ['google', 'status'] as const,
     calendars: ['google', 'calendars'] as const,
     event: (id: string) => ['google', 'event', id] as const,
+    courses: (day: string) => ['google', 'courses', day] as const,
+    course: (itemId: string) => ['google', 'course', itemId] as const,
   },
   /** Synchronisation entre appareils (étape 9) : clé présente, dernière synchronisation. */
   sync: {

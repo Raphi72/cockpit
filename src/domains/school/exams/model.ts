@@ -2,14 +2,14 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { isISODate, isTime } from '@/core/dates';
 import { relativeDayText } from '@/core/deadline';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 /** Un contrôle, un partiel, un oral : rattaché à une matière. Sa note, une fois connue, est dans `grades`. */
 export type Exam = {
   id: string;
   subjectId: string;
   subjectName: string;
-  subjectColor: PaletteKey;
+  subjectColor: AppColor;
   title: string;
   /** 'YYYY-MM-DD' */
   date: string;

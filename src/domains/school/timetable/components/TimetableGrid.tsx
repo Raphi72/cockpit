@@ -10,6 +10,7 @@ import {
   type TimetableSlot,
   type Weekday,
 } from '../model';
+import { colorVar } from '@/ui/data/ColorDot';
 
 /** Une heure de la grille, en pixels. */
 const HOUR_HEIGHT = 48;
@@ -35,7 +36,7 @@ function SlotButton({ block, firstHour, onOpen }: { block: SlotBlock; firstHour:
         height,
         left: `calc(${(block.lane / block.lanes) * 100}% + 2px)`,
         width: `calc(${100 / block.lanes}% - 4px)`,
-        borderLeftColor: `var(--p-${slot.subjectColor})`,
+        borderLeftColor: colorVar(slot.subjectColor),
       }}
       className={
         'absolute z-[1] overflow-hidden rounded-md border-l-2 bg-hover px-1.5 text-left text-meta leading-snug ' +

@@ -1,5 +1,5 @@
 import { isISODate } from '@/core/dates';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 import { semesters as semestersOf, type SchoolPeriod } from '../periods/model';
 import { formatDecimal, parseDecimal } from '../subjects/model';
 
@@ -15,7 +15,7 @@ export type Grade = {
   id: string;
   subjectId: string;
   subjectName: string;
-  subjectColor: PaletteKey;
+  subjectColor: AppColor;
   subjectCoefficient: number;
   examId: string | null;
   examTitle: string | null;
@@ -120,7 +120,7 @@ export function formatAverage(average: number | null): string {
   return average === null ? '–' : formatDecimal(average);
 }
 
-export type SubjectRef = { id: string; name: string; color: PaletteKey; coefficient: number };
+export type SubjectRef = { id: string; name: string; color: AppColor; coefficient: number };
 
 export type SubjectLine = { subject: SubjectRef; grades: Grade[]; average: number | null };
 

@@ -1,5 +1,5 @@
 import { isISODate } from '@/core/dates';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 /**
  * Transaction : mouvement réel sur un compte, montant signé (+ entrée, − sortie).
@@ -46,7 +46,7 @@ export type TransactionListItem = TransactionRow & {
   accountName: string;
   categoryName: string | null;
   projectName: string | null;
-  projectColor: PaletteKey | null;
+  projectColor: AppColor | null;
   /** Virement : l'autre compte. */
   peerAccountId: string | null;
   peerAccountName: string | null;

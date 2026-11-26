@@ -6,6 +6,7 @@ import { moduleIcon } from '@/domains/day/icons';
 import { useHabitHistory, useHabits, useToggleHabit } from '../hooks';
 import { doneDays, frequencyText, isScheduled, mondayOf, streak, streakText, successRate, type Habit } from '../model';
 import { HabitDialog } from './HabitDialog';
+import { colorVar } from '@/ui/data/ColorDot';
 
 const WEEKDAY_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -23,7 +24,7 @@ export function HabitCheck({ habit, done, day, size = 'md' }: { habit: Habit; do
         toggle.mutate({ habitId: habit.id, day, done: !done });
       }}
       className={`grid shrink-0 place-items-center rounded-full border-[1.5px] transition-colors duration-[120ms] ease-soft ${size === 'md' ? 'size-[18px]' : 'size-4'} ${done ? 'check-pop' : 'border-line-strong hover:border-ink-3'}`}
-      style={done ? { backgroundColor: `var(--p-${habit.color})`, borderColor: `var(--p-${habit.color})` } : undefined}
+      style={done ? { backgroundColor: colorVar(habit.color), borderColor: colorVar(habit.color) } : undefined}
     >
       {done && <Check className="size-3 text-white" strokeWidth={3} />}
     </button>
@@ -44,7 +45,7 @@ function WeekDots({ habit, done, today }: { habit: Habit; done: Set<string>; tod
             key={day}
             title={letter}
             className={`size-2 rounded-full ${isDone ? '' : expected && day >= today ? 'ring-1 ring-line-strong ring-inset' : expected ? 'bg-danger/25' : 'bg-active'}`}
-            style={isDone ? { backgroundColor: `var(--p-${habit.color})` } : undefined}
+            style={isDone ? { backgroundColor: colorVar(habit.color) } : undefined}
           />
         );
       })}

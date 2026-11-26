@@ -18,6 +18,7 @@ import { POMODORO_BREAK_CHOICES, POMODORO_WORK_CHOICES, formatCountdown, msUntil
 import { setFullscreen } from '../native';
 import { playChime } from '../sounds';
 import { useCompanion } from '../store';
+import { colorVar } from '@/ui/data/ColorDot';
 
 function FocusTask({ task, main }: { task: TaskItem; main: boolean }) {
   const toggle = useToggleTask();
@@ -99,7 +100,7 @@ function FocusContent({ onClose }: { onClose: () => void }) {
 
       {current ? (
         <p className="flex items-center gap-2.5 text-lg text-ink-2">
-          {Icon && <Icon className="size-5" strokeWidth={1.75} style={{ color: `var(--p-${current.block.color})` }} />}
+          {Icon && <Icon className="size-5" strokeWidth={1.75} style={{ color: colorVar(current.block.color) }} />}
           {current.block.title}
         </p>
       ) : (

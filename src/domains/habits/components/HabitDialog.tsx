@@ -14,6 +14,7 @@ import { PropertyButton } from '@/ui/primitives/PropertyButton';
 import { TimeField } from '@/ui/primitives/TimeField';
 import { useArchiveHabit, useGoals, useHabitActivity, useSaveHabit } from '../hooks';
 import { FREQUENCY_LABELS, doneDays, monthGrid, validateHabit, type Frequency, type Habit, type HabitInput } from '../model';
+import { colorVar } from '@/ui/data/ColorDot';
 
 const WEEKDAY_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const WEEKDAY_NAMES = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -53,7 +54,7 @@ function MonthGrid({ habit }: { habit: Habit }) {
             key={day}
             title={`${Number(day.slice(8))} : ${state === 'done' ? 'fait' : state === 'missed' ? 'manqué' : state === 'future' ? 'à venir' : 'pas prévu'}`}
             className={`size-5 rounded-[4px] ${state === 'done' ? '' : state === 'missed' ? 'bg-danger/15' : 'bg-hover'} ${day === today ? 'ring-1 ring-ink-3' : ''}`}
-            style={state === 'done' ? { backgroundColor: `var(--p-${habit.color})` } : undefined}
+            style={state === 'done' ? { backgroundColor: colorVar(habit.color) } : undefined}
           />
         ))}
       </div>

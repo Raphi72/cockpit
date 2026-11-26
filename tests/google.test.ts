@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { listAgenda } from '@/domains/agenda/repository';
-import { isMovable } from '@/domains/agenda/model';
+import { isMovable, isShownInMonth } from '@/domains/agenda/model';
+import { sql } from '@/core/db/client';
 import { googleWhen } from '@/domains/google/components/GoogleEventDialog';
 import {
+  courseName,
   googleItemId,
   nearestPaletteKey,
   planCalendars,
@@ -12,7 +14,18 @@ import {
   type RemoteCalendar,
   type RemoteEvent,
 } from '@/domains/google/model';
-import { clearGoogleStatement, getGoogleEvent, listGoogleCalendars, setCalendarColorStatement, setCalendarShownStatement } from '@/domains/google/repository';
+import {
+  clearGoogleStatement,
+  getGoogleEvent,
+  homeworkDueOn,
+  listCoursesOn,
+  listGoogleCalendars,
+  nextCourseDay,
+  setCalendarColorStatement,
+  setCalendarSchoolStatement,
+  setCalendarShownStatement,
+  setCourseLinkStatement,
+} from '@/domains/google/repository';
 import { syncGoogle, type GoogleSource } from '@/domains/google/service';
 import { listTimedEventsBetween } from '@/domains/notifications/repository';
 import { createTestDb } from './support/test-db';
@@ -153,5 +166,73 @@ describe('Google Agenda : relecture', () => {
     await db.batch([clearGoogleStatement()]);
     expect(await listGoogleCalendars(db)).toEqual([]);
     expect(await db.query('SELECT id FROM google_events')).toEqual([]);
+  });
+});
+
+describe('Google Agenda : l’agenda des cours', () => {
+  it('ramène un intitulé de cours à sa matière', () => {
+    expect(courseName('Maths - TD')).toBe('Maths');
+    expect(courseName('Maths (CM)')).toBe('Maths');
+    expect(courseName('Anglais - TD - Gr 2')).toBe('Anglais');
+    expect(courseName('R1.01 - Initiation au développement - TP 2')).toBe('R1.01 - Initiation au développement');
+    expect(courseName('Physique TD2')).toBe('Physique');
+    expect(courseName('Droit civil [TD] G3')).toBe('Droit civil');
+    expect(courseName('Projet tutoré')).toBe('Projet tutoré');
+    expect(courseName('TD')).toBe('TD');
+  });
+
+  it('crée les matières toutes seules, relie les cours, et ouvre les devoirs au cours suivant', async () => {
+    const { db } = createTestDb();
+    await db.batch([sql`INSERT INTO subjects (id, name, color, sort_order, created_at, updated_at) VALUES ('fr', 'Francais', 'red', 1, ${NOW}, ${NOW})`]);
+    const school: RemoteCalendar = { id: 'cours@import.calendar.google.com', name: 'Emploi du temps', color: '#4986e7', primary: false, selected: true };
+    const events: RemoteEvent[] = [
+      remoteEvent({ id: 'c1', title: 'Maths - CM', start: '2026-11-26T08:00:00+01:00', end: '2026-11-26T10:00:00+01:00', location: 'Amphi A' }),
+      remoteEvent({ id: 'c2', title: 'Maths - TD', start: '2026-11-27T10:00:00+01:00', end: '2026-11-27T12:00:00+01:00' }),
+      remoteEvent({ id: 'c3', title: 'Français (TD)', start: '2026-11-26T14:00:00+01:00', end: '2026-11-26T15:30:00+01:00' }),
+      remoteEvent({ id: 'c4', title: 'Pause déjeuner', start: '2026-11-26T12:00:00+01:00', end: '2026-11-26T13:00:00+01:00' }),
+    ];
+    const source: GoogleSource = { calendars: async () => [school], events: async () => events };
+    await syncGoogle(db, source, TODAY, 'Europe/Paris', NOW);
+    // Pas encore l'agenda des cours : aucune matière créée.
+    expect((await db.query('SELECT name FROM subjects ORDER BY name')).length).toBe(1);
+
+    await db.batch([setCalendarSchoolStatement(school.id, true, NOW)]);
+    await syncGoogle(db, source, TODAY, 'Europe/Paris', NOW);
+    const subjects = await db.query<{ id: string; name: string; color: string }>('SELECT id, name, color FROM subjects ORDER BY name');
+    // « Français » retrouve « Francais » (sans accents) ; « Maths » et « Pause déjeuner » sont créées.
+    expect(subjects.map((s) => s.name)).toEqual(['Francais', 'Maths', 'Pause déjeuner']);
+    expect(new Set(subjects.map((s) => s.color)).size).toBe(3);
+    const maths = subjects.find((s) => s.name === 'Maths')!;
+
+    // « Pause déjeuner » n'est pas un cours : ignorée, et jamais recréée.
+    await db.batch([setCourseLinkStatement('Pause déjeuner', null, NOW)]);
+    await syncGoogle(db, source, TODAY, 'Europe/Paris', NOW);
+    expect((await db.query('SELECT COUNT(*) AS n FROM course_links WHERE subject_id IS NULL'))[0]).toEqual({ n: 1 });
+
+    const courses = await listCoursesOn(db, TODAY);
+    expect(courses.map((c) => [c.title, c.startsAt, c.subjectName, c.location])).toEqual([
+      ['Maths - CM', '2026-11-26T08:00', 'Maths', 'Amphi A'],
+      ['Français (TD)', '2026-11-26T14:00', 'Francais', null],
+    ]);
+    expect(await nextCourseDay(db, maths.id, TODAY)).toBe('2026-11-27');
+    expect(await nextCourseDay(db, maths.id, '2026-11-27')).toBeNull();
+
+    const agenda = (await listAgenda(db, TODAY, '2026-11-28')).filter((i) => i.source === 'google');
+    const cm = agenda.find((i) => i.title === 'Maths - CM')!;
+    expect(cm).toMatchObject({ kind: 'class', subjectId: maths.id, color: maths.color });
+    expect(isShownInMonth(cm)).toBe(false);
+    expect(agenda.find((i) => i.title === 'Pause déjeuner')).toMatchObject({ kind: 'google', subjectId: null });
+
+    const detail = await getGoogleEvent(db, school.id, 'c1');
+    expect(detail).toMatchObject({ isSchool: true, course: 'Maths', subjectId: maths.id, subjectName: 'Maths', ignored: false });
+    expect(await getGoogleEvent(db, school.id, 'c4')).toMatchObject({ ignored: true, subjectId: null });
+
+    await db.batch([
+      sql`INSERT INTO tasks (id, title, status, priority, sort_order, subject_id, due_date, created_at, updated_at)
+          VALUES ('h1', 'Exercices p. 42', 'todo', 1, 1, ${maths.id}, '2026-11-27', ${NOW}, ${NOW})`,
+    ]);
+    expect(await homeworkDueOn(db, maths.id, '2026-11-27')).toEqual([{ id: 'h1', title: 'Exercices p. 42', status: 'todo' }]);
+    // Les cours ne déclenchent pas le rappel « Rendez-vous ».
+    expect(await listTimedEventsBetween(db, '2026-11-26T07:50', '2026-11-26T08:05')).toEqual([]);
   });
 });

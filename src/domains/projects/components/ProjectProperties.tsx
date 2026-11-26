@@ -3,6 +3,8 @@ import { deadlineStatus } from '@/core/deadline';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
 import { ClientPicker } from '@/domains/clients/components/ClientPicker';
 import { ColorDot } from '@/ui/data/ColorDot';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/overlays/Popover';
+import { ColorChoice } from '@/ui/primitives/ColorChoice';
 import { DEADLINE_TONE_CLASS } from '@/ui/data/deadline-tone';
 import { ProgressBar } from '@/ui/data/ProgressBar';
 import { PropertyRow } from '@/ui/layout/PropertyRow';
@@ -112,6 +114,25 @@ export function ProjectProperties({ project, today }: { project: ProjectDetail; 
             </MenuRadioGroup>
           </MenuContent>
         </Menu>
+      </PropertyRow>
+
+      <PropertyRow label="Couleur">
+        <Popover>
+          <PopoverTrigger asChild>
+            <PropertyButton aria-label="Couleur du projet">
+              <ColorDot color={project.typeColor} />
+              {project.ownColor ? 'Sa couleur' : 'Celle du type'}
+            </PropertyButton>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="px-2 py-1.5">
+            <ColorChoice value={project.typeColor} onChange={(color) => update.mutate({ color })} label="Couleur du projet" />
+            {project.ownColor && (
+              <button type="button" onClick={() => update.mutate({ color: null })} className="mt-1 px-1 text-meta text-ink-3 hover:text-ink">
+                Reprendre la couleur du type
+              </button>
+            )}
+          </PopoverContent>
+        </Popover>
       </PropertyRow>
 
       <PropertyRow label="Client">

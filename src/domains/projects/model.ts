@@ -1,7 +1,7 @@
 import { daysBetween, isISODate } from '@/core/dates';
 import { DEADLINE_HORIZON, deadlineThresholds } from '@/core/deadline';
 import type { ClientChoice } from '@/domains/clients/model';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 export type { ClientChoice };
 
@@ -11,7 +11,7 @@ export type { ClientChoice };
 export type ProjectType = {
   id: string;
   name: string;
-  color: PaletteKey;
+  color: AppColor;
   sortOrder: number;
 };
 
@@ -66,7 +66,10 @@ export type ProjectListItem = {
   budgetCents: number | null;
   typeId: string;
   typeName: string;
-  typeColor: PaletteKey;
+  /** La couleur affichée : celle du projet s'il en a une, sinon celle de son type. */
+  typeColor: AppColor;
+  /** La couleur choisie pour ce projet (`null` : celle du type). */
+  ownColor: AppColor | null;
   clientId: string | null;
   clientName: string | null;
   tasksTotal: number;
@@ -95,6 +98,7 @@ export type ProjectPatch = Partial<{
   startDate: string | null;
   deadline: string | null;
   budgetCents: number | null;
+  color: string | null;
 }>;
 
 /**

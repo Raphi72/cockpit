@@ -2,6 +2,7 @@ import { ChevronRight, Plus, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { formatMoney } from '@/core/money';
+import { ColorDot } from '@/ui/data/ColorDot';
 import { EmptyState } from '@/ui/layout/EmptyState';
 import { Page } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
@@ -18,7 +19,8 @@ function ClientRow({ client, onOpen }: { client: ClientListItem; onOpen: () => v
         onClick={onOpen}
         className="-mx-2.5 grid min-h-11 w-[calc(100%+20px)] grid-cols-[minmax(0,1fr)_auto_120px] items-center gap-6 rounded-md px-2.5 text-left transition-colors duration-[120ms] ease-soft hover:bg-hover"
       >
-        <span className={`truncate ${archived ? 'text-ink-2' : ''}`}>
+        <span className={`flex min-w-0 items-center gap-2.5 truncate ${archived ? 'text-ink-2' : ''}`}>
+          {client.color && <ColorDot color={client.color} />}
           {client.name}
           {client.email && <span className="ml-2.5 text-meta text-ink-3">{client.email}</span>}
         </span>

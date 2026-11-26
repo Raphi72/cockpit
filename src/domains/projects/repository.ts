@@ -61,7 +61,7 @@ const STATUS_ON = `CASE WHEN p.status = 'planned' AND p.start_date <= ? THEN 'ac
 
 const LIST_COLUMNS = `
   p.id, p.name, ${STATUS_ON} AS status, p.status AS saved_status, p.priority, p.start_date, p.deadline, p.budget_cents,
-  p.type_id, t.name AS type_name, t.color AS type_color,
+  p.type_id, t.name AS type_name, COALESCE(p.color, t.color) AS type_color, p.color AS own_color,
   p.client_id, c.name AS client_name,
   COALESCE(pp.tasks_total, 0) AS tasks_total, COALESCE(pp.tasks_done, 0) AS tasks_done,
   COALESCE(pm.received_cents, 0) AS received_cents, COALESCE(pm.scheduled_cents, 0) AS scheduled_cents,
@@ -162,6 +162,7 @@ const PATCH_COLUMNS: Record<keyof ProjectPatch, string> = {
   startDate: 'start_date',
   deadline: 'deadline',
   budgetCents: 'budget_cents',
+  color: 'color',
 };
 
 export function updateProjectStatement(id: string, patch: ProjectPatch, now: string): Statement {

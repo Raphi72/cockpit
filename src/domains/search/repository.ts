@@ -57,7 +57,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        SELECT id FROM projects WHERE client_id IN (SELECT id FROM matched_clients)
      ),
      results AS (
-       SELECT 'project' AS entity, p.id, p.name AS title, p.id AS project_id, c.name AS context, pt.color,
+       SELECT 'project' AS entity, p.id, p.name AS title, p.id AS project_id, c.name AS context, COALESCE(p.color, pt.color) AS color,
               p.deadline AS date,
               NULL AS amount_cents,
               (p.status IN ('done', 'cancelled') OR p.archived_at IS NOT NULL) AS closed,
@@ -70,7 +70,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
 
        UNION ALL
        -- Un devoir (tâche d'une matière) montre sa matière.
-       SELECT 'task', t.id, t.title, t.project_id, COALESCE(p.name, sub.name), COALESCE(pt.color, sub.color),
+       SELECT 'task', t.id, t.title, t.project_id, COALESCE(p.name, sub.name), COALESCE(p.color, pt.color, sub.color),
               COALESCE(t.due_date, t.scheduled_date), NULL, t.status = 'done', h.id IS NOT NULL, h.score
        FROM tasks t
        LEFT JOIN projects p ON p.id = t.project_id
@@ -86,7 +86,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.entity = 'subject'
 
        UNION ALL
-       SELECT 'idea', i.id, i.title, i.project_id, p.name, pt.color, NULL, NULL,
+       SELECT 'idea', i.id, i.title, i.project_id, p.name, COALESCE(p.color, pt.color) AS color, NULL, NULL,
               (p.status IN ('done', 'cancelled') OR p.archived_at IS NOT NULL), h.id IS NOT NULL, h.score
        FROM ideas i
        JOIN projects p ON p.id = i.project_id
@@ -108,7 +108,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
 
        UNION ALL
        -- Un événement qui se répète n'a ni une seule date ni de fin connue ici : sans date, jamais « passé ».
-       SELECT 'event', e.id, e.title, e.project_id, p.name, pt.color,
+       SELECT 'event', e.id, e.title, e.project_id, p.name, COALESCE(p.color, pt.color) AS color,
               CASE WHEN e.recurrence IS NULL THEN e.starts_at END,
               NULL, e.recurrence IS NULL AND substr(COALESCE(e.ends_at, e.starts_at), 1, 10) < ?, h.id IS NOT NULL, h.score
        FROM events e
@@ -132,7 +132,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.id IS NOT NULL OR x.subject_id IN (SELECT id FROM matched_subjects)
 
        UNION ALL
-       SELECT 'payment', pay.id, pay.label, pay.project_id, COALESCE(p.name, pc.name), pt.color,
+       SELECT 'payment', pay.id, pay.label, pay.project_id, COALESCE(p.name, pc.name), COALESCE(p.color, pt.color) AS color,
               COALESCE(pay.received_date, pay.due_date), pay.amount_cents,
               pay.status = 'received', h.id IS NOT NULL, h.score
        FROM payments pay

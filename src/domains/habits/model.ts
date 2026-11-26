@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { addDaysISO, isTime } from '@/core/dates';
 import type { IconKey } from '@/domains/day/model';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 
 /**
  * Sport, habitudes et objectifs (V2, étape 6, P20). Une habitude est faite un jour si on l'a cochée,
@@ -18,7 +18,7 @@ export type Habit = {
   id: string;
   name: string;
   icon: IconKey;
-  color: PaletteKey;
+  color: AppColor;
   frequency: Frequency;
   timesPerWeek: number | null;
   /** Jours choisis (1 = lundi … 7 = dimanche), pour « certains jours ». */

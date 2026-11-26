@@ -15,7 +15,7 @@ import {
   toISODate,
 } from '@/core/dates';
 import { formatMoney } from '@/core/money';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 import {
   formatRecurrence,
   isOccurrenceDay,
@@ -53,7 +53,7 @@ export type AgendaEvent = {
   notes: string | null;
   projectId: string | null;
   projectName: string | null;
-  projectColor: PaletteKey | null;
+  projectColor: AppColor | null;
   createdAt: string;
   /** Règle de répétition (RRULE), ou `null`. `startsAt` est alors la première occurrence. */
   recurrence: string | null;
@@ -323,7 +323,7 @@ export type AgendaItem = {
   end: string | null;
   allDay: boolean;
   projectId: string | null;
-  color: PaletteKey | null;
+  color: AppColor | null;
   amountCents: number | null;
   /** Matière : un devoir, un cours ou un examen (espace Cours). Absent ou `null` pour le reste. */
   subjectId?: string | null;
@@ -544,8 +544,9 @@ export function isMovable(item: Pick<AgendaItem, 'source'>): boolean {
 }
 
 /** La vue mois ne montre ni les cours ni les blocs de la journée : une routine qui cacherait le reste. */
-export function isShownInMonth(item: Pick<AgendaItem, 'source'>): boolean {
-  return item.source !== 'class' && item.source !== 'block';
+export function isShownInMonth(item: Pick<AgendaItem, 'source' | 'kind'>): boolean {
+  // Les cours venant de l'agenda des cours non plus.
+  return item.source !== 'class' && item.source !== 'block' && item.kind !== 'class';
 }
 
 export type CalendarDrop = { day: string; time: string | null };

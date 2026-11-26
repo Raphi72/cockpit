@@ -26,6 +26,7 @@ const project = (id: string, overrides: Partial<ProjectListItem> = {}): ProjectL
   typeId: 'type-freelance',
   typeName: 'Freelance',
   typeColor: 'blue',
+  ownColor: null,
   clientId: null,
   clientName: null,
   tasksTotal: 0,

@@ -19,7 +19,7 @@ export function resolveClientChoice(choice: ClientChoice, ctx: BatchContext, sta
   if (choice.kind === 'existing') return choice.id;
   if (choice.kind === 'none') return null;
   const clientId = ctx.newId();
-  const client = normalizeClient({ name: choice.name, email: null, phone: null, notes: null });
+  const client = normalizeClient({ name: choice.name, email: null, phone: null, notes: null, color: null });
   statements.push(insertClientStatement(clientId, client, ctx.now));
   return clientId;
 }

@@ -1,5 +1,5 @@
 import { addDaysISO } from '@/core/dates';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor, PaletteKey } from '@/ui/data/ColorDot';
 
 /**
  * Google Agenda en lecture seule (V2, étape 8). La connexion, les jetons et les appels réseau sont côté
@@ -29,9 +29,11 @@ export type GoogleCalendar = {
   id: string;
   name: string;
   googleColor: string | null;
-  color: PaletteKey;
+  color: AppColor;
   isPrimary: boolean;
   shown: boolean;
+  /** L'agenda des cours (l'emploi du temps de l'intranet, relié par iCal) : ses événements sont des cours. */
+  isSchool: boolean;
   syncedAt: string | null;
 };
 
@@ -44,6 +46,8 @@ export type LocalEvent = {
   endsAt: string | null;
   allDay: boolean;
   htmlLink: string | null;
+  /** Pour un agenda des cours : l'intitulé ramené au cours (voir courseName). */
+  course?: string | null;
 };
 
 /** Relecture : au lancement puis toutes les 15 minutes, tant que Cockpit tourne et que Google est connecté. */
@@ -135,6 +139,41 @@ export function planCalendars(
     kept: remote.filter((c) => known.has(c.id)),
     removed: local.filter((c) => !seen.has(c.id)).map((c) => c.id),
   };
+}
+
+// ─── Cours ──────────────────────────────────────────────────────────────────
+
+/** Un morceau d'intitulé qui dit le type de séance ou le groupe, pas la matière : « TD », « CM 2 », « Groupe A ». */
+const TYPE_SEGMENT =
+  /^(?:(?:cm|td|tp|tds|tps|ds|de|cours|amphi|tutorat|examen|exam|partiel|contr[ôo]le|soutenance)\s*\d*\s*)+(?:(?:gr(?:oupe|\.)?|g)\s*[\w-]+)?$|^(?:gr(?:oupe|\.)?|g)\s*[\w-]+$/i;
+
+/**
+ * L'intitulé d'un cours ramené à sa matière : sans le type de séance ni le groupe. « Maths - TD » et
+ * « Maths (CM) » donnent « Maths » ; « R1.01 - Initiation au développement - TP 2 » donne
+ * « R1.01 - Initiation au développement ». Tous les cours d'une matière partagent ainsi un intitulé.
+ */
+export function courseName(title: string): string {
+  let text = title.replace(/\s+/g, ' ').trim();
+  text = text.replace(/\s*[([]\s*([^)\]]*?)\s*[)\]]/g, (whole, inner: string) => (TYPE_SEGMENT.test(inner.trim()) ? '' : whole)).trim();
+  const parts = text.split(/\s+[-–—:|/]\s+/).map((p) => p.trim()).filter(Boolean);
+  const kept = parts.filter((p) => !TYPE_SEGMENT.test(p));
+  let name = (kept.length ? kept : parts).join(' - ');
+  // Type ou groupe collé à la fin : « Physique TD2 », « Anglais Groupe B ».
+  name = name.replace(/\s+(?:cm|td|tp|tds|tps|ds)\s*\d*$/i, '').replace(/\s+(?:gr(?:oupe|\.)?|g)\s*[\w-]+$/i, '').trim();
+  return name || title.trim();
+}
+
+/** Pour comparer un intitulé au nom d'une matière : sans accents ni majuscules. */
+export function sameName(a: string, b: string): boolean {
+  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  return norm(a) === norm(b);
+}
+
+/** La couleur d'une matière créée toute seule : celle de la palette la moins prise par les autres. */
+export function freeSubjectColor(used: string[]): PaletteKey {
+  const choices: PaletteKey[] = ['blue', 'violet', 'green', 'orange', 'pink', 'teal', 'amber', 'red'];
+  const count = (key: PaletteKey) => used.filter((c) => c === key).length;
+  return choices.reduce((best, key) => (count(key) < count(best) ? key : best), choices[0]!);
 }
 
 /** Un événement Google dans l'agenda : l'agenda et l'événement, séparés par une barre (aucun des deux n'en contient). */

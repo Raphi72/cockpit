@@ -12,7 +12,7 @@ import { ColorChoice } from '@/ui/primitives/ColorChoice';
 import { DateField } from '@/ui/primitives/DateField';
 import { Input } from '@/ui/primitives/Input';
 import { TimeField } from '@/ui/primitives/TimeField';
-import type { PaletteKey } from '@/ui/data/ColorDot';
+import type { AppColor } from '@/ui/data/ColorDot';
 import { useCreateBlock, useDeleteBlock, useMoveTasksToBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import {
@@ -27,6 +27,7 @@ import {
   type DayBlock,
   type Module,
 } from '../model';
+import { colorVar } from '@/ui/data/ColorDot';
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -44,7 +45,7 @@ function CreateBlockForm(props: { day: string; minutes: number; modules: Module[
   const create = useCreateBlock();
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(60);
-  const [color, setColor] = useState<PaletteKey>('slate');
+  const [color, setColor] = useState<AppColor>('slate');
   const place = (module: Module) => create.mutate(blockFromModule(module, props.day, props.minutes), { onSuccess: props.onDone });
   const modules = modulesOfMode(props.modules, props.mode);
 
@@ -80,7 +81,7 @@ function CreateBlockForm(props: { day: string; minutes: number; modules: Module[
               onClick={() => place(module)}
               className="flex h-9 items-center gap-2 rounded-md border border-line px-3 transition-colors duration-[120ms] ease-soft hover:bg-hover"
             >
-              <Icon className="size-3.5" style={{ color: `var(--p-${module.color})` }} strokeWidth={2} />
+              <Icon className="size-3.5" style={{ color: colorVar(module.color) }} strokeWidth={2} />
               {module.name}
               <span className="tnum text-meta text-ink-3">{formatMinutes(module.durationMin)}</span>
             </button>

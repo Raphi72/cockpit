@@ -14,7 +14,9 @@ import { usePeriods } from '@/domains/school/periods/hooks';
 import { holidayOn } from '@/domains/school/periods/model';
 import { useSubjects } from '@/domains/school/subjects/hooks';
 import { useSlots } from '@/domains/school/timetable/hooks';
-import { classesOn, currentOrNextClass, slotRoom, type ClassOccurrence } from '@/domains/school/timetable/model';
+import { classesOn, slotRoom, type ClassOccurrence } from '@/domains/school/timetable/model';
+import { useGoogleCourses, useGoogleEventSheet } from '@/domains/google/hooks';
+import type { CourseOnDay } from '@/domains/google/repository';
 import { DoneFold } from '@/domains/tasks/components/TaskGroups';
 import { TaskList } from '@/domains/tasks/components/TaskList';
 import { useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
@@ -43,22 +45,69 @@ function SectionHeading({ title, link }: { title: string; link?: { to: '/timetab
   );
 }
 
+/**
+ * Un cours du jour, qu'il vienne de l'emploi du temps (semaine type) ou de l'agenda des cours (Google) :
+ * le second s'ouvre d'un clic (sa matière, ses devoirs, « Ajouter un devoir »).
+ */
+type CourseLine = {
+  key: string;
+  start: string;
+  end: string;
+  subjectId: string | null;
+  subjectName: string;
+  subjectColor: string;
+  label: string | null;
+  room: string | null;
+  googleItemId: string | null;
+};
+
+function slotLine({ slot }: ClassOccurrence): CourseLine {
+  return { key: `slot:${slot.id}`, start: slot.startsAt, end: slot.endsAt, subjectId: slot.subjectId, subjectName: slot.subjectName, subjectColor: slot.subjectColor, label: slot.label, room: slotRoom(slot), googleItemId: null };
+}
+
+function googleLine(course: CourseOnDay): CourseLine {
+  const start = course.startsAt.slice(11, 16);
+  return {
+    key: `google:${course.itemId}`,
+    start,
+    end: course.endsAt?.slice(11, 16) ?? start,
+    subjectId: course.subjectId,
+    subjectName: course.subjectName ?? course.title,
+    subjectColor: course.subjectColor ?? 'slate',
+    label: course.subjectName && course.title !== course.subjectName ? course.title : null,
+    room: course.location,
+    googleItemId: course.itemId,
+  };
+}
+
 /** Un cours de la journée ; aujourd'hui, celui en cours est mis en avant et ceux passés s'effacent. */
-function ClassRow({ occurrence, state }: { occurrence: ClassOccurrence; state: 'past' | 'now' | 'next' | 'later' }) {
-  const { slot } = occurrence;
-  const room = slotRoom(slot);
+function ClassRow({ line, state }: { line: CourseLine; state: 'past' | 'now' | 'next' | 'later' }) {
+  const openGoogle = useGoogleEventSheet((s) => s.open);
+  const name = (
+    <>
+      <ColorDot color={line.subjectColor} />
+      <span className="truncate">{line.subjectName}</span>
+      {line.label && <span className="min-w-0 shrink truncate text-meta text-ink-3">{line.label}</span>}
+    </>
+  );
   return (
     <li className={`grid min-h-10 grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-3 ${state === 'past' ? 'text-ink-3' : ''}`}>
       <span className={`tnum text-meta ${state === 'past' ? '' : 'text-ink-2'}`}>
-        {slot.startsAt} – {slot.endsAt}
+        {line.start} – {line.end}
       </span>
-      <Link to="/subjects/$subjectId" params={{ subjectId: slot.subjectId }} className="flex min-w-0 items-center gap-2.5 hover:text-ink">
-        <ColorDot color={slot.subjectColor} />
-        <span className="truncate">{slot.subjectName}</span>
-        {slot.label && <span className="shrink-0 text-meta text-ink-3">{slot.label}</span>}
-      </Link>
+      {line.googleItemId ? (
+        <button type="button" onClick={() => openGoogle(line.googleItemId!)} title="Ouvrir le cours : matière, devoirs" className="flex min-w-0 items-center gap-2.5 text-left hover:text-ink">
+          {name}
+        </button>
+      ) : line.subjectId ? (
+        <Link to="/subjects/$subjectId" params={{ subjectId: line.subjectId }} className="flex min-w-0 items-center gap-2.5 hover:text-ink">
+          {name}
+        </Link>
+      ) : (
+        <span className="flex min-w-0 items-center gap-2.5">{name}</span>
+      )}
       <span className="flex items-center gap-3 text-meta text-ink-3">
-        {room}
+        <span className="max-w-[140px] truncate">{line.room}</span>
         {state === 'now' && <span className="font-medium text-accent">En cours</span>}
         {state === 'next' && <span className="text-ink-2">Ensuite</span>}
       </span>
@@ -66,15 +115,15 @@ function ClassRow({ occurrence, state }: { occurrence: ClassOccurrence; state: '
   );
 }
 
-/** Les cours du jour affiché, calculés depuis la semaine type. Redessiné chaque minute (cours en cours). */
-function ClassesSection(props: { day: string; today: string; classes: ClassOccurrence[]; holidayName: string | null; hasSlots: boolean }) {
+/** Les cours du jour affiché : la semaine type et l'agenda des cours. Redessiné chaque minute (cours en cours). */
+function ClassesSection(props: { day: string; today: string; lines: CourseLine[]; holidayName: string | null; hasSlots: boolean }) {
   const minutes = useMinutesOfDay();
   const isToday = props.day === props.today;
-  const current = isToday ? currentOrNextClass(props.classes, minutes) : null;
-  const stateOf = (occurrence: ClassOccurrence) => {
+  const current = isToday ? props.lines.find((line) => timeToMinutes(line.end) > minutes) : undefined;
+  const stateOf = (line: CourseLine) => {
     if (!isToday) return 'later' as const;
-    if (timeToMinutes(occurrence.slot.endsAt) <= minutes) return 'past' as const;
-    if (current?.occurrence === occurrence) return current.now ? ('now' as const) : ('next' as const);
+    if (timeToMinutes(line.end) <= minutes) return 'past' as const;
+    if (current === line) return timeToMinutes(line.start) <= minutes ? ('now' as const) : ('next' as const);
     return 'later' as const;
   };
   const heading = isToday ? 'Cours du jour' : `Cours · ${dayTasksHeading(props.day, props.today).toLowerCase()}`;
@@ -84,19 +133,20 @@ function ClassesSection(props: { day: string; today: string; classes: ClassOccur
       <SectionHeading title={heading} link={{ to: '/timetable', label: 'Emploi du temps' }} />
       {props.holidayName ? (
         <p className="py-2 text-ink-3">{props.holidayName} : pas de cours.</p>
-      ) : !props.hasSlots ? (
+      ) : !props.hasSlots && props.lines.length === 0 ? (
         <p className="py-2 text-ink-3">
           Ton emploi du temps est vide.{' '}
           <Link to="/timetable" className="text-accent">
             Le remplir
           </Link>
+          , ou marque ton agenda des cours dans Paramètres › Google Agenda.
         </p>
-      ) : props.classes.length === 0 ? (
+      ) : props.lines.length === 0 ? (
         <p className="py-2 text-ink-3">Pas de cours ce jour-là.</p>
       ) : (
         <ul>
-          {props.classes.map((occurrence) => (
-            <ClassRow key={occurrence.slot.id} occurrence={occurrence} state={stateOf(occurrence)} />
+          {props.lines.map((line) => (
+            <ClassRow key={line.key} line={line} state={stateOf(line)} />
           ))}
         </ul>
       )}
@@ -217,6 +267,7 @@ export function SchoolDashboard() {
   const { data: allOpen } = useOpenTasks();
   const doneToday = tasksOfMode(useDoneToday(today).data ?? [], 'school');
   const { data: agenda } = useAgenda(agendaRange);
+  const { data: googleCourses = [] } = useGoogleCourses(day);
 
   const goTo = (next: string) => void navigate({ search: next === today ? {} : { day: next } });
   usePageShortcuts({
@@ -231,7 +282,10 @@ export function SchoolDashboard() {
 
   const open = tasksOfMode(allOpen, 'school');
   const holiday = holidayOn(periods, day);
-  const classes = classesOn(slots, periods, day);
+  // Les cours du jour : la semaine type (hors vacances), et l'agenda des cours de Google.
+  const lines = [...(holiday ? [] : classesOn(slots, periods, day).map(slotLine)), ...googleCourses.map(googleLine)].sort((a, b) =>
+    a.start.localeCompare(b.start),
+  );
   const homework = homeworkForDay(open, day, today);
   const title = (
     <DayTitle
@@ -263,7 +317,7 @@ export function SchoolDashboard() {
   return (
     <Page
       title={title}
-      subtitle={schoolDaySummary({ day, today, classes: classes.length, holidayName: holiday?.name ?? null, homework })}
+      subtitle={schoolDaySummary({ day, today, classes: lines.length, holidayName: holiday?.name ?? null, homework })}
       actions={
         day !== today && (
           <Button variant="secondary" shortcut="T" onClick={() => goTo(today)}>
@@ -280,7 +334,7 @@ export function SchoolDashboard() {
       )}
       <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
         <div className="min-w-0">
-          <ClassesSection day={day} today={today} classes={classes} holidayName={holiday?.name ?? null} hasSlots={slots.length > 0} />
+          <ClassesSection day={day} today={today} lines={lines} holidayName={holiday?.name ?? null} hasSlots={slots.length > 0} />
           <div className="mt-14">
             <HomeworkSection day={day} today={today} homework={homework} doneToday={doneToday} />
           </div>
