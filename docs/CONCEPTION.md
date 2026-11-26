@@ -869,7 +869,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
-| **V2** | En cours : étapes 1 à 8 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
+| **V2** | En cours : étapes 1 à 9 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
 
 ### 7.2 Détail des jalons restants
 
@@ -927,6 +927,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 9, entre deux vrais appareils** : la synchronisation est couverte par des tests (deux bases qui s'échangent leurs fichiers par un faux Drive : créations, modifications, suppressions, la plus récente qui l'emporte, la page gardée en double, le journal du jour en double, l'envoi découpé, une version plus récente refusée ; côté Rust, le code de la clé et le chiffrement), et la migration `0014` passe dans les trois SQLite. **Pas encore essayé** : le vrai dépôt sur Google Drive (il faut la connexion Google de l'étape 8, avec l'API Google Drive activée), puis deux instances, par exemple l'app installée sur deux PC, ou une seconde base de développement. Installer cette version met la vraie base au schéma 14 (sauvegarde automatique d'avant migration) ; rien ne part tant que la synchronisation n'est pas activée.
 - **V2, étape 8, la vraie connexion Google** : la connexion (OAuth, coffre d'identifiants, appels à Google Agenda) est couverte par des tests Rust (PKCE, adresse d'autorisation, retour du navigateur, lecture des réponses), la relecture et l'affichage par des tests TypeScript avec un faux Google, et l'affichage a été vérifié dans le navigateur de test avec des événements copiés à la main. **Pas encore essayé avec un vrai compte** : il faut d'abord le projet Google Cloud de l'utilisateur ([docs/google-cloud.md](google-cloud.md)), puis se connecter depuis l'app de développement (`npm run tauri dev`, Paramètres › Google Agenda). À vérifier alors : la page de Google, le retour vers Cockpit, la liste des agendas, les fuseaux horaires, les séries, la relecture toutes les 15 minutes, la déconnexion.
 - **V2, étape 7, dans la vraie fenêtre** : vérifié dans le navigateur de test (écran du matin, mode focus et Pomodoro, tâche cochée depuis le focus, journée bouclée fêtée, mini-fenêtre ouverte comme page à part, Paramètres). Pas encore essayés dans l'app : la **mini-fenêtre native** (toujours au-dessus, glisser pour la déplacer, place retenue, la fenêtre principale qui suit une tâche cochée), le **plein écran** natif du mode focus, l'écran du matin après un démarrage caché avec Windows, les **sons** et les quatre nouvelles notifications en vraies notifications Windows.
 - **V2, étape 6, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Habitudes et ses trois onglets, cocher sur Aujourd'hui, habitude cochée par un bloc Sport fait, objectif et étapes, séance notée depuis la page et depuis un bloc, nouvel exercice, courbe, revue de la semaine, commande de la palette). Pas encore vus : le **bandeau du dimanche** (seulement le dimanche ; la règle est testée), le **rappel d'habitude** en vraie notification Windows, et la mise en page à 125 %.
@@ -934,6 +935,15 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 4, dans la vraie fenêtre** : vérifié dans le navigateur de test (créer une page, titre, enregistrement, « / », tableau, case, lien « [[ » qui crée une sous-page, liens entrants, favoris). Les raccourcis Markdown n'ont pu être essayés qu'en simulant la frappe : à vérifier au clavier. Pas encore essayés : coller ou déposer une image, l'export Markdown dans la vraie fenêtre « Enregistrer sous », et **l'import Notion** (seulement dans l'app ; couvert par des tests Rust et TypeScript).
 - **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 9 (« Synchronisation »)**, à confirmer à l'usage :
+- **Journal par déclencheurs** (migration `0014`, générée depuis le schéma) : trois déclencheurs par table de données (celles de l'export, 33) tiennent `sync_rows`, le dernier changement de chaque ligne : sa clé (tableau JSON), son heure (UTC), son appareil et un numéro d'ordre local tant qu'il n'est pas envoyé ; une suppression laisse sa trace (`deleted`). Les écritures de l'app n'ont pas changé (« Annuler » compris). Les lignes déjà là partent au premier envoi. Les traces de suppression et les fichiers sur Drive ne sont pas encore élagués.
+- **Pas synchronisés** (choix de l'étape) : les réglages, le journal des notifications, l'index de recherche et la copie de Google Agenda, propres à chaque appareil.
+- **Fichiers** : les lignes changées, avec leurs valeurs du moment, en fichiers de 3 Mo au plus, nommés par appareil et par numéro ; chiffrés côté Rust (XChaCha20-Poly1305, clé de 256 bits) puis déposés dans le dossier caché de l'app sur Google Drive (`drive.appdata`). L'app de développement écrit des fichiers à part (préfixe `dev-`). Chaque minute tant que Cockpit est ouvert et quand sa fenêtre se ferme : d'abord lire les autres, puis envoyer.
+- **Conflits** (choix de l'étape) : pour une même ligne, la modification la plus récente l'emporte en entier (à égalité, l'appareil au plus grand identifiant) : tous les appareils arrivent au même résultat. Une **page** modifiée des deux côtés avant d'être envoyée garde l'autre version dans une page à part « … (autre version) » (sauf si les deux sont identiques). Une contrainte d'unicité heurtée (journal du même jour, type de projet ou catégorie de même nom, paiement lié deux fois, exception d'événement) fait céder la ligne locale (date retirée, « (2) » ajouté, lien retiré, exception retirée), et ce changement repart aux autres.
+- **Réception** : un fichier par transaction, clés étrangères vérifiées à la fin ; les changements reçus ne sont pas renvoyés. Un fichier d'une version plus récente de Cockpit arrête la synchronisation (« mets à jour cet appareil »).
+- **Clé** (choix de l'étape) : créée sur le premier appareil (« Activer ici »), gardée dans le Gestionnaire d'identification de Windows, donnée aux autres par un **code** de 13 groupes de 4 caractères (« Rejoindre la synchronisation ») ; un fichier « key-check » chiffré sur Drive vérifie le code saisi. Rejoindre donne un nouvel identifiant d'appareil (une base restaurée d'un autre PC ne garde pas le sien). Le code QR pour le téléphone viendra à l'étape 10.
+- **Connexion Google** : elle demande désormais aussi `drive.appdata` (le dossier caché de Cockpit, rien d'autre du Drive) ; un compte connecté à l'étape 8 voit « Autoriser la synchronisation ».
 
 **Choix faits en V2, étape 8 (« Connexion Google et Google Agenda »)**, à confirmer à l'usage :
 - **Lecture seule** (choix de l'étape) : seul le droit `calendar.readonly` est demandé. Drive viendra à l'étape 9, avec une nouvelle autorisation.
@@ -1185,7 +1195,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes` ; **étape 7 (« Le compagnon ») faite le 26/11/2026**, branche `v2-compagnon` ; **étape 8 (« Connexion Google et Google Agenda ») faite le 26/11/2026**, branche `v2-google` (la connexion avec un vrai compte reste à essayer). Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes` ; **étape 7 (« Le compagnon ») faite le 26/11/2026**, branche `v2-compagnon` ; **étape 8 (« Connexion Google et Google Agenda ») faite le 26/11/2026**, branche `v2-google` (la connexion avec un vrai compte reste à essayer) ; **étape 9 (« Synchronisation ») faite le 26/11/2026**, branche `v2-sync` (l'échange réel par Drive reste à essayer). Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1326,7 +1336,7 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 | `goals`, `goal_steps` | Objectifs | échéance, étapes |
 | `exercises`, `workouts`, `workout_sets` | Carnet de séances | séance (date, ressenti, bloc facultatif) et ses séries |
 | `inbox_items` | Boîte de réception | texte, date de capture. **Fait** (migration `0006`) |
-| `sync_changes`, `sync_state` | Synchronisation | journal des modifications locales, dernier fichier lu par appareil |
+| `sync_rows`, `sync_state` | Synchronisation | dernier changement de chaque ligne (traces de suppression comprises), état de l'appareil, dernier fichier lu par appareil. **Fait** (migration `0014`) |
 
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
 
@@ -1370,12 +1380,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 ### 9.5 Architecture : synchronisation, mobile, éditeur
 
 **Synchronisation par Google Drive (P22)**
-- Chaque appareil a un identifiant. Chaque écriture (`db.batch`) enregistre aussi, dans `sync_changes`, ce qui a changé : table, id de la ligne, colonnes modifiées et horodatage.
+- Chaque appareil a un identifiant. Chaque écriture (`db.batch`) enregistre aussi, dans `sync_changes`, ce qui a changé : table, id de la ligne, colonnes modifiées et horodatage. *(Fait à l'étape 9 autrement : des déclencheurs tiennent `sync_rows`, le dernier changement de chaque ligne ; voir §7.3.)*
 - **Suppressions** : une ligne supprimée laisse une trace (`deleted_at`), purgée quand tous les appareils l'ont vue. « Annuler » continue de marcher comme aujourd'hui.
 - **Envoi** : à intervalles réguliers (environ chaque minute quand l'app est ouverte, et à la fermeture), les modifications sont regroupées dans un fichier, **chiffré sur l'appareil**, puis déposé dans le dossier caché de l'app sur Google Drive (`appDataFolder`, invisible dans le Drive). Chaque appareil n'écrit que ses propres fichiers : aucun conflit de fichier.
 - **Réception** : l'appareil lit les nouveaux fichiers des autres et les applique dans une transaction.
-- **Conflits** : pour une même ligne, la modification la plus récente l'emporte, colonne par colonne. Pour une page modifiée sur les deux appareils, la plus récente l'emporte, et l'autre version est gardée dans l'historique de la page.
-- **Clé de chiffrement** : créée au premier appareil et transmise au téléphone une seule fois (code QR affiché sur le PC). Google ne voit que des fichiers illisibles.
+- **Conflits** : pour une même ligne, la modification la plus récente l'emporte, colonne par colonne. Pour une page modifiée sur les deux appareils, la plus récente l'emporte, et l'autre version est gardée dans l'historique de la page. *(Étape 9 : la ligne entière, pas colonne par colonne ; l'autre version d'une page est gardée dans une page à part.)*
+- **Clé de chiffrement** : créée au premier appareil et transmise au téléphone une seule fois (code QR affiché sur le PC). Google ne voit que des fichiers illisibles. *(Étape 9 : transmise à un autre PC par un code à recopier ; le code QR viendra avec le téléphone.)*
 - **Côté Rust** : la connexion Google (OAuth), le jeton (dans le coffre d'identifiants de Windows ou d'Android, jamais dans la base ni les exports), les appels réseau et le chiffrement. L'interface ne fait toujours aucun appel réseau.
 - **À faire une fois** : créer un projet Google Cloud pour avoir le droit de se connecter (Drive, dossier de l'app, et Agenda). *(Guide : [docs/google-cloud.md](google-cloud.md). Connexion faite à l'étape 8, pour l'agenda ; le jeton est dans le Gestionnaire d'identification de Windows.)*
 - Les sauvegardes quotidiennes restent, sur chaque appareil.
@@ -1457,6 +1467,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - événements Google visibles dans les deux modes ;
    - seulement l'accès à l'agenda pour l'instant ; Drive sera demandé à l'étape 9.
 
+14. **Étape 9, « Synchronisation »** (26/11/2026) :
+   - la modification la plus récente l'emporte, ligne entière ;
+   - une page modifiée des deux côtés garde l'autre version dans une page à part ;
+   - la clé se donne par un code à recopier ;
+   - les données seulement : les réglages restent propres à chaque appareil.
+
 ### 9.7 Ordre de construction
 
 Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie sur les précédentes. Une branche `v2-…` par étape, validée une à une.
@@ -1469,7 +1485,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine. **Fait le 26/11/2026** (branche `v2-habitudes` ; détail au §7.3).
 7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications. **Fait le 26/11/2026** (branche `v2-compagnon` ; détail au §7.3).
 8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda. **Fait le 26/11/2026** (branche `v2-google`, lecture seule ; connexion avec un vrai compte à essayer ; détail au §7.3).
-9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord.
+9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord. **Fait le 26/11/2026** (branche `v2-sync` ; échange réel par Drive à essayer ; détail au §7.3).
 10. **Application Android** : écrans du téléphone, synchro, notifications, widget.
 
 La V2.5 (partage de projets, voir CONTRIBUTING.md) vient après.
