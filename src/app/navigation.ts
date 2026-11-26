@@ -65,6 +65,12 @@ const calendar: NavItem = { to: '/calendar', label: 'Calendrier', icon: Calendar
 const settings: NavItem = { to: '/settings', label: 'Paramètres', icon: SlidersHorizontal };
 
 /**
+ * Les pages communes aux deux modes, en une rangée d'icônes sous Aujourd'hui (le nom au survol) :
+ * la barre latérale garde de la place pour les projets en cours et les favoris.
+ */
+export const NAV_ROW: NavItem[] = [dayPage, inbox, pagesPage, habitsPage];
+
+/**
  * La barre latérale de chaque mode. Aujourd'hui, la boîte de réception, le calendrier et les paramètres
  * sont dans les deux ; le reste n'appartient qu'à un mode (voir modeOfPath).
  */
@@ -72,10 +78,6 @@ export const NAV: Record<AppMode, ModeNav> = {
   work: {
     main: [
       today,
-      dayPage,
-      inbox,
-      pagesPage,
-      habitsPage,
       { to: '/projects', label: 'Projets', icon: FolderClosed, shortcut: '2' },
       { to: '/tasks', label: 'Tâches', icon: SquareCheck, shortcut: '3' },
       calendar,
@@ -87,10 +89,6 @@ export const NAV: Record<AppMode, ModeNav> = {
   school: {
     main: [
       today,
-      dayPage,
-      inbox,
-      pagesPage,
-      habitsPage,
       { to: '/subjects', label: 'Matières', icon: BookOpen, shortcut: '2' },
       { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '3' },
       calendar,
@@ -105,7 +103,7 @@ export const NAV: Record<AppMode, ModeNav> = {
 
 /** Toutes les pages des deux modes, une fois chacune (palette Ctrl+K). */
 export function allNavItems(): NavItem[] {
-  const items = [...NAV.work.main, ...NAV.school.main, ...NAV.work.secondary, ...NAV.school.secondary];
+  const items = [...NAV.work.main.slice(0, 1), ...NAV_ROW, ...NAV.work.main.slice(1), ...NAV.school.main, ...NAV.work.secondary, ...NAV.school.secondary];
   return items.filter((item, index) => items.findIndex((other) => other.to === item.to) === index);
 }
 

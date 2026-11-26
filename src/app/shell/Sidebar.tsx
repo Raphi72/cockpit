@@ -8,7 +8,7 @@ import { PinnedPagesNav } from '@/domains/pages/components/PinnedPagesNav';
 import { ActiveProjectsNav } from '@/domains/projects/components/ActiveProjectsNav';
 import { transitionFor } from '@/ui/motion/presets';
 import { APP_MODES, MODE_ICONS, MODE_LABELS, MODE_SHORTCUT } from '../modes';
-import { NAV, type NavItem } from '../navigation';
+import { NAV, NAV_ROW, type NavItem } from '../navigation';
 import { useUiStore } from '../ui-store';
 import { useSwitchMode } from '../use-mode';
 
@@ -17,9 +17,10 @@ const itemClass =
   'transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink';
 
 /** Captures à trier : un chiffre discret, ou un point sur l'icône quand la barre est réduite. Rien si la boîte est vide. */
-function InboxCount({ collapsed }: { collapsed: boolean }) {
+function InboxCount({ collapsed, row = false }: { collapsed: boolean; row?: boolean }) {
   const count = useInboxCount();
   if (count === 0) return null;
+  if (row) return <span className="absolute top-1.5 left-[calc(50%+5px)] size-1.5 rounded-full bg-accent" aria-label={`${count} à trier`} />;
   if (collapsed) return <span className="absolute top-1.5 left-[21px] size-1.5 rounded-full bg-accent" aria-label={`${count} à trier`} />;
   return <span className="tnum ml-auto pl-2 text-meta font-normal text-ink-3">{count}</span>;
 }
@@ -39,6 +40,34 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
       {!collapsed && <span className="truncate">{item.label}</span>}
       {item.to === '/inbox' && <InboxCount collapsed={collapsed} />}
     </Link>
+  );
+}
+
+/**
+ * Journée, Boîte de réception, Pages et Habitudes : une rangée d'icônes (le nom au survol), pour laisser
+ * la place aux projets. Barre réduite : une icône par ligne, comme le reste.
+ */
+function NavRow({ collapsed }: { collapsed: boolean }) {
+  if (collapsed) return NAV_ROW.map((item) => <NavLink key={item.to} item={item} collapsed />);
+  return (
+    <div className="grid grid-cols-4 gap-0.5">
+      {NAV_ROW.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            title={item.label}
+            aria-label={item.label}
+            className="relative grid h-[34px] place-items-center rounded-md text-ink-2 transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink"
+            activeProps={{ className: 'bg-active !text-ink' }}
+          >
+            <Icon className="size-4" strokeWidth={1.75} />
+            {item.to === '/inbox' && <InboxCount collapsed row />}
+          </Link>
+        );
+      })}
+    </div>
   );
 }
 
@@ -94,7 +123,11 @@ function ModeNavLinks({ collapsed }: { collapsed: boolean }) {
       className="flex min-h-0 flex-1 flex-col"
     >
       <nav className="flex flex-col gap-0.5">
-        {NAV[mode].main.map((item) => (
+        {NAV[mode].main.slice(0, 1).map((item) => (
+          <NavLink key={item.to} item={item} collapsed={collapsed} />
+        ))}
+        <NavRow collapsed={collapsed} />
+        {NAV[mode].main.slice(1).map((item) => (
           <NavLink key={item.to} item={item} collapsed={collapsed} />
         ))}
       </nav>

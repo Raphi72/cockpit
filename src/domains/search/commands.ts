@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import type { CreateKind } from '@/app/create-store';
 import { MODE_ICONS, MODE_LABELS, MODE_SHORTCUT, otherMode, type AppMode } from '@/app/modes';
-import { NAV, allNavItems, type AppPath } from '@/app/navigation';
+import { NAV, NAV_ROW, allNavItems, type AppPath } from '@/app/navigation';
 import { matchesAllTerms } from './model';
 
 export type PaletteAction =
@@ -99,7 +99,7 @@ function createCommands(mode: AppMode): PaletteCommand[] {
  * Seules celles du mode en cours sont suggérées avant toute saisie.
  */
 function goCommands(mode: AppMode): PaletteCommand[] {
-  const current = new Set([...NAV[mode].main, ...NAV[mode].secondary].map((item) => item.to));
+  const current = new Set([...NAV[mode].main, ...NAV_ROW, ...NAV[mode].secondary].map((item) => item.to));
   return allNavItems().map((item) => ({
     id: `go-${item.to}`,
     group: 'go',
