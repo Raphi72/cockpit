@@ -32,12 +32,16 @@ export function homeworkForDay(open: TaskItem[], day: string, today: string, day
     );
 }
 
-/** « Prochains jours » en mode Cours : les examens et les événements personnels (pas ceux d'un projet). */
-export function schoolUpcomingItems(items: AgendaItem[]): AgendaItem[] {
-  // Pas les cours (ceux de l'agenda des cours non plus) : ils sont dans « Cours du jour ».
-  return items.filter(
-    (item) => item.source === 'exam' || (item.source === 'google' && item.kind !== 'class') || (item.source === 'event' && item.projectId === null),
-  );
+/**
+ * « Prochains jours » en mode Cours : les prochains cours (sauf ceux du jour affiché, déjà dans « Cours du
+ * jour »), les examens, les événements personnels (pas ceux d'un projet) et ceux de Google Agenda. C'est
+ * le mode Cours qui montre les cours à venir, pas le mode Travail (retours du 26/11/2026).
+ */
+export function schoolUpcomingItems(items: AgendaItem[], shownDay: string): AgendaItem[] {
+  return items.filter((item) => {
+    if (item.kind === 'class') return item.start.slice(0, 10) !== shownDay;
+    return item.source === 'exam' || item.source === 'google' || (item.source === 'event' && item.projectId === null);
+  });
 }
 
 const plural = (count: number, one: string, many: string) => `${count} ${count > 1 ? many : one}`;

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { listAgenda } from '@/domains/agenda/repository';
-import { isMovable, isShownInMonth } from '@/domains/agenda/model';
+import { isMovable, isSchoolItem, isShownInMonth } from '@/domains/agenda/model';
+import { schoolUpcomingItems } from '@/domains/dashboard/school-model';
 import { sql } from '@/core/db/client';
 import { googleWhen } from '@/domains/google/components/GoogleEventDialog';
 import {
   courseName,
   googleItemId,
+  isTimetableName,
   looksLikeTimetable,
   nearestPaletteKey,
   parseCourseTitle,
@@ -215,12 +217,15 @@ describe('Google Agenda : l’agenda des cours', () => {
     expect(looksLikeTimetable([...piped, ...['Dentiste', 'Sport', 'Courses', 'Ciné', 'Repas'].map(timed)])).toBe(false);
     // Les journées entières (jours fériés…) ne comptent pas.
     expect(looksLikeTimetable([...piped, { title: 'Jour férié |  | ', allDay: true }, { title: 'Pont', allDay: true }])).toBe(true);
+    // Second indice : le nom de l'agenda.
+    expect(['Emploi du temps', 'EDT M1', 'Mon emploi du temps', 'Timetable'].every(isTimetableName)).toBe(true);
+    expect(['Famille', 'Jours fériés et autres fêtes en France', 'Perso', 'Medtech'].some(isTimetableName)).toBe(false);
   });
 
   it('crée les matières toutes seules, relie les cours, et ouvre les devoirs au cours suivant', async () => {
     const { db } = createTestDb();
     await db.batch([sql`INSERT INTO subjects (id, name, color, sort_order, created_at, updated_at) VALUES ('fr', 'Francais', 'red', 1, ${NOW}, ${NOW})`]);
-    const school: RemoteCalendar = { id: 'cours@import.calendar.google.com', name: 'Emploi du temps', color: '#4986e7', primary: false, selected: true };
+    const school: RemoteCalendar = { id: 'cours@import.calendar.google.com', name: 'Intranet', color: '#4986e7', primary: false, selected: true };
     const events: RemoteEvent[] = [
       remoteEvent({ id: 'c1', title: 'Maths - CM', start: '2026-11-26T08:00:00+01:00', end: '2026-11-26T10:00:00+01:00', location: 'Amphi A' }),
       remoteEvent({ id: 'c2', title: 'Maths - TD', start: '2026-11-27T10:00:00+01:00', end: '2026-11-27T12:00:00+01:00' }),
@@ -310,8 +315,13 @@ describe('Google Agenda : emploi du temps reconnu seul et devoirs reliés à un 
     expect(exam).toMatchObject({ course: 'Comptabilité', courseKind: 'Examen', teacher: 'PETIT Luc', homeworkOpen: 0 });
     // Le jour férié (journée entière) n'est pas un cours.
     expect(await db.query("SELECT course FROM google_events WHERE id = 'f1'")).toEqual([{ course: null }]);
-    const titles = (await listAgenda(db, '2026-11-26', '2026-12-01')).filter((i) => i.kind === 'class').map((i) => i.title);
+    const agenda = await listAgenda(db, '2026-11-26', '2026-12-01');
+    const titles = agenda.filter((i) => i.kind === 'class').map((i) => i.title);
     expect(titles).toEqual(['Machine Learning', 'Réseaux', 'Comptabilité · Examen']);
+    // Les cours appartiennent au mode Cours : le dashboard Travail (qui écarte isSchoolItem) ne les montre
+    // plus, il garde les événements de l'agenda perso ; « Prochains jours » du mode Cours les montre.
+    expect(agenda.filter((i) => !isSchoolItem(i)).map((i) => i.title)).toEqual(['Dentiste']);
+    expect(schoolUpcomingItems(agenda, '2026-11-26').map((i) => i.title)).toEqual(['Réseaux', 'Dentiste', 'Comptabilité · Examen']);
   });
 
   it('ne reconnaît plus seul l’agenda des cours une fois choisi à la main', async () => {

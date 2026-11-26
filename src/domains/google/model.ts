@@ -208,6 +208,12 @@ export function looksLikeTimetable(events: Pick<LocalEvent, 'title' | 'allDay'>[
   return matching >= 5 && matching >= timed.length * 0.6;
 }
 
+/** Second indice : un agenda nommé comme un emploi du temps (« Emploi du temps », « EDT M1 », « Timetable »). */
+export function isTimetableName(name: string): boolean {
+  const plain = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return /emploi du temps|\bedt\b|timetable/.test(plain);
+}
+
 /** L'ancienne règle, pour les intitulés sans « | » : sans le type de séance ni le groupe. */
 function legacyCourseName(title: string): string {
   let text = title.replace(/\s+/g, ' ').trim();

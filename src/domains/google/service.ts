@@ -1,6 +1,6 @@
 import type { Db, Statement } from '@/core/db';
 import { getSetting } from '@/domains/settings/repository';
-import { looksLikeTimetable, parseCourseTitle, SCHOOL_MANUAL_SETTING, syncWindow, toLocalEvent, type RemoteCalendar, type RemoteEvent } from './model';
+import { isTimetableName, looksLikeTimetable, parseCourseTitle, SCHOOL_MANUAL_SETTING, syncWindow, toLocalEvent, type RemoteCalendar, type RemoteEvent } from './model';
 import {
   autoSubjectStatements,
   followCourseDatesStatement,
@@ -21,7 +21,7 @@ export type GoogleSource = {
  * fenêtre de syncWindow. Chaque agenda est remplacé d'un coup (une transaction) : en cas d'erreur réseau,
  * la copie d'avant reste.
  *
- * L'agenda des cours se reconnaît seul (looksLikeTimetable) tant qu'aucun agenda n'en est un et que
+ * L'agenda des cours se reconnaît seul (looksLikeTimetable, ou son nom : isTimetableName) tant qu'aucun agenda n'en est un et que
  * l'utilisateur n'a pas choisi lui-même dans Paramètres. Ses événements à l'heure gardent leur cours, son
  * type et ses profs ; les intitulés nouveaux reçoivent leur matière (créée au besoin), et les devoirs
  * reliés à un cours qui a changé de jour le suivent. Renvoie le nombre d'événements copiés.
@@ -35,7 +35,7 @@ export async function syncGoogle(db: Db, source: GoogleSource, today: string, ti
   let count = 0;
   for (const calendar of shown) {
     const local = (await source.events(calendar.id, window.timeMin, window.timeMax, timeZone)).map(toLocalEvent);
-    const detected = !calendar.isSchool && detect && looksLikeTimetable(local);
+    const detected = !calendar.isSchool && detect && (looksLikeTimetable(local) || isTimetableName(calendar.name));
     const school = calendar.isSchool || detected;
     const events = local.map((event) => {
       if (!school || event.allDay) return event;

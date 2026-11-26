@@ -68,7 +68,7 @@ describe('dashboard Cours', () => {
     );
   });
 
-  it('garde pour « Prochains jours » les examens et les événements personnels', () => {
+  it('garde pour « Prochains jours » les prochains cours, les examens et les événements personnels', () => {
     const item = (source: AgendaItem['source'], projectId: string | null): AgendaItem => ({
       key: `${source}:${projectId}`,
       source,
@@ -83,7 +83,13 @@ describe('dashboard Cours', () => {
       color: null,
       amountCents: null,
     });
-    const kept = schoolUpcomingItems([item('exam', null), item('event', null), item('event', 'p1'), item('payment', null), item('class', null)]);
-    expect(kept.map((i) => i.key)).toEqual(['exam:null', 'event:null']);
+    const course = (day: string): AgendaItem => ({ ...item('google', null), key: `cours:${day}`, kind: 'class', start: `${day}T09:00`, allDay: false, subjectId: 's1' });
+    const kept = schoolUpcomingItems(
+      [item('exam', null), item('event', null), item('event', 'p1'), item('payment', null), item('google', null), course(TODAY), course('2026-11-27')],
+      TODAY,
+    );
+    // Les cours du jour affiché sont déjà dans « Cours du jour » ; ceux des jours suivants viennent ici.
+    expect(kept.map((i) => i.key)).toEqual(['exam:null', 'event:null', 'google:null', 'cours:2026-11-27']);
+    expect(schoolUpcomingItems([course(TODAY), course('2026-11-27')], '2026-11-27').map((i) => i.key)).toEqual([`cours:${TODAY}`]);
   });
 });

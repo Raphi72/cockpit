@@ -345,7 +345,7 @@ export function SchoolDashboard() {
           <NextExamSection exams={exams} today={today} />
           <div className="mt-12">
             <UpcomingDays
-              days={upcomingWithTasks(schoolUpcomingItems(agenda), open, today, day)}
+              days={upcomingWithTasks(schoolUpcomingItems(agenda, day), open, today, day)}
               today={today}
               showAmounts={false}
               onShowDay={goTo}
