@@ -16,6 +16,7 @@ import { attachmentSrc, parseDoc, type Page, type PageItem } from '../model';
 import { CheckboxToTask } from './checkbox-to-task';
 import { contentExtensions } from './extensions';
 import { isImageFile, shrinkImage } from './images';
+import { BlockGutter } from './BlockGutter';
 import { undoLineCreation, useLineToIdea } from './line-actions';
 import { LineMenu, type LineChoice } from './LineMenu';
 import { deleteLine, findLine, lineAt, restoreLine, type LineRemoval, type PageLine } from './page-lines';
@@ -30,7 +31,8 @@ type LineMenuState = { x: number; y: number; line: PageLine };
 /**
  * L'éditeur d'une page (TipTap) : blocs, « / » pour en insérer, « [[ » pour citer une page, images
  * collées ou déposées (réduites, gardées dans la base), raccourcis Markdown (# titre, - liste, [ ] case…).
- * Un clic droit sur une ligne en fait une tâche, un devoir, un événement, une idée ou un projet.
+ * Un clic droit sur une ligne en fait une tâche, un devoir, un événement, une idée ou un projet ; à gauche
+ * de chaque bloc, au survol, « + » en ajoute un dessous et « ⠿ » le déplace ou ouvre ses actions.
  * Tout s'enregistre seul ; un changement de page enregistre d'abord ce qui attendait.
  */
 export function PageEditor({ page, pages, onFocusTitle }: { page: Page; pages: PageItem[]; onFocusTitle?: () => void }) {
@@ -234,7 +236,14 @@ export function PageEditor({ page, pages, onFocusTitle }: { page: Page; pages: P
 
   return (
     <>
-      <EditorContent editor={editor} />
+      <BlockGutter
+        editor={editor}
+        pageId={page.id}
+        pageProjectId={taskAttachment.projectId}
+        onLineChoice={page.isTemplate ? undefined : chooseForLine}
+      >
+        <EditorContent editor={editor} />
+      </BlockGutter>
       <LineMenu
         at={lineMenu}
         pageProjectId={taskAttachment.projectId}

@@ -1,18 +1,18 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { CreatedFromLine } from '@/app/create-store';
 import { batchContext } from '@/core/batch';
-import { db } from '@/core/db';
+import { db, type Statement } from '@/core/db';
 import { nowTimestamp } from '@/core/dates';
 import { queryKeys } from '@/core/query-keys';
 import { invalidatePages } from '../hooks';
 import { linksOf, parseDoc, plainTextOf } from '../model';
 import { getPage, saveContentStatements } from '../repository';
 import { buildLineToIdeaBatch, undoCreationStatements } from '../service';
-import { restoreLineInContent, type LineRemoval } from './page-lines';
+import { restoreLineInContent, type LineRemoval, type RestoreOptions } from './page-lines';
 
 /*
- * Les lignes transformées de l'éditeur (clic droit). À part des hooks des pages : ce module tire le
- * schéma de l'éditeur, qui n'a rien à faire dans la barre latérale.
+ * Les lignes transformées (clic droit) et les blocs supprimés (poignée ⠿) de l'éditeur. À part des hooks
+ * des pages : ce module tire le schéma de l'éditeur, qui n'a rien à faire dans la barre latérale.
  */
 
 /** Ce qu'une création née d'une ligne touche : tâches (et projets, calendrier), agenda, idées ou projets. */
@@ -40,29 +40,42 @@ export function useLineToIdea() {
   });
 }
 
+export type RestoreInPage = { pageId: string; removal: LineRemoval; options?: RestoreOptions };
+
 /**
- * « Annuler » une ligne transformée : ce qu'elle est devenue disparaît. Si l'éditeur de sa page est
- * encore ouvert, c'est lui qui remet la ligne ; sinon elle revient dans la page enregistrée, dans le même lot.
+ * Remet ce qui a quitté une page dont l'éditeur n'est plus ouvert : `statements` d'abord, puis la page
+ * enregistrée, dans le même lot ; le cache de la page aussi, car l'éditeur part de lui quand on la rouvre.
  */
-export async function undoLineCreation(
-  queryClient: QueryClient,
-  created: Pick<CreatedFromLine, 'kind' | 'id'>,
-  restoreInPage?: { pageId: string; removal: LineRemoval },
-): Promise<void> {
-  const statements = undoCreationStatements(created);
-  const page = restoreInPage ? await getPage(db, restoreInPage.pageId) : undefined;
-  const content = page && restoreInPage ? JSON.stringify(restoreLineInContent(parseDoc(page.content), restoreInPage.removal)) : null;
+async function batchWithPageRestore(queryClient: QueryClient, statements: Statement[], restore?: RestoreInPage): Promise<void> {
+  const page = restore ? await getPage(db, restore.pageId) : undefined;
+  const content = page && restore ? JSON.stringify(restoreLineInContent(parseDoc(page.content), restore.removal, restore.options)) : null;
   if (page && content) {
     const doc = parseDoc(content);
     statements.push(...saveContentStatements(page.id, content, plainTextOf(doc), linksOf(doc), nowTimestamp()));
   }
   await db.batch(statements);
-  invalidateAfterCreation(queryClient, created.kind);
   if (page && content) {
-    // L'éditeur part de la page gardée en cache quand on la rouvre : elle doit déjà avoir la ligne.
     queryClient.setQueryData(queryKeys.pages.detail(page.id), (cached: { content: string } | null | undefined) =>
       cached ? { ...cached, content } : cached,
     );
     invalidatePages(queryClient);
   }
+}
+
+/**
+ * « Annuler » une ligne transformée : ce qu'elle est devenue disparaît. Si l'éditeur de sa page est
+ * encore ouvert, c'est lui qui remet la ligne ; sinon elle revient dans la page enregistrée.
+ */
+export async function undoLineCreation(
+  queryClient: QueryClient,
+  created: Pick<CreatedFromLine, 'kind' | 'id'>,
+  restoreInPage?: RestoreInPage,
+): Promise<void> {
+  await batchWithPageRestore(queryClient, undoCreationStatements(created), restoreInPage);
+  invalidateAfterCreation(queryClient, created.kind);
+}
+
+/** « Annuler » un bloc supprimé à la poignée, quand l'éditeur de sa page n'est plus ouvert. */
+export function restoreBlockInPage(queryClient: QueryClient, restore: RestoreInPage): Promise<void> {
+  return batchWithPageRestore(queryClient, [], restore);
 }

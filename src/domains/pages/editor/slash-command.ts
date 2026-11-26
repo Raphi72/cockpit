@@ -45,6 +45,14 @@ const ITEMS: SlashItem[] = [
   { key: 'subpage', label: 'Sous-page', icon: FilePlus, keywords: 'page enfant', action: 'subpage' },
 ];
 
+/** Ce qu'un bloc peut devenir (« Transformer en », poignée ⠿) : les blocs de texte du menu « / ». */
+export const TURN_INTO = ITEMS.filter(
+  (item): item is SlashItem & { run: NonNullable<SlashItem['run']> } => item.run !== undefined && item.key !== 'divider' && item.key !== 'table',
+);
+
+/** Les transformations qui gardent une puce dans une liste ; les autres la sortent d'abord de sa liste. */
+export const LIST_TARGETS = new Set(['bullet', 'ordered', 'todo']);
+
 export type SlashCommandOptions = {
   /** Ouvre le choix d'une image (elle sera insérée à la position du curseur). */
   pickImage: () => void;

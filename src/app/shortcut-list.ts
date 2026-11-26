@@ -43,6 +43,7 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     title: 'Pages',
     entries: [
       { keys: ['Clic droit'], label: 'Faire d’une ligne une tâche, un devoir, un événement, une idée ou un projet' },
+      { keys: ['+', '⠿'], label: 'À gauche d’un bloc, au survol : en ajouter un dessous, le glisser ou le modifier' },
       { keys: ['/'], label: 'Insérer un bloc (titre, liste, cases, tableau, image…)' },
       { keys: ['[['], label: 'Lien vers une page (ou une nouvelle)' },
       { keys: ['# ', '- ', '[ ] '], label: 'Titre, liste ou case, en tapant' },

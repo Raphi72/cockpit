@@ -30,12 +30,52 @@ type LineMenuProps = {
 };
 
 /**
+ * Ce qu'une ligne peut devenir : une tâche, un devoir, un événement, une idée de projet (les projets en
+ * cours, celui de la page en premier) ou un projet. Dans le menu du clic droit et sous « En faire » de la
+ * poignée ⠿.
+ */
+export function LineChoiceItems({ pageProjectId, onChoose }: { pageProjectId: string | null; onChoose: (choice: LineChoice) => void }) {
+  const { data: projects = [] } = useProjects({ statuses: OPEN_STATUSES });
+  const ordered = [...projects].sort((a, b) => Number(b.id === pageProjectId) - Number(a.id === pageProjectId));
+  return (
+    <>
+      <MenuItem icon={SquareCheck} onSelect={() => onChoose({ kind: 'task' })}>
+        Une tâche
+      </MenuItem>
+      <MenuItem icon={NotebookPen} onSelect={() => onChoose({ kind: 'homework' })}>
+        Un devoir
+      </MenuItem>
+      <MenuItem icon={CalendarPlus} onSelect={() => onChoose({ kind: 'event' })}>
+        Un événement
+      </MenuItem>
+      <MenuSeparator />
+      <MenuSub>
+        <MenuSubTrigger icon={Lightbulb}>Une idée de projet</MenuSubTrigger>
+        <MenuSubContent className="max-h-80 overflow-y-auto">
+          {ordered.length === 0 && <MenuItem disabled>Aucun projet en cours</MenuItem>}
+          {ordered.map((project) => (
+            <MenuItem
+              key={project.id}
+              leading={<ColorDot color={project.typeColor} />}
+              onSelect={() => onChoose({ kind: 'idea', projectId: project.id, projectName: project.name })}
+            >
+              {project.name}
+            </MenuItem>
+          ))}
+        </MenuSubContent>
+      </MenuSub>
+      <MenuItem icon={FolderPlus} onSelect={() => onChoose({ kind: 'project' })}>
+        Un projet
+      </MenuItem>
+    </>
+  );
+}
+
+/**
  * Le clic droit sur une ligne de page : en faire une tâche, un devoir, un événement, une idée de projet
  * ou un projet. Ce que faisait la boîte de réception, dans n'importe quelle page.
  */
 export function LineMenu({ at, pageProjectId, onChoose, onClose }: LineMenuProps) {
-  const { data: projects = [] } = useProjects({ statuses: OPEN_STATUSES });
-  const ordered = [...projects].sort((a, b) => Number(b.id === pageProjectId) - Number(a.id === pageProjectId));
   /** Le choix fait avant que le menu se referme (rien : Échap, ou un clic ailleurs). */
   const chosen = useRef<LineChoice | null>(null);
   const choose = (choice: LineChoice) => {
@@ -62,34 +102,7 @@ export function LineMenu({ at, pageProjectId, onChoose, onClose }: LineMenuProps
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
         <MenuLabel>En faire</MenuLabel>
-        <MenuItem icon={SquareCheck} onSelect={() => choose({ kind: 'task' })}>
-          Une tâche
-        </MenuItem>
-        <MenuItem icon={NotebookPen} onSelect={() => choose({ kind: 'homework' })}>
-          Un devoir
-        </MenuItem>
-        <MenuItem icon={CalendarPlus} onSelect={() => choose({ kind: 'event' })}>
-          Un événement
-        </MenuItem>
-        <MenuSeparator />
-        <MenuSub>
-          <MenuSubTrigger icon={Lightbulb}>Une idée de projet</MenuSubTrigger>
-          <MenuSubContent className="max-h-80 overflow-y-auto">
-            {ordered.length === 0 && <MenuItem disabled>Aucun projet en cours</MenuItem>}
-            {ordered.map((project) => (
-              <MenuItem
-                key={project.id}
-                leading={<ColorDot color={project.typeColor} />}
-                onSelect={() => choose({ kind: 'idea', projectId: project.id, projectName: project.name })}
-              >
-                {project.name}
-              </MenuItem>
-            ))}
-          </MenuSubContent>
-        </MenuSub>
-        <MenuItem icon={FolderPlus} onSelect={() => choose({ kind: 'project' })}>
-          Un projet
-        </MenuItem>
+        <LineChoiceItems pageProjectId={pageProjectId} onChoose={choose} />
       </MenuContent>
     </Menu>
   );

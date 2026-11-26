@@ -6,6 +6,15 @@ import { sql } from '@/core/db/client';
 import { getEvent } from '@/domains/agenda/repository';
 import { listProjectIdeas } from '@/domains/ideas/repository';
 import {
+  blockAt,
+  duplicateBlock,
+  firstTextPos,
+  insertBlockAfter,
+  isAlready,
+  isEmptyParagraph,
+  type HandleBlock,
+} from '@/domains/pages/editor/block-handle';
+import {
   deleteLine,
   findLine,
   lineAt,
@@ -152,6 +161,97 @@ describe('lignes d’une page', () => {
 });
 
 // ─── Ce qu'une ligne devient, et « Annuler » ────────────────────────────────
+
+// ─── Poignées des blocs (« + » et « ⠿ ») ─────────────────────────────────────
+
+const blockOf = (node: PMNode, value: string): HandleBlock => {
+  const block = blockAt(node, posOf(node, value));
+  if (!block) throw new Error(`pas de bloc pour « ${value} »`);
+  return block;
+};
+
+describe('poignées des blocs', () => {
+  const page = () =>
+    doc(
+      { type: 'heading', attrs: { level: 2 }, content: [text('Courses')] },
+      { type: 'bulletList', content: [bullet('Pain', bullet('Complet'))] },
+      { type: 'taskList', content: [{ type: 'taskItem', attrs: { checked: true }, content: [paragraph('Réviser')] }] },
+      { type: 'horizontalRule' },
+      paragraph(),
+    );
+
+  it('désigne la puce la plus proche, sinon le bloc du premier niveau', () => {
+    const p = page();
+    expect(blockOf(p, 'Courses').node.type.name).toBe('heading');
+    // Une sous-puce a sa propre poignée ; sa parente aussi.
+    expect(blockOf(p, 'Complet').node.textContent).toBe('Complet');
+    expect(blockOf(p, 'Pain').node.textContent).toBe('PainComplet');
+    expect(blockOf(p, 'Réviser').node.type.name).toBe('taskItem');
+    // Entre deux blocs du premier niveau : le séparateur qui suit.
+    const rule = blockOf(p, 'Réviser');
+    const between = rule.pos + rule.node.nodeSize + 1; // après la liste de cases
+    expect(blockAt(p, between)?.node.type.name).toBe('horizontalRule');
+    expect(firstTextPos(blockAt(p, between)!)).toBeNull();
+  });
+
+  it('« + » ajoute dessous un bloc du même genre : une puce sous une puce, une case (non cochée) sous une case', () => {
+    const p = page();
+    for (const [value, type] of [
+      ['Courses', 'paragraph'],
+      ['Complet', 'listItem'],
+      ['Réviser', 'taskItem'],
+    ] as const) {
+      const block = blockOf(p, value);
+      const tr = new Transform(p);
+      const at = insertBlockAfter(tr, block);
+      tr.doc.check();
+      const added = tr.doc.resolve(at);
+      expect(added.parent.type.name).toBe('paragraph');
+      expect(added.parent.content.size).toBe(0);
+      if (type !== 'paragraph') expect(added.node(added.depth - 1).type.name).toBe(type);
+      if (type === 'taskItem') expect(added.node(added.depth - 1).attrs.checked).toBe(false);
+      // Juste après le bloc, au même niveau.
+      const parentDepth = added.depth - (type === 'paragraph' ? 1 : 2);
+      expect(added.index(parentDepth)).toBe(tr.doc.resolve(block.pos).index() + 1);
+    }
+    expect(isEmptyParagraph(p.lastChild!)).toBe(true);
+  });
+
+  it('« Dupliquer » met une copie juste dessous', () => {
+    const p = page();
+    const tr = new Transform(p);
+    duplicateBlock(tr, blockOf(p, 'Courses'));
+    expect(texts(tr.doc).slice(0, 2)).toEqual(['Courses', 'Courses']);
+    tr.doc.check();
+  });
+
+  it('ne « transforme » pas un bloc en ce qu’il est déjà', () => {
+    const p = page();
+    expect(isAlready(p, blockOf(p, 'Courses'), 'h2')).toBe(true);
+    expect(isAlready(p, blockOf(p, 'Courses'), 'h1')).toBe(false);
+    expect(isAlready(p, blockOf(p, 'Pain'), 'bullet')).toBe(true);
+    expect(isAlready(p, blockOf(p, 'Pain'), 'ordered')).toBe(false);
+    expect(isAlready(p, blockOf(p, 'Réviser'), 'todo')).toBe(true);
+    expect(isAlready(p, blockOf(p, 'Réviser'), 'text')).toBe(false);
+  });
+
+  it('« Annuler » une suppression ne remet pas un bloc déjà revenu par Ctrl+Z', () => {
+    const p = page();
+    const block = blockOf(p, 'Courses');
+    const tr = new Transform(p);
+    const removal = deleteLine(tr, { from: block.pos, to: block.pos + block.node.nodeSize, pos: block.pos, text: '' });
+    // Ctrl+Z dans la page l'a remis, puis on a tapé ailleurs : « Annuler » ne le double pas.
+    const typed = new Transform(p).insert(p.content.size - 1, pageSchema().text('suite'));
+    const back = new Transform(typed.doc);
+    restoreLine(back, removal, { unlessPresent: true });
+    expect(back.docChanged).toBe(false);
+    expect(restoreLineInContent(typed.doc.toJSON(), removal, { unlessPresent: true })).toEqual(typed.doc.toJSON());
+    // Sans Ctrl+Z, il revient à sa place.
+    const undo = new Transform(tr.doc);
+    restoreLine(undo, removal, { unlessPresent: true });
+    expect(undo.doc.eq(p)).toBe(true);
+  });
+});
 
 describe('ce qu’une ligne devient', () => {
   it('crée une idée du projet choisi, et « Annuler » la retire', async () => {

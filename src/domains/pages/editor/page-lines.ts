@@ -79,10 +79,33 @@ export function deleteLine(tr: Transform, line: PageLine): LineRemoval {
   return { before, after: tr.doc, slice };
 }
 
+/** Le bloc est-il dans la page ? (Même contenu, même schéma.) */
+export function containsNode(doc: PMNode, node: PMNode): boolean {
+  let found = false;
+  doc.descendants((child) => {
+    if (!found && child.eq(node)) found = true;
+    return !found;
+  });
+  return found;
+}
+
+export type RestoreOptions = {
+  /**
+   * Ne rien remettre si ce qui est parti est déjà revenu (un bloc supprimé à la poignée est dans
+   * l'historique de l'éditeur : Ctrl+Z dans la page a pu le remettre avant « Annuler »).
+   */
+  unlessPresent?: boolean;
+};
+
 /** Remet la ligne : à l'identique si la page n'a pas changé depuis, sinon à la fin de la page. */
-export function restoreLine(tr: Transform, removal: LineRemoval): void {
-  if (tr.doc.eq(removal.after)) tr.replaceWith(0, tr.doc.content.size, removal.before.content);
-  else tr.replace(tr.doc.content.size, tr.doc.content.size, removal.slice);
+export function restoreLine(tr: Transform, removal: LineRemoval, options: RestoreOptions = {}): void {
+  if (tr.doc.eq(removal.after)) {
+    tr.replaceWith(0, tr.doc.content.size, removal.before.content);
+    return;
+  }
+  const removed = removal.slice.content.firstChild;
+  if (options.unlessPresent && removed && containsNode(tr.doc, removed)) return;
+  tr.replace(tr.doc.content.size, tr.doc.content.size, removal.slice);
 }
 
 let schema: Schema | null = null;
@@ -97,9 +120,13 @@ export function pageSchema(): Schema {
  * Remet une ligne dans le contenu enregistré d'une page, quand son éditeur n'est plus ouvert : à
  * l'identique si la page n'a pas changé depuis, sinon à la fin.
  */
-export function restoreLineInContent(current: JSONContent, removal: LineRemoval): JSONContent {
+export function restoreLineInContent(current: JSONContent, removal: LineRemoval, options: RestoreOptions = {}): JSONContent {
   if (JSON.stringify(current) === JSON.stringify(removal.after.toJSON())) return removal.before.toJSON();
-  const tr = new Transform(PMNode.fromJSON(pageSchema(), current));
-  tr.replace(tr.doc.content.size, tr.doc.content.size, Slice.fromJSON(pageSchema(), removal.slice.toJSON()));
+  const doc = PMNode.fromJSON(pageSchema(), current);
+  const slice = Slice.fromJSON(pageSchema(), removal.slice.toJSON());
+  const removed = slice.content.firstChild;
+  if (options.unlessPresent && removed && containsNode(doc, removed)) return current;
+  const tr = new Transform(doc);
+  tr.replace(tr.doc.content.size, tr.doc.content.size, slice);
   return tr.doc.toJSON();
 }
