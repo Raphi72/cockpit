@@ -166,27 +166,3 @@ export function isInPeriod(row: PlanningRow, period: PlanningPeriod): boolean {
   const { first, last } = extent(row);
   return (first === null || first <= periodEnd(period)) && (last === null || last >= period.start);
 }
-
-// ─── Bande de densité ───────────────────────────────────────────────────────
-
-export type WeekLoad = { week: string; projects: ProjectListItem[] };
-
-/**
- * Projets menés en même temps, semaine par semaine : ceux dont la barre (retard compris) touche la
- * semaine. Un projet sans deadline compte à partir de son début ; un projet en cours sans date de
- * début compte jusqu'à sa deadline. Un projet à venir qui n'a qu'une deadline ne compte pas : on ne
- * sait pas quand il commence.
- */
-export function weeklyLoad(rows: PlanningRow[], period: PlanningPeriod): WeekLoad[] {
-  return period.weeks.map((week) => {
-    const sunday = addDaysISO(week, 6);
-    const projects = rows
-      .filter((row) => {
-        if (!row.bar) return false;
-        const end = row.to === null ? null : (row.lateUntil ?? row.to);
-        return (row.from === null || row.from <= sunday) && (end === null || end >= week);
-      })
-      .map((row) => row.project);
-    return { week, projects };
-  });
-}

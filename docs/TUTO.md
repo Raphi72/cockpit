@@ -106,7 +106,11 @@ l'arrêter. **Coche** au fur et à mesure : la tâche est vraiment terminée dan
 - **Projets** : statut, client, budget, échéancier des paiements, tâches et sous-tâches, idées.
 - **Tâches** : en liste ou en kanban. Pour **renommer** une tâche sans l'ouvrir, clique sur le crayon au
   survol, ou utilise `F2`. « Je veux travailler… » compose un programme pour une durée donnée.
-- **Planning** : la frise de tes projets.
+- **Planning** : est-ce que tu auras le temps ? En haut, pour chaque semaine, **À faire** (le travail de tes
+  tâches, réparti jusqu'à leur deadline ou celle du projet ; 30 min pour une tâche sans durée) et **Posé dans la
+  Journée** (tes blocs de travail). La semaine passe en **ambre** quand le temps posé ne suffit pas ; un clic
+  l'ouvre dans la Journée pour y poser des blocs. Sous chaque projet, ses heures de la semaine. Une tâche sans
+  deadline (ni celle de son projet) ne compte pas : donne une deadline au projet, ses tâches s'y répartissent.
 - **Finances** : comptes, encaissements attendus et reçus, transactions.
 - **Couleurs** : chaque projet, client ou matière peut avoir la couleur de ton choix (la palette, ou
   « Autre couleur »).

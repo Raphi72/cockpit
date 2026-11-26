@@ -7,7 +7,6 @@ import {
   planningTitle,
   planningPeriod,
   shiftPlanningAnchor,
-  weeklyLoad,
 } from '@/domains/agenda/timeline/model';
 import type { PaymentListItem } from '@/domains/finance/payments/model';
 import type { ProjectListItem } from '@/domains/projects/model';
@@ -134,18 +133,5 @@ describe('lignes du planning', () => {
     const now = planningPeriod('month', TODAY);
     expect(rows.filter((r) => isInPeriod(r, now)).map((r) => r.project.id)).toEqual(['memoire', 'logo', 'site', 'appli']);
     expect(rows.filter((r) => isInPeriod(r, planningPeriod('quarter', TODAY))).map((r) => r.project.id)).toContain('bde');
-  });
-
-  it('compte les projets menés en même temps, semaine par semaine', () => {
-    const { rows } = planningRows(projects, payments, TODAY);
-    const load = weeklyLoad(rows, planningPeriod('month', TODAY));
-    expect(load.map((w) => [w.week, w.projects.map((p) => p.id)])).toEqual([
-      ['2026-09-14', ['memoire', 'logo', 'site']],
-      ['2026-09-21', ['memoire', 'logo', 'site']], // logo est en retard : il compte jusqu'à aujourd'hui
-      ['2026-09-28', ['memoire', 'site']],
-      ['2026-10-05', ['memoire', 'appli']],
-      ['2026-10-12', ['memoire', 'appli']],
-      ['2026-10-19', ['memoire', 'appli']],
-    ]);
   });
 });

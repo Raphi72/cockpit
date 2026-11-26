@@ -4,10 +4,14 @@ import { Fragment, useMemo } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { useUiStore } from '@/app/ui-store';
+import { addDaysISO } from '@/core/dates';
 import { useToday } from '@/core/use-today';
 import { useWeekStartsOn } from '@/core/week-start';
+import { useBlocks } from '@/domains/day/hooks';
+import { formatMinutes } from '@/domains/day/model';
 import { useOpenPayments, useReceivedPayments } from '@/domains/finance/payments/hooks';
 import { useProjects } from '@/domains/projects/hooks';
+import { useOpenTasks } from '@/domains/tasks/hooks';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import type { ProjectStatus } from '@/domains/projects/model';
 import { EmptyState } from '@/ui/layout/EmptyState';
@@ -18,13 +22,14 @@ import {
   PLANNING_ZOOMS,
   PLANNING_ZOOM_LABELS,
   isInPeriod,
+  periodEnd,
   planningRows,
   planningTitle,
   planningPeriod,
   shiftPlanningAnchor,
-  weeklyLoad,
 } from './model';
 import { Timeline } from './Timeline';
+import { displayMinutes, projectWeekMinutes, spreadTasks, weeklyWorkload } from './workload';
 
 /** Projets du planning : en cours ou à venir (un projet à venir passe en cours à sa date de début). */
 const PLANNED_STATUSES: ProjectStatus[] = ['active', 'planned'];
@@ -32,9 +37,10 @@ const PLANNED_STATUSES: ProjectStatus[] = ['active', 'planned'];
 const ZOOM_KEYS = { month: 'M', quarter: 'R' } as const;
 
 /**
- * Planning : une ligne par projet en cours ou à venir, une barre du début à la deadline, la ligne
- * « aujourd'hui », les encaissements en losanges, et en haut la bande qui montre combien de projets
- * se chevauchent chaque semaine. Zoom mois (6 semaines) ou trimestre (13 semaines).
+ * Planning : il dit si tu auras le temps. En haut, la charge de chaque semaine (le travail à finir avant
+ * les deadlines) face au temps posé dans la Journée ; dessous, une ligne par projet en cours ou à venir,
+ * une barre du début à la deadline, ses heures par semaine, la ligne « aujourd'hui » et les encaissements
+ * en losanges. Zoom mois (6 semaines) ou trimestre (13 semaines).
  */
 export function PlanningPage() {
   const today = useToday();
@@ -47,10 +53,13 @@ export function PlanningPage() {
   const { data: projects } = useProjects({ statuses: PLANNED_STATUSES });
   const { data: open } = useOpenPayments();
   const { data: received } = useReceivedPayments();
+  const { data: tasks } = useOpenTasks();
 
   const anchor = search.date ?? today;
   const weekStartsOn = useWeekStartsOn();
   const period = useMemo(() => planningPeriod(zoom, anchor, weekStartsOn), [zoom, anchor, weekStartsOn]);
+  const range = useMemo(() => ({ from: period.start, to: addDaysISO(periodEnd(period), 1) }), [period]);
+  const { data: blocks } = useBlocks(range);
   const goTo = (date: string) => void navigate({ search: date === today ? {} : { date } });
 
   usePageShortcuts({
@@ -62,12 +71,16 @@ export function PlanningPage() {
     p: openPlan,
   });
 
-  if (!projects || !open || !received) return null;
+  if (!projects || !open || !received || !tasks || !blocks) return null;
 
   const { rows, undated } = planningRows(projects, [...open, ...received], today);
   const visible = rows.filter((row) => isInPeriod(row, period));
   const hidden = rows.length - visible.length;
   const unit = zoom === 'month' ? '4 semaines' : '12 semaines';
+  const work = spreadTasks(tasks, projects, today);
+  const load = weeklyWorkload(work.spreads, blocks, period, today);
+  // Du travail à faire, et aucun bloc posé d'ici la fin de la période : on dit où le poser.
+  const nothingPlanned = load.some((w) => w.todoMin > 0) && load.every((w) => w.plannedMin === 0);
 
   return (
     <Page
@@ -105,19 +118,58 @@ export function PlanningPage() {
         </>
       }
     >
-      {projects.length === 0 ? (
+      {projects.length === 0 && work.spreads.length === 0 ? (
         <EmptyState icon={ChartGantt} title="Aucun projet en cours ou à venir">
-          <p>Donne une date de début et une deadline à tes projets : ils s’aligneront ici, et tu verras ce qui se chevauche.</p>
+          <p>
+            Donne une deadline à tes projets et une durée à leurs tâches : tu verras ici, semaine par semaine, le travail à
+            faire face au temps posé dans ta Journée.
+          </p>
           <Button variant="primary" icon={Plus} className="mt-4" onClick={() => openCreate('project')}>
             Créer un projet
           </Button>
         </EmptyState>
       ) : (
         <>
-          <Timeline rows={visible} load={weeklyLoad(visible, period)} period={period} today={today} detailed={zoom === 'month'} />
+          <Timeline
+            rows={visible}
+            load={load}
+            period={period}
+            today={today}
+            detailed={zoom === 'month'}
+            weeklyOf={(projectId) => projectWeekMinutes(load, projectId)}
+            remaining={work.remaining}
+          />
           {visible.length === 0 && <p className="mt-4 text-ink-3">Aucun projet sur cette période.</p>}
 
           <div className="mt-8 space-y-1.5 text-meta text-ink-3">
+            {nothingPlanned && (
+              <p>
+                Aucun bloc de travail posé sur cette période : clique sur une semaine pour l’ouvrir dans la Journée et y poser
+                du temps.
+              </p>
+            )}
+            {work.undated.length > 0 && (
+              <p>
+                Sans deadline, pas dans la charge :{' '}
+                {work.undated.map((share, index) => (
+                  <Fragment key={share.projectId ?? ''}>
+                    {index > 0 && ', '}
+                    {share.projectId ? (
+                      <Link to="/projects/$projectId" params={{ projectId: share.projectId }} className="text-ink-2 hover:text-ink">
+                        {share.name}
+                      </Link>
+                    ) : (
+                      `${share.count} tâche${share.count > 1 ? 's' : ''} sans projet`
+                    )}{' '}
+                    ({formatMinutes(displayMinutes(share.minutes))})
+                  </Fragment>
+                ))}
+                .{' '}
+                {work.undated.some((share) => share.projectId)
+                  ? 'Une deadline sur le projet suffit : ses tâches s’y répartissent.'
+                  : 'Donne-leur une deadline, ou range-les dans un bloc de la Journée.'}
+              </p>
+            )}
             {hidden > 0 && (
               <p>
                 {hidden} autre{hidden > 1 ? 's' : ''} projet{hidden > 1 ? 's' : ''} hors de cette période : ← → pour les voir.
