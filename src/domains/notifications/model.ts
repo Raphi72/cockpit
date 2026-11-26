@@ -12,6 +12,10 @@ export type NotificationRule =
   | 'events'
   | 'blocks'
   | 'habits'
+  | 'eveningReview'
+  | 'homework'
+  | 'exams'
+  | 'flashcards'
   | 'deadlines'
   | 'priorityTasks'
   | 'payments'
@@ -23,6 +27,10 @@ export const NOTIFICATION_RULES: { rule: NotificationRule; label: string; hint: 
   { rule: 'events', label: 'Rendez-vous', hint: '15 minutes avant un événement à heure fixe' },
   { rule: 'blocks', label: 'Blocs de la journée', hint: 'au début et à la fin de chaque bloc' },
   { rule: 'habits', label: 'Rappels d’habitude', hint: 'à l’heure choisie, si l’habitude n’est pas encore faite' },
+  { rule: 'eveningReview', label: 'Bilan du soir', hint: 'à 20 h, s’il reste des blocs à marquer' },
+  { rule: 'homework', label: 'Devoirs', hint: 'la veille du jour où ils sont à rendre' },
+  { rule: 'exams', label: 'Examens', hint: '3 jours avant' },
+  { rule: 'flashcards', label: 'Cartes à revoir', hint: 'le matin, s’il y en a' },
   { rule: 'deadlines', label: 'Deadlines', hint: 'projets et échéances, 3 jours avant puis le jour même' },
   { rule: 'priorityTasks', label: 'Tâches prioritaires', hint: 'la veille de leur deadline' },
   { rule: 'payments', label: 'Encaissements', hint: 'la veille de la date prévue, puis s’ils sont en retard' },
@@ -154,6 +162,22 @@ export function habitNotices(habits: HabitForNotice[], moment: Moment): Notice[]
   });
 }
 
+/** Le bilan du soir est rappelé à 20 h (heure où la Journée le propose), pendant 30 minutes, une fois. */
+export const EVENING_REVIEW_TIME = '20:00';
+export const EVENING_REVIEW_WINDOW_MIN = 30;
+
+/** Bilan du soir : des blocs de la journée sont finis sans être marqués (fait, raté, décalé). */
+export function eveningReviewNotice(toReview: number, moment: Moment): Notice | null {
+  const now = blockMinutes(moment.time);
+  const at = blockMinutes(EVENING_REVIEW_TIME);
+  if (toReview === 0 || now < at || now >= at + EVENING_REVIEW_WINDOW_MIN) return null;
+  return {
+    key: `evening-review:${moment.today}`,
+    title: 'Bilan du soir',
+    body: `${toReview} bloc${toReview > 1 ? 's' : ''} de la journée à marquer : ouvre la Journée.`,
+  };
+}
+
 // ─── Textes ─────────────────────────────────────────────────────────────────
 
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`;
@@ -186,6 +210,42 @@ export function eventNotices(events: TimedEvent[], moment: Moment): Notice[] {
       body: event.location ? `${when} · ${event.location}` : when,
     };
   });
+}
+
+export type HomeworkDue = { id: string; title: string; subjectName: string | null; dueDate: string };
+
+/** Devoirs : la veille du jour où ils sont à rendre, une fois. */
+export function homeworkNotices(items: HomeworkDue[], today: string): Notice[] {
+  return items
+    .filter((item) => daysBetween(today, item.dueDate) === 1)
+    .map((item) => ({
+      key: `homework:${item.id}:${item.dueDate}`,
+      title: `À rendre demain : ${item.title}`,
+      body: item.subjectName ?? 'Devoir',
+    }));
+}
+
+export type ExamSoon = { id: string; title: string; subjectName: string; date: string; startsAt: string | null };
+
+/** Examens : 3 jours avant, une fois (décaler l'examen relance le rappel). */
+export function examNotices(exams: ExamSoon[], today: string): Notice[] {
+  return exams
+    .filter((exam) => daysBetween(today, exam.date) === 3)
+    .map((exam) => ({
+      key: `exam:${exam.id}:${exam.date}`,
+      title: `Examen dans 3 jours : ${exam.subjectName}`,
+      body: `${exam.title}, ${longDay(exam.date)}${exam.startsAt ? ` à ${exam.startsAt}` : ''}`,
+    }));
+}
+
+/** Cartes à revoir : le matin, s'il y en a. */
+export function flashcardsNotice(count: number, today: string): Notice | null {
+  if (count === 0) return null;
+  return {
+    key: `flashcards:${today}`,
+    title: `${plural(count, 'carte')} à revoir aujourd’hui`,
+    body: 'Quelques minutes dans Révisions suffisent.',
+  };
 }
 
 /**

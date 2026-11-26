@@ -8,7 +8,7 @@ import type { Transition } from 'motion/react';
 /** La courbe de `--ease-soft` (tokens.css). */
 export const EASE_SOFT = [0.2, 0.8, 0.2, 1] as const;
 
-export type MotionKind = 'page' | 'row' | 'toast';
+export type MotionKind = 'page' | 'row' | 'toast' | 'screen' | 'spark';
 
 export const TRANSITIONS: Record<MotionKind, Transition> = {
   /** Une page qui apparaît : un simple fondu, sans déplacement (rien ne bouge sous le pointeur). */
@@ -17,6 +17,10 @@ export const TRANSITIONS: Record<MotionKind, Transition> = {
   row: { duration: 0.2, ease: EASE_SOFT },
   /** Un message qui se pose en bas de l'écran : un ressort bref, sans rebond visible. */
   toast: { type: 'spring', stiffness: 520, damping: 38, mass: 0.8 },
+  /** Un écran entier qui arrive ou part (écran du matin, mode focus) : un fondu plus lent, apaisé. */
+  screen: { duration: 0.3, ease: EASE_SOFT },
+  /** L'étincelle d'une petite célébration : elle éclot avec un léger rebond, juste après son message. */
+  spark: { type: 'spring', stiffness: 420, damping: 14, delay: 0.08 },
 };
 
 export const INSTANT: Transition = { duration: 0 };

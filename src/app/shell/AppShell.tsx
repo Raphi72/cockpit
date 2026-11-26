@@ -18,6 +18,7 @@ import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { CreatePageOnDemand } from '@/domains/pages/components/CreatePageOnDemand';
 import { WorkoutDialog } from '@/domains/habits/components/WorkoutDialog';
+import { Companion } from '@/domains/companion/components/Companion';
 import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
 import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDialog';
 import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
@@ -94,6 +95,8 @@ export function AppShell() {
         <SelectionBar />
         <CommandPalette />
         <ShortcutsDialog />
+        {/* Le compagnon : écran du matin, mode focus, célébrations, sons. */}
+        <Companion />
       </OverlaysBoundary>
       <Toaster />
     </div>

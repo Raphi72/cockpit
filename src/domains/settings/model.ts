@@ -39,6 +39,13 @@ export const SETTINGS = {
   /** Journée (organisateur) : première et dernière heure de la colonne. */
   dayStartHour: { key: 'day.startHour', fallback: 6 } as SettingDef<number>,
   dayEndHour: { key: 'day.endHour', fallback: 24 } as SettingDef<number>,
+  /** Compagnon (V2, étape 7) : écran du matin, petites célébrations, sons (désactivés par défaut). */
+  morningScreen: { key: 'companion.morningScreen', fallback: true } as SettingDef<boolean>,
+  celebrations: { key: 'companion.celebrations', fallback: true } as SettingDef<boolean>,
+  sounds: { key: 'companion.sounds', fallback: false } as SettingDef<boolean>,
+  /** Mode focus : durées d'un Pomodoro, en minutes. */
+  pomodoroWork: { key: 'focus.pomodoroWork', fallback: 25 } as SettingDef<number>,
+  pomodoroBreak: { key: 'focus.pomodoroBreak', fallback: 5 } as SettingDef<number>,
 };
 
 export const DAY_START_CHOICES = [5, 6, 7, 8, 9] as const;

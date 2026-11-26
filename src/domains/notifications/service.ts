@@ -2,6 +2,10 @@ import { addDaysISO, timeToMinutes } from '@/core/dates';
 import type { Db } from '@/core/db';
 import { listAgenda } from '@/domains/agenda/repository';
 import { listBlocks } from '@/domains/day/repository';
+import { blocksToReview, toMinutes } from '@/domains/day/model';
+import { listExams } from '@/domains/school/exams/repository';
+import { todayQueue } from '@/domains/school/flashcards/model';
+import { listFlashcards } from '@/domains/school/flashcards/repository';
 import { doneDays, isScheduled, weekProgress } from '@/domains/habits/model';
 import { listDoneBlocks, listHabitLogs, listHabits } from '@/domains/habits/repository';
 import { nextTimedEvent } from '@/domains/dashboard/model';
@@ -17,8 +21,12 @@ import {
   bundleNotices,
   deadlineNotices,
   blockNotices,
+  eveningReviewNotice,
   eventNotices,
+  examNotices,
+  flashcardsNotice,
   habitNotices,
+  homeworkNotices,
   paymentNotices,
   priorityTaskNotices,
   projectStartNotices,
@@ -92,6 +100,11 @@ export async function collectNotices(db: Db, moment: Moment, round: Round): Prom
   if (rules.habits) {
     notices.push(...habitNotices(await loadHabitsForNotice(db, today), moment));
   }
+  if (rules.eveningReview) {
+    const blocks = await listBlocks(db, today, addDaysISO(today, 1));
+    const review = eveningReviewNotice(blocksToReview(blocks, toMinutes(moment.time)).length, moment);
+    if (review) notices.push(review);
+  }
   if (round === null) return notices;
 
   const tomorrow = addDaysISO(today, 1);
@@ -107,6 +120,19 @@ export async function collectNotices(db: Db, moment: Moment, round: Round): Prom
     notices.push(...paymentNotices(await listPaymentsToNotify(db, today, tomorrow), today, showAmounts));
   }
   if (rules.projectStarts) notices.push(...projectStartNotices(await listProjectsStarting(db, today), today));
+  if (rules.homework) {
+    const homework = (await listOpenTasks(db)).flatMap((task) =>
+      task.subjectId !== null && task.parentId === null && task.dueDate !== null
+        ? [{ id: task.id, title: task.title, subjectName: task.subjectName, dueDate: task.dueDate }]
+        : [],
+    );
+    notices.push(...homeworkNotices(homework, today));
+  }
+  if (rules.exams) notices.push(...examNotices(await listExams(db), today));
+  if (rules.flashcards) {
+    const cards = flashcardsNotice(todayQueue(await listFlashcards(db), today).length, today);
+    if (cards) notices.push(cards);
+  }
   return notices;
 }
 

@@ -7,7 +7,8 @@ export type ToastAction = {
   undo?: boolean;
 };
 
-export type Toast = { id: number; message: string; tone: 'default' | 'danger'; action?: ToastAction };
+/** `celebrate` : une petite célébration (compagnon), avec une étincelle. */
+export type Toast = { id: number; message: string; tone: 'default' | 'danger' | 'celebrate'; action?: ToastAction };
 
 type ToastState = {
   toasts: Toast[];
@@ -29,7 +30,7 @@ export function toast(message: string, options: { tone?: Toast['tone']; action?:
   const id = nextId++;
   const tone = options.tone ?? 'default';
   useToastStore.setState((state) => ({ toasts: [...state.toasts, { id, message, tone, action: options.action }] }));
-  const duration = options.action ? 6000 : tone === 'danger' ? 6000 : 3500;
+  const duration = options.action ? 6000 : tone === 'danger' ? 6000 : tone === 'celebrate' ? 4500 : 3500;
   setTimeout(() => useToastStore.getState().dismiss(id), duration);
 }
 

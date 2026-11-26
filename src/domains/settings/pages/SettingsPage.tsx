@@ -19,6 +19,7 @@ import {
 import { AccountsEditor } from '@/domains/finance/accounts/components/AccountsEditor';
 import { CategoriesEditor } from '@/domains/finance/transactions/components/CategoriesEditor';
 import { CaptureSettings } from '@/domains/inbox';
+import { CompanionSettings } from '@/domains/companion/components/CompanionSettings';
 import { NotificationSettings } from '@/domains/notifications';
 import { PresenceSettings } from '@/domains/presence';
 import { ProjectTypesEditor } from '@/domains/projects/components/ProjectTypesEditor';
@@ -287,6 +288,7 @@ export function SettingsPage() {
       <DaySection />
       <PresenceSettings />
       <CaptureSettings />
+      <CompanionSettings />
       <NotificationSettings />
       <Section title="Types de projet" meta="clique sur un nom ou une couleur pour le modifier">
         <ProjectTypesEditor />

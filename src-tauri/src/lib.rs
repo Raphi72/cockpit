@@ -1,6 +1,6 @@
 //! Coquille native de Cockpit, volontairement fine : toute la logique métier est côté TypeScript.
 //! Ici : ouverture de la base, migrations, sauvegardes, exposition du pont SQLite, exports,
-//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification et capture rapide.
+//! envoi des notifications, mémoire de la fenêtre, présence dans la zone de notification, capture rapide et mini-fenêtre « En ce moment ».
 
 mod backup;
 mod capture;
@@ -8,6 +8,7 @@ mod data;
 mod notion;
 mod db;
 mod notify;
+mod now;
 mod presence;
 
 use backup::BackupDirs;
@@ -103,6 +104,8 @@ pub fn run() {
             capture::capture_done,
             capture::capture_shortcut_get,
             capture::capture_shortcut_set,
+            now::now_toggle,
+            now::now_changed,
         ])
         .run(tauri::generate_context!())
         .expect("impossible de lancer Cockpit");

@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { AnimatePresence, useReducedMotion } from 'motion/react';
 import * as m from 'motion/react-m';
 import { transitionFor } from '../motion/presets';
@@ -25,6 +25,17 @@ export function Toaster() {
               (t.tone === 'danger' ? 'text-danger' : 'text-ink')
             }
           >
+            {t.tone === 'celebrate' && (
+              // Une étincelle qui éclot : la seule fantaisie d'une célébration, discrète.
+              <m.span
+                initial={reduced ? false : { scale: 0.3, rotate: -40, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                transition={transitionFor('spark', reduced)}
+                className="-mr-1 text-warning"
+              >
+                <Sparkles className="size-4" strokeWidth={1.75} />
+              </m.span>
+            )}
             <span className="py-0.5">{t.message}</span>
             {t.action && (
               <button

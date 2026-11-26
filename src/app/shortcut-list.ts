@@ -25,6 +25,8 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
       { keys: ['C'], label: 'Nouveau…, puis la lettre du menu (T, E, P… ; en Cours : D, X, N…)' },
       { keys: ['Ctrl 1 … 6'], label: 'Aller aux pages principales du mode' },
       { keys: ['Ctrl M'], label: 'Passer du mode Travail au mode Cours, et inversement' },
+      { keys: ['F'], label: 'Mode focus : le bloc en cours en plein écran, minuteur et Pomodoro' },
+      { keys: ['Ctrl Maj E'], label: 'Mini-fenêtre « En ce moment », toujours au-dessus' },
       { keys: ['Ctrl B'], label: 'Réduire ou déplier la barre latérale' },
       { keys: ['Ctrl Z'], label: 'Annuler la dernière action' },
       { keys: ['?'], label: 'Afficher cette aide' },

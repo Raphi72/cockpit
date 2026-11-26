@@ -13,6 +13,7 @@ import { useOpenJournal } from '@/domains/pages/hooks';
 import { useProjects } from '@/domains/projects/hooks';
 import { useSetting } from '@/domains/settings/hooks';
 import { SETTINGS, resolveDayHours } from '@/domains/settings/model';
+import { useCompanion } from '@/domains/companion/store';
 import { useOpenTasks, useTasksInBlocks } from '@/domains/tasks/hooks';
 import { selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
 import { Page } from '@/ui/layout/Page';
@@ -73,6 +74,7 @@ export function DayPage() {
   const now = useMinutesOfDay();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [dialog, setDialog] = useState<BlockDialogState>(null);
+  const setFocusOpen = useCompanion((state) => state.setFocusOpen);
   // Propositions figées à l'ouverture : elles ne bougent pas pendant qu'on les coche.
   const [fill, setFill] = useState<FillProposal[] | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -152,10 +154,22 @@ export function DayPage() {
         onPickerOpenChange={setPickerOpen}
       />
     );
-  const subtitle =
+  const text =
     view === 'week'
       ? `${weekBlocks.length} bloc${weekBlocks.length > 1 ? 's' : ''} cette semaine`
       : daySubtitle(blocksOn(day), day === today, now);
+  // Un bloc en cours : le mode focus est à un clic (ou F).
+  const subtitle =
+    view === 'day' && day === today && currentBlock(blocksOn(day), now) ? (
+      <>
+        {text}
+        <button type="button" onClick={() => setFocusOpen(true)} title="Mode focus · F" className="ml-2 text-ink-3 transition-colors hover:text-ink">
+          · Focus →
+        </button>
+      </>
+    ) : (
+      text
+    );
 
   return (
     <Page

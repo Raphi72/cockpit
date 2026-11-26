@@ -37,6 +37,8 @@ import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { useTransactionEditor } from '@/domains/finance/transactions/editor-store';
 import { useExamEditor } from '@/domains/school/exams/components/ExamDialog';
 import { useWorkoutEditor } from '@/domains/habits/components/WorkoutDialog';
+import { toggleNowWindow } from '@/domains/companion/native';
+import { useCompanion } from '@/domains/companion/store';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { ColorDot, type PaletteKey } from '@/ui/data/ColorDot';
@@ -216,6 +218,12 @@ function usePaletteActions(close: () => void) {
         break;
       case 'workout':
         openWorkout({ date: today });
+        break;
+      case 'focus':
+        useCompanion.getState().setFocusOpen(true);
+        break;
+      case 'now-window':
+        toggleNowWindow();
         break;
       case 'sidebar':
         toggleSidebar();

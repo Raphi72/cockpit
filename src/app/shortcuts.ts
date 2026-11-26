@@ -1,6 +1,8 @@
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { todayISO } from '@/core/dates';
+import { toggleNowWindow } from '@/domains/companion/native';
+import { useCompanion } from '@/domains/companion/store';
 import { undoLatest } from '@/ui/overlays/toast';
 import { createDefaultsFor, useCreateStore, type CreateKind } from './create-store';
 import { shortcutTarget } from './navigation';
@@ -46,7 +48,7 @@ function isTyping(target: EventTarget | null): boolean {
  * Ctrl+K pour la palette, Ctrl+1…6 pour les pages du mode, Ctrl+M pour changer de mode,
  * Ctrl+B pour la barre latérale, Ctrl+Z pour annuler,
  * N (ou Ctrl+N) pour une nouvelle tâche (un devoir en mode Cours), C pour le menu « Nouveau »,
- * ? pour l'aide des raccourcis.
+ * F pour le mode focus, Ctrl+Maj+E pour la mini-fenêtre « En ce moment », ? pour l'aide des raccourcis.
  */
 export function useGlobalShortcuts(): void {
   const navigate = useNavigate();
@@ -70,6 +72,12 @@ export function useGlobalShortcuts(): void {
           return;
         }
         const letter = event.key.toLowerCase();
+        // Ctrl+Maj+E : la mini-fenêtre « En ce moment », toujours au-dessus (V2, étape 7).
+        if (event.shiftKey && letter === 'e') {
+          event.preventDefault();
+          toggleNowWindow();
+          return;
+        }
         // Ctrl+K : même en tapant du texte ; une seconde fois, il referme la palette.
         if (!event.shiftKey && letter === 'k') {
           event.preventDefault();
@@ -112,6 +120,11 @@ export function useGlobalShortcuts(): void {
       if (key === 'c') {
         event.preventDefault();
         setNewMenuOpen(true);
+      }
+      // F : le mode focus, plein écran sur le bloc en cours.
+      if (key === 'f') {
+        event.preventDefault();
+        useCompanion.getState().setFocusOpen(true);
       }
       // N : nouvelle tâche. Ctrl+N reste disponible, mais certains navigateurs le réservent.
       if (key === 'n') {

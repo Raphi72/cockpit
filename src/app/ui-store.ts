@@ -50,6 +50,9 @@ type UiState = {
   /** Le lundi de la dernière semaine dont le bandeau « revue de la semaine » a été fermé. */
   reviewDismissed: string | null;
   dismissReview: (monday: string) => void;
+  /** Le dernier jour où l'écran du matin a été montré (une fois par jour). */
+  morningShown: string | null;
+  markMorningShown: (day: string) => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -88,6 +91,8 @@ export const useUiStore = create<UiState>()(
       setWorkPlanRequest: (request) => set({ workPlanRequest: request }),
       reviewDismissed: null,
       dismissReview: (monday) => set({ reviewDismissed: monday }),
+      morningShown: null,
+      markMorningShown: (day) => set({ morningShown: day }),
     }),
     {
       name: 'cockpit-ui',
@@ -104,6 +109,7 @@ export const useUiStore = create<UiState>()(
         planningZoom: state.planningZoom,
         workPlanRequest: state.workPlanRequest,
         reviewDismissed: state.reviewDismissed,
+        morningShown: state.morningShown,
       }),
     },
   ),

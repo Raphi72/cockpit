@@ -6,6 +6,8 @@ import {
   CalendarPlus,
   CircleCheck,
   Dumbbell,
+  Focus,
+  PictureInPicture2,
   FileCheck,
   FileText,
   FolderClosed,
@@ -31,6 +33,8 @@ export type PaletteAction =
   | { type: 'receive' }
   | { type: 'work-plan' }
   | { type: 'workout' }
+  | { type: 'focus' }
+  | { type: 'now-window' }
   | { type: 'shortcuts' }
   | { type: 'sidebar' }
   | { type: 'mode' }
@@ -143,6 +147,25 @@ export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: b
       icon: Timer,
       action: { type: 'work-plan' },
       suggested: true,
+    },
+    {
+      id: 'focus',
+      group: 'action',
+      label: 'Mode focus',
+      keywords: 'concentration plein écran minuteur pomodoro bloc en cours',
+      icon: Focus,
+      shortcut: 'F',
+      action: { type: 'focus' },
+      suggested: true,
+    },
+    {
+      id: 'now-window',
+      group: 'action',
+      label: 'Mini-fenêtre « En ce moment »',
+      keywords: 'toujours au-dessus bloc en cours temps restant petite fenêtre',
+      icon: PictureInPicture2,
+      shortcut: 'Ctrl Maj E',
+      action: { type: 'now-window' },
     },
     {
       id: 'workout',

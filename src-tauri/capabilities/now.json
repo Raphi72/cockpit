@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "now",
+  "description": "Mini-fenêtre « En ce moment » : se déplacer en la faisant glisser.",
+  "windows": ["now"],
+  "permissions": ["core:event:default", "core:window:allow-start-dragging"]
+}
