@@ -19,6 +19,7 @@ import {
   startClock,
   type ClosureState,
 } from '@/domains/companion/model';
+import type { TaskItem } from '@/domains/tasks/model';
 import { eveningReviewNotice, examNotices, homeworkNotices } from '@/domains/notifications/model';
 
 const TODAY = '2026-11-26';
@@ -143,5 +144,23 @@ describe('compagnon : notifications', () => {
     expect(eveningReviewNotice(2, { today: TODAY, time: '20:05' })).toMatchObject({ key: 'evening-review:2026-11-26', title: 'Bilan du soir' });
     expect(eveningReviewNotice(0, { today: TODAY, time: '20:05' })).toBeNull();
     expect(eveningReviewNotice(1, { today: TODAY, time: '20:30' })).toBeNull();
+  });
+});
+
+describe('compagnon : choisir les tâches d’une séance', () => {
+  it('range toutes les tâches par projet, et filtre sur la tâche ou le projet', async () => {
+    const { groupByContext } = await import('@/domains/companion/components/FocusSetup');
+    const task = (title: string, projectName: string | null, subjectName: string | null = null) =>
+      ({ title, projectName, projectColor: projectName ? 'blue' : null, subjectName, subjectColor: subjectName ? 'violet' : null, parentTitle: null }) as unknown as TaskItem;
+    const tasks = [task('Facture', 'Refonte'), task('Maquette', 'Application'), task('Courrier', null), task('Exercice 3', null, 'Maths'), task('Tests', 'Application')];
+    expect(groupByContext(tasks, '').map((g) => [g.name, g.tasks.map((t) => t.title)])).toEqual([
+      ['Application', ['Maquette', 'Tests']],
+      ['Maths', ['Exercice 3']],
+      ['Refonte', ['Facture']],
+      ['Sans projet', ['Courrier']],
+    ]);
+    // Le nom du projet suffit à le retrouver, accents et majuscules compris.
+    expect(groupByContext(tasks, 'applic').map((g) => g.name)).toEqual(['Application']);
+    expect(groupByContext(tasks, 'facture').map((g) => g.tasks.map((t) => t.title))).toEqual([['Facture']]);
   });
 });

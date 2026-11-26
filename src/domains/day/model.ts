@@ -150,6 +150,14 @@ export function blockFromModule(module: Module, date: string, startMin: number):
   };
 }
 
+/**
+ * Un bloc remis dans « À caser » : il redevient un module « pour une fois », avec son nom, son aspect et
+ * sa durée, qu'on reposera plus tard.
+ */
+export function moduleFromBlock(block: Pick<DayBlock, 'title' | 'icon' | 'color' | 'mode' | 'startsAt' | 'endsAt'>): ModuleInput {
+  return { name: block.title, icon: block.icon, color: block.color, durationMin: blockDuration(block), mode: block.mode, oneOff: true };
+}
+
 /** Un bloc déplacé : même durée, nouveau jour et nouvelle heure (au quart d'heure, dans la journée). */
 export function movedBlock(block: Pick<DayBlock, 'startsAt' | 'endsAt'>, date: string, startMin: number): Pick<DayBlock, 'date' | 'startsAt' | 'endsAt'> {
   const duration = blockDuration(block);

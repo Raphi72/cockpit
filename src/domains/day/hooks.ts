@@ -8,6 +8,7 @@ import { shorten } from '@/core/text';
 import { toast } from '@/ui/overlays/toast';
 import {
   blocksFromWeekTemplate,
+  moduleFromBlock,
   weekTemplateFromBlocks,
   type BlockInput,
   type BlockStatus,
@@ -141,6 +142,32 @@ export function usePlaceOneOff() {
       announce(queryClient, `« ${shorten(input.title)} » posé à ${input.startsAt}.`, [
         deleteBlockStatement(id),
         ...(row ? [reinsertRowStatement('block_templates', row)] : []),
+      ]);
+    },
+  });
+}
+
+/**
+ * Remet un bloc dans « À caser » : il redevient un module « pour une fois » et ses tâches en sortent,
+ * dans le même lot. « Annuler » repose le bloc, avec ses tâches.
+ */
+export function useUnplaceBlock() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (block: DayBlock) => {
+      const row = await db.queryOne<Record<string, unknown>>('SELECT * FROM day_blocks WHERE id = ?', [block.id]);
+      const taskIds = await listBlockTaskIds(db, block.id);
+      const moduleId = newId();
+      await db.batch([deleteBlockStatement(block.id), insertModuleStatement(moduleId, moduleFromBlock(block), nowTimestamp())]);
+      return { row, taskIds, moduleId };
+    },
+    onSuccess: ({ row, taskIds, moduleId }, block) => {
+      invalidateDay(queryClient);
+      if (!row) return;
+      announce(queryClient, `« ${shorten(block.title)} » remis à caser.`, [
+        deleteModuleStatement(moduleId),
+        reinsertRowStatement('day_blocks', row),
+        ...(taskIds.length ? [setTasksBlockStatement(taskIds, block.id, nowTimestamp())] : []),
       ]);
     },
   });

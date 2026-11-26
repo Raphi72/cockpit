@@ -16,7 +16,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateField } from '@/core/dates';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
-import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, usePlaceOneOff, useUpdateBlock } from '../hooks';
+import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, usePlaceOneOff, useUnplaceBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import { blockFromModule, movedBlock } from '../model';
 import { accepts, type DayDragData, type DayDropData } from './drag';
@@ -86,6 +86,7 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   const deleteBlock = useDeleteBlock();
   const deleteModule = useDeleteModule();
   const placeOneOff = usePlaceOneOff();
+  const unplaceBlock = useUnplaceBlock();
   const moveTasks = useMoveTasksToBlock();
   const [dragging, setDragging] = useState<DayDragData | null>(null);
   const [label, setLabel] = useState<string | null>(null);
@@ -118,7 +119,9 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   };
 
   const onDragMove = (event: DragMoveEvent) => {
-    if ((event.over?.data.current as DayDropData | undefined)?.kind === 'trash') return setLabel('Supprimer');
+    const overKind = (event.over?.data.current as DayDropData | undefined)?.kind;
+    if (overKind === 'trash') return setLabel('Supprimer');
+    if (overKind === 'to-place' && dragging?.type === 'block') return setLabel('À caser');
     const at = minutesOf(event, pointerY.current, grabOffset.current);
     if (!at || !dragging || dragging.type === 'task') return setLabel(null);
     const time =
@@ -145,6 +148,10 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
     if (drop?.kind === 'trash') {
       if (current.type === 'block') deleteBlock.mutate(current.block.id);
       else deleteModule.mutate(current.module.id);
+      return;
+    }
+    if (drop?.kind === 'to-place') {
+      if (current.type === 'block') unplaceBlock.mutate(current.block);
       return;
     }
     const at = minutesOf(event, pointerY.current, grabOffset.current);

@@ -18,10 +18,12 @@ export type DayDropData =
   | { kind: 'trash' };
 
 /**
- * Un module ou un bloc se pose dans une colonne, ou part à la corbeille ; une tâche va dans un bloc ou
- * dans « À caser » (jamais à la corbeille : la sortir d'un bloc ne la supprime pas).
+ * Un module ou un bloc se pose dans une colonne, ou part à la corbeille ; un bloc peut aussi revenir dans
+ * « À caser » (il redevient un module pour une fois). Une tâche va dans un bloc ou dans « À caser »
+ * (jamais à la corbeille : la sortir d'un bloc ne la supprime pas).
  */
 export function accepts(drag: DayDragData['type'], drop: DayDropData['kind']): boolean {
   if (drag === 'task') return drop === 'block' || drop === 'to-place';
+  if (drag === 'block' && drop === 'to-place') return true;
   return drop === 'column' || drop === 'trash';
 }

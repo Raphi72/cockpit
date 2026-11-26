@@ -1,4 +1,4 @@
-import { Play, Plus, Search, X } from 'lucide-react';
+import { ListChecks, Play, Plus, Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useUiStore } from '@/app/ui-store';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
@@ -7,6 +7,7 @@ import { useSaveSetting, useSetting } from '@/domains/settings/hooks';
 import { SETTINGS } from '@/domains/settings/model';
 import { useOpenTasks } from '@/domains/tasks/hooks';
 import { selectToday, taskContext, tasksOfMode, type TaskItem } from '@/domains/tasks/model';
+import { ColorDot, type AppColor } from '@/ui/data/ColorDot';
 import { Button } from '@/ui/primitives/Button';
 import { Checkbox } from '@/ui/primitives/Checkbox';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
@@ -46,6 +47,30 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+const NO_CONTEXT = 'Sans projet';
+
+type TaskGroup = { name: string; color: AppColor | null; tasks: TaskItem[] };
+
+/**
+ * Les tâches à faire rangées par projet (ou par matière pour un devoir), les projets par ordre
+ * alphabétique, les tâches libres à la fin. Le filtre porte sur le titre de la tâche ou le nom du projet.
+ */
+export function groupByContext(tasks: TaskItem[], query: string): TaskGroup[] {
+  const wanted = fold(query.trim());
+  const groups = new Map<string, TaskGroup>();
+  for (const task of tasks) {
+    const context = taskContext(task);
+    const name = context?.name ?? NO_CONTEXT;
+    if (wanted && !fold(task.title).includes(wanted) && !fold(name).includes(wanted) && !fold(task.parentTitle ?? '').includes(wanted)) continue;
+    const group = groups.get(name) ?? { name, color: context?.color ?? null, tasks: [] };
+    group.tasks.push(task);
+    groups.set(name, group);
+  }
+  return [...groups.values()].sort((a, b) =>
+    a.name === NO_CONTEXT ? 1 : b.name === NO_CONTEXT ? -1 : a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }),
+  );
+}
+
 function toItem(task: TaskItem): FocusItem {
   return { key: taskKey(task), title: task.title, taskId: task.id, tag: taskContext(task)?.name ?? null };
 }
@@ -79,6 +104,7 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
   const [free, setFree] = useState<FocusItem[]>([]);
   const [picked, setPicked] = useState<Set<string> | null>(null);
   const [query, setQuery] = useState('');
+  const [browsing, setBrowsing] = useState(false);
   const [freeText, setFreeText] = useState('');
 
   // Les tâches proposées : celles du bloc en cours, puis celles du jour (du mode, puis de l'autre mode).
@@ -101,10 +127,12 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
 
   const chosen = picked ?? preselected;
   const listed = [...candidates, ...added.filter((task) => !candidates.some((c) => c.id === task.id))];
-  const searchResults =
-    query.trim() === ''
-      ? []
-      : (open ?? []).filter((task) => !listed.some((l) => l.id === task.id) && fold(task.title).includes(fold(query.trim()))).slice(0, 6);
+  // Toutes les tâches à faire, rangées par projet (ou matière), filtrées sur la tâche ou le projet.
+  const groups = useMemo(() => groupByContext(open ?? [], query), [open, query]);
+  const toggleTask = (task: TaskItem, on: boolean) => {
+    if (on && !listed.some((l) => l.id === task.id)) setAdded((tasks) => [...tasks, task]);
+    toggle(taskKey(task), on);
+  };
 
   const pomodoro = pomodoroOn ?? savedPomodoro;
   const choice = duration ?? (FOCUS_DURATIONS.some((d) => d === savedMinutes) ? String(savedMinutes) : 'custom');
@@ -230,7 +258,7 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
 
         <Section title="Pendant la séance">
           {listed.length === 0 && free.length === 0 ? (
-            <p className="text-ink-3">Rien de prévu aujourd’hui : cherche une tâche, ou écris ce que tu vas faire.</p>
+            <p className="text-ink-3">Rien de prévu aujourd’hui : choisis dans tes tâches, ou écris ce que tu vas faire.</p>
           ) : (
             <ul className="flex max-h-[38vh] flex-col gap-2 overflow-y-auto pr-2">
               {listed.map((task) => (
@@ -253,30 +281,15 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
           )}
 
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-ink-3" strokeWidth={1.75} />
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Ajouter une tâche…" aria-label="Chercher une tâche à ajouter" className="pl-8" />
-              {searchResults.length > 0 && (
-                <ul className="absolute inset-x-0 top-full z-10 mt-1 rounded-lg bg-elevated p-1 shadow-overlay">
-                  {searchResults.map((task) => (
-                    <li key={task.id}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAdded((tasks) => [...tasks, task]);
-                          toggle(taskKey(task), true);
-                          setQuery('');
-                        }}
-                        className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left hover:bg-hover"
-                      >
-                        <span className="min-w-0 flex-1 truncate">{task.title}</span>
-                        {taskContext(task) && <span className="max-w-[40%] shrink-0 truncate text-meta text-ink-3">{taskContext(task)!.name}</span>}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <Button
+              variant="secondary"
+              icon={ListChecks}
+              onClick={() => setBrowsing((open) => !open)}
+              aria-expanded={browsing}
+              className="justify-start"
+            >
+              {browsing ? 'Masquer mes tâches' : 'Ajouter une tâche'}
+            </Button>
             <div className="relative">
               <Plus className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-ink-3" strokeWidth={1.75} />
               <Input
@@ -294,6 +307,46 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
               />
             </div>
           </div>
+
+          {browsing && (
+            <div className="mt-3 overflow-hidden rounded-lg border border-line bg-elevated">
+              <div className="flex items-center gap-2 border-b border-line px-3">
+                <Search className="size-4 shrink-0 text-ink-3" strokeWidth={1.75} />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filtrer par tâche ou par projet…"
+                  aria-label="Filtrer mes tâches"
+                  className="h-10 min-w-0 flex-1 bg-transparent outline-none placeholder:text-ink-3"
+                />
+              </div>
+              <div className="max-h-[40vh] overflow-y-auto px-3 py-2">
+                {groups.length === 0 && <p className="py-2 text-meta text-ink-3">Aucune tâche ne correspond.</p>}
+                {groups.map((group) => (
+                  <section key={group.name} className="mb-3 last:mb-0">
+                    <p className="sticky top-0 z-[1] flex items-center gap-2 bg-elevated py-1.5 text-meta font-medium text-ink-2">
+                      <ColorDot color={group.color ?? 'slate'} />
+                      <span className="truncate">{group.name}</span>
+                      <span className="tnum font-normal text-ink-3">{group.tasks.length}</span>
+                    </p>
+                    <ul className="flex flex-col gap-1.5 pl-1">
+                      {group.tasks.map((task) => (
+                        <li key={task.id}>
+                          <Checkbox checked={chosen.has(taskKey(task))} onChange={(on) => toggleTask(task, on)}>
+                            <span className="min-w-0 flex-1 truncate">
+                              {task.parentTitle && <span className="text-ink-3">{task.parentTitle} › </span>}
+                              {task.title}
+                            </span>
+                          </Checkbox>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+            </div>
+          )}
         </Section>
 
         <div className="mt-10 flex items-center justify-end gap-3">

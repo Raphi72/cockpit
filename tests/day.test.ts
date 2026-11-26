@@ -13,6 +13,7 @@ import {
   fromMinutes,
   isReviewTime,
   layoutIntervals,
+  moduleFromBlock,
   movedBlock,
   nextBlock,
   overlapsOf,
@@ -138,6 +139,20 @@ describe('journée : heures et blocs', () => {
     expect(accepts('task', 'trash')).toBe(false);
     expect(accepts('task', 'block')).toBe(true);
     expect(accepts('block', 'column')).toBe(true);
+    // Un bloc revient « à caser » ; un module de la bibliothèque, non.
+    expect(accepts('block', 'to-place')).toBe(true);
+    expect(accepts('module', 'to-place')).toBe(false);
+  });
+
+  it('un bloc remis à caser redevient un module pour une fois, de même durée', () => {
+    expect(moduleFromBlock(block('Courses', '17:00', '18:30', { icon: 'sparkles', color: 'teal', mode: 'both' }))).toEqual({
+      name: 'Courses',
+      icon: 'sparkles',
+      color: 'teal',
+      durationMin: 90,
+      mode: 'both',
+      oneOff: true,
+    });
   });
 
   it('dit ce qui reste de temps dans un bloc (30 min pour une tâche sans estimation)', () => {

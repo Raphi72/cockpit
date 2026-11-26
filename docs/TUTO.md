@@ -69,7 +69,8 @@ Un devoir lié à un cours apparaît aussi dans ce cours sur la journée, mais i
 du temps.
 
 **À caser › Ajouter** crée un module **pour une fois** (« Courses · 1 h ») : il attend les jours suivants,
-puis disparaît quand tu le poses.
+puis disparaît quand tu le poses. Changé d'avis ? Glisse un bloc de la journée sur **À caser** : il y revient,
+avec sa durée.
 
 En haut de la page :
 
@@ -86,8 +87,9 @@ Bouton **Focus** en haut (ou la touche `F`), dans les deux modes.
 
 1. Choisis une **durée** (15 à 90 min, « Autre », ou jusqu'à la fin du bloc en cours), ou un **Pomodoro**
    (travail, pause, nombre de tours).
-2. Choisis ce que tu vas faire : les tâches et devoirs du jour sont proposés. Tu peux aussi **chercher une
-   tâche** ou écrire **« autre chose »**.
+2. Choisis ce que tu vas faire : les tâches et devoirs du jour sont proposés. **Ajouter une tâche** ouvre
+   toutes tes tâches, rangées par projet, avec un filtre (sur la tâche ou le projet). Tu peux aussi écrire
+   **« autre chose »**.
 3. **Lancer** (`Ctrl Entrée`).
 
 L'écran passe en mode nuit : un anneau lumineux se vide avec le temps, et ta liste est en bas à droite.

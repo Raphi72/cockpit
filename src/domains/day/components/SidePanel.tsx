@@ -129,7 +129,7 @@ export function SidePanel({ modules, oneOffs, mode, toPlace }: { modules: Module
               ))}
             </ul>
           )}
-          <p className="mt-2 text-meta text-ink-3">Glisse une tâche dans un bloc ; dépose-la ici pour l’en sortir.</p>
+          <p className="mt-2 text-meta text-ink-3">Glisse une tâche dans un bloc ; dépose-la ici pour l’en sortir. Un bloc lâché ici revient à caser.</p>
         </section>
       )}
 
