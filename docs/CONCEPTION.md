@@ -671,11 +671,10 @@ gestion_projets/
 
 ### 5.1 Navigation
 
-**Sidebar** (232 px, réductible à 56 px avec Ctrl+B) :
+**Sidebar** (232 px, réductible à 56 px avec Ctrl+B). Depuis la V2 (étape 2), elle dépend du mode, choisi en haut à gauche par un sélecteur à deux icônes (Travail, Cours ; `Ctrl M`) :
 
-- Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ;
-- une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ;
-- en bas, Clients et Paramètres.
+- **mode Travail** : Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
+- **mode Cours** : Aujourd'hui, Boîte de réception, Matières, Devoirs, Calendrier, Emploi du temps, Examens, Notes ; en bas, Paramètres.
 
 La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le dashboard joue déjà le rôle de vue globale. La sidebar utilise des icônes Lucide plutôt que des emojis, pour un rendu plus net et plus sobre.
 
@@ -684,11 +683,12 @@ La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le 
 | Raccourci | Action |
 |---|---|
 | `Ctrl K` | Rechercher ou lancer une commande |
-| `C` | Menu Créer, puis `T` tâche · `E` événement · `P` projet · `L` client · `R` encaissement · `D` transaction |
-| `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet |
-| `Ctrl 1` … `Ctrl 6` | Aller aux pages principales |
+| `C` | Menu Créer, puis `T` tâche · `E` événement · `P` projet · `L` client · `R` encaissement · `D` transaction ; en mode Cours : `D` devoir · `X` examen · `N` note · `E` événement · `M` matière · `C` cours |
+| `N` (ou `Ctrl N`) | Nouvelle tâche (l'action la plus fréquente) ; dans une fiche projet, elle est rattachée au projet. En mode Cours : nouveau devoir (rattaché à la matière de la fiche ouverte) |
+| `Ctrl 1` … `Ctrl 6` | Aller aux pages principales du mode (`Ctrl 4` : le calendrier dans les deux) |
+| `Ctrl M` | V2 : passer du mode Travail au mode Cours, et inversement |
 | `Ctrl Maj Espace` | V2 : capture rapide, depuis n'importe quelle application (réglable) |
-| `T` · `I` · `E` | V2, boîte de réception : faire de la capture une tâche, une idée de projet ou un événement |
+| `T` · `I` · `E` · `D` | V2, boîte de réception : faire de la capture une tâche, une idée de projet, un événement ou un devoir |
 | `Ctrl B` | Réduire / déplier la sidebar |
 | `↑ ↓` · `Entrée` · `Espace` | Parcourir une liste · ouvrir · cocher la tâche |
 | `← →` · `T` · `M` `S` `J` | Calendrier : période précédente ou suivante, aujourd'hui, vue mois, semaine ou jour |
@@ -926,6 +926,18 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 2 (« Modes et espace Cours »)**, à confirmer à l'usage :
+- **Modes** (P13, `app/modes.ts`) : le mode est mémorisé (`ui-store`) et suit la page ouverte (ouvrir un projet depuis la recherche repasse en Travail). Changer de mode sur une page de l'autre mode ramène à Aujourd'hui ; une page commune (calendrier, boîte de réception, paramètres) reste affichée. Les pages de l'autre mode se trouvent toujours par `Ctrl K` ; seules celles du mode en cours y sont suggérées. Le menu « Nouveau » et `N` suivent le mode.
+- **Chaque mode montre les siens** : la page Tâches, Aujourd'hui (mode Travail) et « Je veux travailler… » ne montrent pas les devoirs ; le dashboard du mode Travail ne montre ni cours ni examens. Le calendrier, la boîte de réception, la recherche et les notifications montrent tout.
+- **Matières** (migration `0008`, `domains/school`) : nom, couleur (la première libre est proposée), prof, salle, coefficient (saisi « 1,5 » ou « 1.5 »). Une fiche par matière : ses devoirs, ses notes du semestre, ses cours de la semaine, ses examens. Supprimer une matière emporte ses devoirs, cours, examens et notes ; le toast dit ce qui part et « Annuler » remet tout.
+- **Devoirs** (P14) : une tâche avec `subject_id` ; jamais à la fois dans un projet et une matière (choisir l'un retire l'autre). Les sous-tâches suivent la matière de leur parente. Leur date principale est « À rendre » (la deadline) ; « À faire le » (le début) est facultatif. Page Devoirs : en retard, à rendre jour par jour, sans date, puis « Rendus ».
+- **Emploi du temps** : **une seule semaine type**, toute l'année (pas de semaines A/B, comme demandé). Contrairement à l'esquisse du §9.4, les cours ne sont pas des événements récurrents mais une table à part (`timetable_slots`) : ils suivent le calendrier scolaire (semestres, vacances), et `events.kind` ne peut pas recevoir de nouvelle valeur sans reconstruire la table. Les cours de chaque jour sont tout de même calculés, jamais recopiés (P8, P15). Ils sont dans les vues semaine et jour du calendrier (filtre « Cours »), pas au mois (une routine qui cacherait le reste), et ne se glissent pas : on les change dans la page Emploi du temps. Annuler un seul cours (prof absent) n'existe pas encore.
+- **Semestres et vacances** (`school_periods`) : saisis dans Emploi du temps › Semestres et vacances, avec deux semestres proposés en un clic (septembre-janvier, février-juin). Les semestres ne se chevauchent pas. Sans semestre, la semaine type vaut toute l'année et les notes font une seule moyenne. Une seule année scolaire pour l'instant : à la rentrée suivante, il faudra changer les dates (une vraie « nouvelle année » reste à prévoir).
+- **Examens** (`exams`, pas des événements, pour la même raison) : matière, titre, jour, horaire facultatif, salle, « À réviser ». Dans le calendrier (filtre « Examens »), ils se glissent d'un jour à l'autre. Supprimer un examen garde sa note. Les révisions à rebours viendront avec l'étape 5.
+- **Notes** (`grades`) : note sur un barème (20 par défaut), coefficient, date (qui la range dans un semestre), intitulé, examen d'origine facultatif. Un examen passé propose « Ajouter la note ». Moyenne d'une matière : notes ramenées sur 20, pondérées par leur coefficient ; moyenne générale : pondérée par le coefficient des matières notées ; année : moyenne des moyennes de semestre de chaque matière. Rien n'est stocké.
+- **Aujourd'hui en mode Cours** : deux colonnes. À gauche, les cours du jour (celui en cours en avant, les passés effacés) et les devoirs à rendre (retards, semaine qui vient, à faire ce jour-là) ; à droite, le prochain examen et les prochains jours (examens et événements sans projet). Même navigation de jour en jour qu'en mode Travail ; `P` compose un programme de devoirs.
 
 **Choix faits en V2, étape 1 (« Toujours là »)**, à confirmer à l'usage :
 - **Boîte de réception** (migration `0006`, domaine `inbox`) : une page sous « Aujourd'hui », sans raccourci `Ctrl+chiffre` (les six pages gardent les leurs), avec un compteur dans la barre latérale (un point quand elle est réduite). Les captures les plus récentes d'abord, sur une ligne. Sur la ligne qui a le focus : `T` et `E` ouvrent « Nouvelle tâche » et « Nouvel événement » pré-remplis (on choisit le projet ou la date avant de valider), `I` range la capture en idée d'un projet, `Entrée` la reformule, `Suppr` la supprime. La capture quitte la boîte dans le même lot que la création ; « Annuler » la remet à sa place. Le focus passe à la ligne suivante.
@@ -1106,7 +1118,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; ses choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1175,13 +1187,13 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - Vues **jour** et **semaine**.
 
 #### Cours
-- **Matières** : nom, couleur, prof, salle, coefficient.
-- **Emploi du temps** : cours récurrents (P15), avec semaines A/B si besoin et vacances (période sans cours).
-- **Devoirs** (P14) : à rendre, en retard, rendus.
-- **Contrôles et examens** : un événement de type « Examen », rattaché à une matière. À sa création, l'app propose des **révisions à rebours** (J-7, J-3, J-1), créées comme des blocs « Révision ».
-- **Notes** : note, sur combien, coefficient, date ; **moyenne** par matière et générale, calculées.
+- **Matières** : nom, couleur, prof, salle, coefficient. *(Fait, étape 2.)*
+- **Emploi du temps** : cours récurrents (P15) et vacances (période sans cours). *(Fait, étape 2 : une semaine type pour toute l'année, sans semaines A/B ; semestres et vacances réglables.)*
+- **Devoirs** (P14) : à rendre, en retard, rendus. *(Fait, étape 2.)*
+- **Contrôles et examens** : rattachés à une matière. À sa création, l'app propose des **révisions à rebours** (J-7, J-3, J-1), créées comme des blocs « Révision ». *(Examens faits à l'étape 2 ; les révisions à rebours viennent avec l'étape 5.)*
+- **Notes** : note, sur combien, coefficient, date ; **moyenne** par matière et générale, calculées. *(Fait, étape 2 : par semestre et pour l'année.)*
 - **Fiches et flashcards** : une fiche est une page (P19) ; une flashcard a un recto et un verso, par matière. **Répétition espacée** : chaque jour, l'app dit quelles cartes revoir, et la session se fait au clavier (Espace pour retourner, 1 à 4 pour noter).
-- Dashboard en mode Cours : les cours du jour, les devoirs à rendre, le prochain examen, les cartes à revoir.
+- Dashboard en mode Cours : les cours du jour, les devoirs à rendre, le prochain examen, les cartes à revoir. *(Fait, étape 2, en deux colonnes, avec les prochains jours ; les cartes à revoir viendront avec l'étape 5.)*
 
 #### Pages
 - **Éditeur en blocs** : titres, paragraphes, listes, cases à cocher, citations, séparateurs, code, tableaux simples, images collées ou glissées. La commande `/` insère un bloc, et la mise en forme courante se fait au clavier (`**gras**`, `#` titre…).
@@ -1251,6 +1263,8 @@ Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, 
 
 **Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
 
+**Fait à l'étape 2** (migration `0008`) : `subjects`, `tasks.subject_id`, `school_periods` (semestres et vacances), `timetable_slots` (la semaine type), `exams` et `grades`, avec les triggers de recherche des matières et des examens. Les cours et les examens ont leurs propres tables au lieu d'être des événements (`events.subject_id` n'existe donc pas) : voir les choix de l'étape 2 au §7.3.
+
 ```sql
 ALTER TABLE events ADD COLUMN recurrence TEXT;   -- RRULE (RFC 5545), NULL : pas de répétition
 
@@ -1314,6 +1328,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 4. **Propositions P13 à P22** : retenues (25/11/2026).
 5. **Sélecteur de mode** (P13, étape 2) : un interrupteur à deux icônes, sans texte, en haut à gauche de la barre latérale, sur le modèle du sélecteur Chat / Code de l'application Claude Desktop. Le mode actif est mis en évidence (demandé le 25/11/2026).
 
+7. **Étape 2, « Modes et espace Cours »** (26/11/2026) :
+   - chaque mode montre les siens : les devoirs n'apparaissent pas dans les tâches du mode Travail ; le calendrier et la boîte de réception montrent tout ;
+   - moyennes par semestre, avec des dates réglables, plus la moyenne de l'année ;
+   - une semaine type toute l'année, avec des vacances (périodes sans cours) ;
+   - dashboard du mode Cours en deux colonnes : cours du jour et devoirs à rendre à gauche, prochain examen et prochains jours à droite.
+
 6. **Étape 1, « Toujours là »** (25/11/2026) :
    - le démarrage avec Windows est activé d'office, et Cockpit démarre alors caché dans la zone de notification ;
    - le raccourci global de capture est `Ctrl+Maj+Espace`, modifiable dans Paramètres (jamais `Ctrl+Alt`, qui est AltGr en AZERTY) ;
@@ -1331,7 +1351,7 @@ Encore à trancher, au moment de l'étape concernée :
 Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie sur les précédentes. Une branche `v2-…` par étape, validée une à une.
 
 1. **Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre, premières animations. **Fait le 25/11/2026** (branche `v2-toujours-la`, 8 sous-étapes ; détail au §7.3).
-2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes.
+2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes. **Fait le 26/11/2026** (branche `v2-modes-cours`, 8 sous-étapes ; détail au §7.3).
 3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
 4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion.
 5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens.
