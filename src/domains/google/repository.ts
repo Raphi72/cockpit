@@ -145,6 +145,7 @@ export async function autoSubjectStatements(db: Db, now: string): Promise<{ stat
 export type CourseOnDay = {
   itemId: string;
   title: string;
+  /** Le nom du cours : celui de sa matière (renommable dans la page Matières), sinon l'intitulé ramené. */
   course: string | null;
   courseKind: string | null;
   teacher: string | null;
@@ -161,7 +162,7 @@ export type CourseOnDay = {
 /** Les cours de l'agenda des cours (affiché) dont le jour est dans [from, to[, sauf les intitulés ignorés. */
 export function listCoursesBetween(db: Db, from: string, to: string): Promise<CourseOnDay[]> {
   return db.query<CourseOnDay>(
-    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, g.course, g.course_kind, g.teacher,
+    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, COALESCE(s.name, g.course) AS course, g.course_kind, g.teacher,
             g.starts_at, g.ends_at, g.location, cl.subject_id, s.name AS subject_name, s.color AS subject_color,
             (SELECT COUNT(*) FROM tasks t
              WHERE t.parent_id IS NULL AND t.status <> 'done'
@@ -205,7 +206,7 @@ export function nextCourseOccurrence(db: Db, course: string, after: string): Pro
 /** Un cours copié, pour l'afficher là où un devoir y est relié (fiche du devoir, choix du cours). */
 export function getCourse(db: Db, itemId: string): Promise<CourseOnDay | undefined> {
   return db.queryOne<CourseOnDay>(
-    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, g.course, g.course_kind, g.teacher,
+    `SELECT g.calendar_id || '|' || g.id AS item_id, g.title, COALESCE(s.name, g.course) AS course, g.course_kind, g.teacher,
             g.starts_at, g.ends_at, g.location, cl.subject_id, s.name AS subject_name, s.color AS subject_color,
             0 AS homework_open
      FROM google_events g

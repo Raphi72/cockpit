@@ -66,6 +66,7 @@ export function useDeleteSubject() {
         slots: snapshot.slots.length,
         exams: snapshot.exams.length,
         grades: snapshot.grades.length,
+        courses: snapshot.courses.length,
       };
       toast(removalSummary(removal), {
         action: {

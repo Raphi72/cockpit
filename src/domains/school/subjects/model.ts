@@ -90,9 +90,15 @@ export function subjectDetails(subject: Pick<Subject, 'teacher' | 'room' | 'coef
 }
 
 /** Ce qu'emporte la suppression d'une matière, pour le message (« avec 3 devoirs et 2 notes »). */
-export type SubjectRemoval = { homework: number; slots: number; exams: number; grades: number };
+/** `courses` : les intitulés de cours de Google qui menaient à la matière (ils ne s'affichent plus). */
+export type SubjectRemoval = { homework: number; slots: number; exams: number; grades: number; courses?: number };
 
 export function removalSummary(removal: SubjectRemoval): string {
+  const courses = removal.courses ? ' Ses cours de Google Agenda n’apparaissent plus.' : '';
+  return removedItemsSummary(removal) + courses;
+}
+
+function removedItemsSummary(removal: SubjectRemoval): string {
   const parts = [
     [removal.homework, 'devoir', 'devoirs'],
     [removal.slots, 'cours', 'cours'],

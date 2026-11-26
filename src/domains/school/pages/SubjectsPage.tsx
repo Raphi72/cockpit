@@ -46,7 +46,10 @@ export function SubjectsPage() {
     >
       {subjects.length === 0 ? (
         <EmptyState icon={BookOpen} title="Aucune matière pour l’instant">
-          <p>Commence par tes matières : leurs devoirs, leurs cours, leurs examens et leurs notes s’y rattachent.</p>
+          <p>
+            Elles se créent toutes seules depuis ton emploi du temps de Google Agenda (Paramètres › Google Agenda). Tu peux aussi en
+            ajouter une à la main : ses devoirs, ses examens et ses notes s’y rattachent.
+          </p>
           <div className="mt-4">
             <Button variant="primary" icon={Plus} onClick={() => openCreate('subject')}>
               Ajouter une matière

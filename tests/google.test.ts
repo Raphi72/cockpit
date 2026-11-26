@@ -34,6 +34,7 @@ import {
 } from '@/domains/google/repository';
 import { syncGoogle, type GoogleSource } from '@/domains/google/service';
 import { listTimedEventsBetween } from '@/domains/notifications/repository';
+import { deleteSubjectStatement, readSubjectSnapshot, restoreSubjectStatements } from '@/domains/school/subjects/repository';
 import { setSettingStatement } from '@/domains/settings/repository';
 import { insertTaskStatement } from '@/domains/tasks/repository';
 import { createTestDb } from './support/test-db';
@@ -357,5 +358,32 @@ describe('Google Agenda : emploi du temps reconnu seul et devoirs reliés à un 
       { id: 'h1', dueDate: '2026-12-04', courseEvent: ml!.itemId },
       { id: 'h2', dueDate: '2026-12-03', courseEvent: ml!.itemId },
     ]);
+  });
+
+  it('suit le renommage d’une matière ; la supprimer écarte ses cours, « Annuler » les rend', async () => {
+    const { db } = createTestDb();
+    await syncGoogle(db, source(), TODAY, 'Europe/Paris', NOW);
+    const [ml] = await db.query<{ id: string }>("SELECT id FROM subjects WHERE name = 'Machine Learning'");
+    const onTheDay = () => listCoursesBetween(db, '2026-11-26', '2026-11-27');
+
+    // Renommée dans la page Matières : le cours prend ce nom partout, et le garde à la relecture.
+    await db.batch([sql`UPDATE subjects SET name = 'Apprentissage automatique' WHERE id = ${ml!.id}`]);
+    await syncGoogle(db, source(), TODAY, 'Europe/Paris', NOW);
+    expect(await onTheDay()).toMatchObject([{ course: 'Apprentissage automatique', subjectId: ml!.id }]);
+    const agenda = await listAgenda(db, '2026-11-26', '2026-11-27');
+    expect(agenda.find((i) => i.kind === 'class')?.title).toBe('Apprentissage automatique');
+    expect(await db.query("SELECT id FROM subjects WHERE name = 'Machine Learning'")).toEqual([]);
+
+    // Supprimée : ses cours ne sont plus des cours, et elle ne revient pas à la relecture.
+    const snapshot = (await readSubjectSnapshot(db, ml!.id))!;
+    expect(snapshot.courses).toEqual(['Machine Learning']);
+    await db.batch([deleteSubjectStatement(ml!.id)]);
+    await syncGoogle(db, source(), TODAY, 'Europe/Paris', NOW);
+    expect(await onTheDay()).toEqual([]);
+    expect(await db.query('SELECT COUNT(*) AS n FROM subjects')).toEqual([{ n: 2 }]);
+
+    // « Annuler » : la matière revient avec ses cours.
+    await db.batch(restoreSubjectStatements(snapshot));
+    expect(await onTheDay()).toMatchObject([{ course: 'Apprentissage automatique', subjectId: ml!.id }]);
   });
 });

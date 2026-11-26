@@ -1,3 +1,4 @@
+import { nowTimestamp } from '@/core/dates';
 import type { Db, Statement } from '@/core/db';
 import { reinsertRowStatement } from '@/core/db/rows';
 import type { NormalizedSubject, Subject, SubjectListItem } from './model';
@@ -53,18 +54,24 @@ export type SubjectSnapshot = {
   slots: Record<string, unknown>[];
   exams: Record<string, unknown>[];
   grades: Record<string, unknown>[];
+  /**
+   * Les intitulés de cours de Google reliés à la matière : la suppression en fait des « pas un cours »
+   * (ON DELETE SET NULL), pour qu'une matière en trop ne revienne pas à la relecture ; « Annuler » les rend.
+   */
+  courses: string[];
 };
 
 export async function readSubjectSnapshot(db: Db, id: string): Promise<SubjectSnapshot | null> {
   const subject = await db.queryOne<Record<string, unknown>>('SELECT * FROM subjects WHERE id = ?', [id]);
   if (!subject) return null;
-  const [tasks, slots, exams, grades] = await Promise.all([
+  const [tasks, slots, exams, grades, courses] = await Promise.all([
     db.query<Record<string, unknown>>('SELECT * FROM tasks WHERE subject_id = ? ORDER BY parent_id IS NOT NULL, rowid', [id]),
     db.query<Record<string, unknown>>('SELECT * FROM timetable_slots WHERE subject_id = ? ORDER BY rowid', [id]),
     db.query<Record<string, unknown>>('SELECT * FROM exams WHERE subject_id = ? ORDER BY rowid', [id]),
     db.query<Record<string, unknown>>('SELECT * FROM grades WHERE subject_id = ? ORDER BY rowid', [id]),
+    db.query<{ course: string }>('SELECT course FROM course_links WHERE subject_id = ? ORDER BY course', [id]),
   ]);
-  return { subject, tasks, slots, exams, grades };
+  return { subject, tasks, slots, exams, grades, courses: courses.map((row) => row.course) };
 }
 
 /** Annulation : la matière revient, puis ce qui en dépend (les examens avant les notes qui y renvoient). */
@@ -75,5 +82,11 @@ export function restoreSubjectStatements(snapshot: SubjectSnapshot): Statement[]
     ...snapshot.slots.map((row) => reinsertRowStatement('timetable_slots', row)),
     ...snapshot.exams.map((row) => reinsertRowStatement('exams', row)),
     ...snapshot.grades.map((row) => reinsertRowStatement('grades', row)),
+    ...(snapshot.courses ?? []).map(
+      (course): Statement => ({
+        sql: 'UPDATE course_links SET subject_id = ?, updated_at = ? WHERE course = ? AND subject_id IS NULL',
+        params: [snapshot.subject.id as string, nowTimestamp(), course],
+      }),
+    ),
   ];
 }

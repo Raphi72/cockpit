@@ -105,7 +105,7 @@ export function GoogleEventDialog() {
     <Dialog
       open={itemId !== null && Boolean(event)}
       onOpenChange={(open) => !open && close()}
-      title={event ? (isCourse ? courseLabel(event) : event.title) : ''}
+      title={event ? (isCourse ? courseLabel({ ...event, course: event.subjectName ?? event.course }) : event.title) : ''}
       width={isCourse ? 520 : 480}
       restoreFocus={!chaining}
     >

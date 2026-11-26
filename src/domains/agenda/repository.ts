@@ -149,11 +149,12 @@ export async function listAgenda(
      UNION ALL
      -- Un événement Google Agenda (copie locale, lecture seule) d'un agenda affiché. Dans l'agenda des cours,
      -- un intitulé relié à une matière en fait un cours, à la couleur de la matière, sous son nom propre
-     -- (« Machine Learning », « Comptabilité · Examen ») plutôt que l'intitulé brut « Matière | Type | Prof ».
+     -- (« Machine Learning », « Comptabilité · Examen ») plutôt que l'intitulé brut « Matière | Type | Prof » ;
+     -- ce nom est celui de la matière, qui se renomme dans la page Matières.
      SELECT 'google', g.calendar_id || '|' || g.id, CASE WHEN cl.subject_id IS NOT NULL THEN 'class' ELSE 'google' END,
             CASE WHEN cl.subject_id IS NULL THEN g.title
-                 WHEN g.course_kind IS NOT NULL AND lower(g.course_kind) <> 'cours' THEN g.course || ' · ' || g.course_kind
-                 ELSE g.course END,
+                 WHEN g.course_kind IS NOT NULL AND lower(g.course_kind) <> 'cours' THEN COALESCE(s.name, g.course) || ' · ' || g.course_kind
+                 ELSE COALESCE(s.name, g.course) END,
             g.location, g.starts_at, g.ends_at, g.all_day, NULL, COALESCE(s.color, c.color), NULL, NULL, cl.subject_id
      FROM google_events g
      JOIN google_calendars c ON c.id = g.calendar_id

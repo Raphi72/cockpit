@@ -72,6 +72,10 @@ describe('matières : règles', () => {
     expect(removalSummary({ homework: 3, slots: 0, exams: 1, grades: 2 })).toBe(
       'Matière supprimée, avec 3 devoirs, 1 examen et 2 notes.',
     );
+    // Une matière venue de Google : ses cours ne s'affichent plus (« Annuler » les rend).
+    expect(removalSummary({ homework: 1, slots: 0, exams: 0, grades: 0, courses: 2 })).toBe(
+      'Matière supprimée, avec 1 devoir. Ses cours de Google Agenda n’apparaissent plus.',
+    );
   });
 });
 
