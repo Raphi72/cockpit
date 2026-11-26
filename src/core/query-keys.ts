@@ -70,6 +70,16 @@ export const queryKeys = {
     backlinks: (id: string) => ['pages', 'backlinks', id] as const,
     attachment: (id: string) => ['pages', 'attachment', id] as const,
   },
+  /** Habitudes, objectifs, séances, revue de la semaine (étape 6). */
+  habits: {
+    all: ['habits'] as const,
+    list: ['habits', 'list'] as const,
+    activity: (from: string, to: string) => ['habits', 'activity', from, to] as const,
+    goals: ['habits', 'goals'] as const,
+    exercises: ['habits', 'exercises'] as const,
+    workouts: ['habits', 'workouts'] as const,
+    review: (monday: string) => ['habits', 'review', monday] as const,
+  },
   payments: {
     all: ['payments'] as const,
     byProject: (projectId: string) => ['payments', 'project', projectId] as const,

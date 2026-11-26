@@ -32,6 +32,7 @@ describe('règles et moments', () => {
     expect(resolveRules(null)).toEqual({
       events: true,
       blocks: true,
+      habits: true,
       deadlines: true,
       priorityTasks: true,
       payments: true,

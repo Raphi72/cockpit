@@ -42,6 +42,8 @@ export function invalidateDay(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.day.all });
   void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
   void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
+  // Un bloc fait coche les habitudes de son module (étape 6).
+  void queryClient.invalidateQueries({ queryKey: queryKeys.habits.all });
 }
 
 /** Toast d'une écriture annulable : « Annuler » rejoue le lot inverse. */

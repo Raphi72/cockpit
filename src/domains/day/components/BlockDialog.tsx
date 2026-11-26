@@ -1,6 +1,9 @@
-import { X } from 'lucide-react';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { Dumbbell, X } from 'lucide-react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { AppMode } from '@/core/app-mode';
+import { useWorkoutEditor } from '@/domains/habits/components/WorkoutDialog';
+import { useWorkouts } from '@/domains/habits/hooks';
+import { isSportBlock } from '@/domains/habits/model';
 import type { TaskItem } from '@/domains/tasks/model';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
 import { Button } from '@/ui/primitives/Button';
@@ -118,7 +121,8 @@ function CreateBlockForm(props: { day: string; minutes: number; modules: Module[
 }
 
 /** Un bloc posé : titre, jour, horaire, statut et ses tâches (qu'on peut en sortir). */
-function EditBlockForm({ block, tasks, onDone }: { block: DayBlock; tasks: TaskItem[]; onDone: () => void }) {
+/** `onChain` : la fenêtre en ouvre une autre en se fermant (la séance) ; le focus ne revient alors pas au bloc. */
+function EditBlockForm({ block, tasks, onDone, onChain }: { block: DayBlock; tasks: TaskItem[]; onDone: () => void; onChain: () => void }) {
   const update = useUpdateBlock();
   const remove = useDeleteBlock();
   const moveTasks = useMoveTasksToBlock();
@@ -128,15 +132,31 @@ function EditBlockForm({ block, tasks, onDone }: { block: DayBlock; tasks: TaskI
   const [endsAt, setEndsAt] = useState<string | null>(block.endsAt === '24:00' ? '23:59' : block.endsAt);
   const [status, setStatus] = useState<BlockStatus>(block.status);
   const [error, setError] = useState<string | null>(null);
+  const openWorkout = useWorkoutEditor((state) => state.openWorkout);
+  const { data: workouts = [] } = useWorkouts();
+  const sport = isSportBlock(block);
+  const noted = sport && workouts.some((w) => w.blockId === block.id);
 
-  const submit = (event?: FormEvent) => {
-    event?.preventDefault();
+  /** Enregistrer le bloc ; « Noter la séance » le marque fait au passage (la séance a eu lieu). */
+  const save = (nextStatus: BlockStatus, then: () => void) => {
     const end = endsAt === '23:59' && block.endsAt === '24:00' ? '24:00' : (endsAt ?? '');
     const input = { title, date: date ?? '', startsAt: startsAt ?? '', endsAt: end };
     const problem = validateBlock(input);
     if (problem) return setError(problem);
-    update.mutate({ block, patch: { title: title.trim(), date: input.date, startsAt: input.startsAt, endsAt: end, status } }, { onSuccess: onDone });
+    update.mutate({ block, patch: { title: title.trim(), date: input.date, startsAt: input.startsAt, endsAt: end, status: nextStatus } }, { onSuccess: then });
   };
+
+  const submit = (event?: FormEvent) => {
+    event?.preventDefault();
+    save(status, onDone);
+  };
+
+  const noteWorkout = () =>
+    save(status === 'planned' ? 'done' : status, () => {
+      onChain();
+      onDone();
+      openWorkout({ blockId: block.id, date: date ?? block.date });
+    });
 
   const duration = startsAt && endsAt ? toMinutes(endsAt) - toMinutes(startsAt) : 0;
 
@@ -174,6 +194,13 @@ function EditBlockForm({ block, tasks, onDone }: { block: DayBlock; tasks: TaskI
             onChange={setStatus}
           />
         </Row>
+        {sport && (
+          <Row label="Séance">
+            <Button variant="secondary" icon={Dumbbell} onClick={noteWorkout}>
+              {noted ? 'Voir la séance' : 'Noter la séance'}
+            </Button>
+          </Row>
+        )}
         <Row label="Tâches">
           {tasks.length === 0 ? (
             <p className="pt-2 text-meta text-ink-3">Glisse des tâches ou des devoirs dans le bloc depuis « À caser ».</p>
@@ -221,13 +248,18 @@ export function BlockDialog(props: {
 }) {
   const { state } = props;
   const title = state?.kind === 'edit' ? state.block.title : state ? `Nouveau bloc à ${fromMinutes(state.minutes)}` : '';
+  // Rendre le focus au bloc fermerait aussitôt la fenêtre de la séance ouverte à sa place.
+  const [chaining, setChaining] = useState(false);
+  useEffect(() => {
+    if (state) setChaining(false);
+  }, [state]);
   return (
-    <Dialog open={state !== null} onOpenChange={(open) => !open && props.onClose()} title={title}>
+    <Dialog open={state !== null} onOpenChange={(open) => !open && props.onClose()} title={title} restoreFocus={!chaining}>
       {state?.kind === 'create' && (
         <CreateBlockForm day={state.day} minutes={state.minutes} modules={props.modules} mode={props.mode} onDone={props.onClose} />
       )}
       {state?.kind === 'edit' && (
-        <EditBlockForm key={state.block.id} block={state.block} tasks={props.tasksByBlock.get(state.block.id) ?? []} onDone={props.onClose} />
+        <EditBlockForm key={state.block.id} block={state.block} tasks={props.tasksByBlock.get(state.block.id) ?? []} onDone={props.onClose} onChain={() => setChaining(true)} />
       )}
     </Dialog>
   );

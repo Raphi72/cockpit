@@ -58,6 +58,13 @@ export const EXPORT_TABLES = [
   { table: 'attachments', key: 'attachments' },
   { table: 'flashcards', key: 'flashcards' },
   { table: 'flashcard_reviews', key: 'flashcardReviews' },
+  { table: 'goals', key: 'goals' },
+  { table: 'goal_steps', key: 'goalSteps' },
+  { table: 'habits', key: 'habits' },
+  { table: 'habit_logs', key: 'habitLogs' },
+  { table: 'exercises', key: 'exercises' },
+  { table: 'workouts', key: 'workouts' },
+  { table: 'workout_sets', key: 'workoutSets' },
 ] as const;
 
 export type ExportTableKey = (typeof EXPORT_TABLES)[number]['key'];

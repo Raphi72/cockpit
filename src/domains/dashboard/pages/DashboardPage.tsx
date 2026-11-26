@@ -19,6 +19,7 @@ import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, useAgenda, type AgendaItem } from '@/domains/agenda';
 import { isSchoolItem } from '@/domains/agenda/model';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
+import { ReviewBanner, TodayHabits } from '@/domains/habits/components/TodayHabits';
 import { useSetting } from '@/domains/settings/hooks';
 import { SETTINGS } from '@/domains/settings/model';
 import { useFinanceSummary } from '@/domains/finance/hooks';
@@ -286,6 +287,7 @@ function WorkDashboard() {
   if (nothingYet) {
     return (
       <Page title={title} subtitle="Rien de prévu pour l’instant.">
+        <TodayHabits today={today} className="mb-10" />
         <EmptyState icon={FolderClosed} title="Tout commence par tes projets et tes tâches">
           <p>Cette page te montrera ensuite ce que tu as à faire aujourd’hui et ce qui mérite ton attention.</p>
           <div className="mt-4 flex gap-2">
@@ -321,7 +323,10 @@ function WorkDashboard() {
       }
     >
       {/* Montants masquables (réglage) : le dashboard peut rester à l'écran sans dévoiler l'argent. */}
+      {day === today && <ReviewBanner today={today} className="mb-10" />}
       {showAmounts && <FinanceFigures summary={finance} today={today} className="mb-12" />}
+      {/* Les habitudes du jour, cochables d'un clic (étape 6). */}
+      {day === today && <TodayHabits today={today} className="mb-12" />}
 
       {/*
         Deux colonnes indépendantes. À droite, les Deadlines d'abord (4 au plus d'emblée), puis

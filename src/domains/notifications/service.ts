@@ -2,6 +2,8 @@ import { addDaysISO, timeToMinutes } from '@/core/dates';
 import type { Db } from '@/core/db';
 import { listAgenda } from '@/domains/agenda/repository';
 import { listBlocks } from '@/domains/day/repository';
+import { doneDays, isScheduled, weekProgress } from '@/domains/habits/model';
+import { listDoneBlocks, listHabitLogs, listHabits } from '@/domains/habits/repository';
 import { nextTimedEvent } from '@/domains/dashboard/model';
 import { SETTINGS } from '@/domains/settings/model';
 import { getSetting } from '@/domains/settings/repository';
@@ -16,6 +18,7 @@ import {
   deadlineNotices,
   blockNotices,
   eventNotices,
+  habitNotices,
   paymentNotices,
   priorityTaskNotices,
   projectStartNotices,
@@ -54,6 +57,21 @@ async function loadDaySummary(db: Db, moment: Moment): Promise<DaySummary> {
   };
 }
 
+/** Les habitudes avec un rappel, et si elles sont encore attendues aujourd'hui (prévues, pas faites, semaine pas tenue). */
+async function loadHabitsForNotice(db: Db, today: string) {
+  const habits = (await listHabits(db)).filter((h) => h.reminderTime);
+  if (habits.length === 0) return [];
+  const from = addDaysISO(today, -6);
+  const to = addDaysISO(today, 1);
+  const [logs, doneBlocks] = await Promise.all([listHabitLogs(db, from, to), listDoneBlocks(db, from, to)]);
+  return habits.map((habit) => {
+    const done = doneDays(habit, logs, doneBlocks);
+    const week = weekProgress(habit, done, today);
+    const due = !done.has(today) && isScheduled(habit, today) && (habit.frequency !== 'weekly' || week.done < week.target);
+    return { id: habit.id, name: habit.name, reminderTime: habit.reminderTime, due };
+  });
+}
+
 /**
  * Notifications dues à ce moment, selon les règles activées : les rendez-vous à chaque vérification,
  * le reste seulement pendant une tournée (voir `Round`). Les plus urgentes d'abord.
@@ -70,6 +88,9 @@ export async function collectNotices(db: Db, moment: Moment, round: Round): Prom
   }
   if (rules.blocks) {
     notices.push(...blockNotices(await listBlocks(db, today, addDaysISO(today, 1)), moment));
+  }
+  if (rules.habits) {
+    notices.push(...habitNotices(await loadHabitsForNotice(db, today), moment));
   }
   if (round === null) return notices;
 

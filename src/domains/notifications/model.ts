@@ -11,6 +11,7 @@ import type { SettingDef } from '@/domains/settings/model';
 export type NotificationRule =
   | 'events'
   | 'blocks'
+  | 'habits'
   | 'deadlines'
   | 'priorityTasks'
   | 'payments'
@@ -21,6 +22,7 @@ export type NotificationRule =
 export const NOTIFICATION_RULES: { rule: NotificationRule; label: string; hint: string }[] = [
   { rule: 'events', label: 'Rendez-vous', hint: '15 minutes avant un événement à heure fixe' },
   { rule: 'blocks', label: 'Blocs de la journée', hint: 'au début et à la fin de chaque bloc' },
+  { rule: 'habits', label: 'Rappels d’habitude', hint: 'à l’heure choisie, si l’habitude n’est pas encore faite' },
   { rule: 'deadlines', label: 'Deadlines', hint: 'projets et échéances, 3 jours avant puis le jour même' },
   { rule: 'priorityTasks', label: 'Tâches prioritaires', hint: 'la veille de leur deadline' },
   { rule: 'payments', label: 'Encaissements', hint: 'la veille de la date prévue, puis s’ils sont en retard' },
@@ -134,6 +136,22 @@ export function blockNotices(blocks: BlockForNotice[], moment: Moment): Notice[]
     }
   }
   return notices;
+}
+
+/** Un rappel d'habitude part pendant 30 minutes après son heure (Cockpit ouvert un peu plus tard), une fois par jour. */
+export const HABIT_WINDOW_MIN = 30;
+
+type HabitForNotice = { id: string; name: string; reminderTime: string | null; due: boolean };
+
+/** Rappels d'habitude : à l'heure choisie, pour une habitude attendue aujourd'hui et pas encore faite. */
+export function habitNotices(habits: HabitForNotice[], moment: Moment): Notice[] {
+  const now = blockMinutes(moment.time);
+  return habits.flatMap((habit) => {
+    if (!habit.due || !habit.reminderTime) return [];
+    const at = blockMinutes(habit.reminderTime);
+    if (now < at || now >= at + HABIT_WINDOW_MIN) return [];
+    return [{ key: `habit:${habit.id}:${moment.today}`, title: `Habitude : ${habit.name}`, body: 'Pas encore faite aujourd’hui. Coche-la sur Aujourd’hui une fois faite.' }];
+  });
 }
 
 // ─── Textes ─────────────────────────────────────────────────────────────────

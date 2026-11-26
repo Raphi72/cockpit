@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CalendarPlus,
   CircleCheck,
+  Dumbbell,
   FileCheck,
   FileText,
   FolderClosed,
@@ -29,6 +30,7 @@ export type PaletteAction =
   | { type: 'go'; to: AppPath }
   | { type: 'receive' }
   | { type: 'work-plan' }
+  | { type: 'workout' }
   | { type: 'shortcuts' }
   | { type: 'sidebar' }
   | { type: 'mode' }
@@ -141,6 +143,14 @@ export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: b
       icon: Timer,
       action: { type: 'work-plan' },
       suggested: true,
+    },
+    {
+      id: 'workout',
+      group: 'action',
+      label: 'Noter une séance de sport…',
+      keywords: 'sport muscu cardio course entraînement séance carnet',
+      icon: Dumbbell,
+      action: { type: 'workout' },
     },
     {
       id: 'shortcuts',

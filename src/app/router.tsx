@@ -12,6 +12,7 @@ import { validateDashboardSearch } from '@/domains/dashboard/search';
 import { validateFinancesSearch } from '@/domains/finance/search';
 import { validateHomeworkSearch } from '@/domains/school/homework/model';
 import { validateDaySearch } from '@/domains/day/search';
+import { validateHabitsSearch } from '@/domains/habits/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateTasksSearch } from '@/domains/tasks/search';
 import { AppShell } from './shell/AppShell';
@@ -118,6 +119,12 @@ const routes = [
     getParentRoute: () => rootRoute,
     path: '/revisions',
     component: lazyRouteComponent(() => import('@/domains/school/pages/RevisionsPage'), 'RevisionsPage'),
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/habits',
+    validateSearch: validateHabitsSearch,
+    component: lazyRouteComponent(() => import('@/domains/habits/pages/HabitsPage'), 'HabitsPage'),
   }),
   createRoute({
     getParentRoute: () => rootRoute,

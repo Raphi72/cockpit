@@ -21,6 +21,7 @@ import { classesOn, currentOrNextClass, slotRoom, type ClassOccurrence } from '@
 import { DoneFold } from '@/domains/tasks/components/TaskGroups';
 import { TaskList } from '@/domains/tasks/components/TaskList';
 import { useDoneToday, useOpenTasks } from '@/domains/tasks/hooks';
+import { ReviewBanner, TodayHabits } from '@/domains/habits/components/TodayHabits';
 import { tasksOfMode, type TaskItem } from '@/domains/tasks/model';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { ColorDot } from '@/ui/data/ColorDot';
@@ -274,6 +275,7 @@ export function SchoolDashboard() {
   if (subjects.length === 0) {
     return (
       <Page title={title} subtitle="Rien de prévu pour l’instant.">
+        <TodayHabits today={today} className="mb-10" />
         <EmptyState icon={GraduationCap} title="Ton espace Cours commence par tes matières">
           <p>Ensuite, ton emploi du temps, tes devoirs et tes examens : cette page te montrera ta journée de cours.</p>
           <div className="mt-4 flex gap-2">
@@ -298,6 +300,12 @@ export function SchoolDashboard() {
         )
       }
     >
+      {day === today && (
+        <>
+          <ReviewBanner today={today} className="mb-10" />
+          <TodayHabits today={today} className="mb-12" />
+        </>
+      )}
       <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
         <div className="min-w-0">
           <ClassesSection day={day} today={today} classes={classes} holidayName={holiday?.name ?? null} hasSlots={slots.length > 0} />

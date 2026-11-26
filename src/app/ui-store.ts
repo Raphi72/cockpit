@@ -47,6 +47,9 @@ type UiState = {
   /** Dernière demande de « Je veux travailler… » (durée ou nombre), proposée la fois suivante. */
   workPlanRequest: PlanRequest;
   setWorkPlanRequest: (request: PlanRequest) => void;
+  /** Le lundi de la dernière semaine dont le bandeau « revue de la semaine » a été fermé. */
+  reviewDismissed: string | null;
+  dismissReview: (monday: string) => void;
 };
 
 export const useUiStore = create<UiState>()(
@@ -83,6 +86,8 @@ export const useUiStore = create<UiState>()(
       setPlanningZoom: (zoom) => set({ planningZoom: zoom }),
       workPlanRequest: DEFAULT_PLAN_REQUEST,
       setWorkPlanRequest: (request) => set({ workPlanRequest: request }),
+      reviewDismissed: null,
+      dismissReview: (monday) => set({ reviewDismissed: monday }),
     }),
     {
       name: 'cockpit-ui',
@@ -98,6 +103,7 @@ export const useUiStore = create<UiState>()(
         calendarPlainTasks: state.calendarPlainTasks,
         planningZoom: state.planningZoom,
         workPlanRequest: state.workPlanRequest,
+        reviewDismissed: state.reviewDismissed,
       }),
     },
   ),

@@ -36,6 +36,7 @@ import { paymentContext, type PaymentListItem } from '@/domains/finance/payments
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { useTransactionEditor } from '@/domains/finance/transactions/editor-store';
 import { useExamEditor } from '@/domains/school/exams/components/ExamDialog';
+import { useWorkoutEditor } from '@/domains/habits/components/WorkoutDialog';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { ColorDot, type PaletteKey } from '@/ui/data/ColorDot';
@@ -149,6 +150,7 @@ function usePaletteActions(close: () => void) {
   const switchMode = useSwitchMode();
   const setShortcutsOpen = useUiStore((state) => state.setShortcutsOpen);
   const openPlan = useWorkPlanDialog((state) => state.openPlan);
+  const openWorkout = useWorkoutEditor((state) => state.openWorkout);
   const openTask = useTaskSheet((state) => state.openTask);
   const openEvent = useEventSheet((state) => state.openEvent);
   const openPayment = usePaymentEditor((state) => state.openPayment);
@@ -211,6 +213,9 @@ function usePaletteActions(close: () => void) {
         break;
       case 'work-plan':
         openPlan();
+        break;
+      case 'workout':
+        openWorkout({ date: today });
         break;
       case 'sidebar':
         toggleSidebar();
