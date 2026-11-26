@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { listAgenda } from '@/domains/agenda/repository';
 import { buildShiftBatch } from '@/domains/agenda/service';
+import { accepts } from '@/domains/day/components/drag';
 import {
   blockFromModule,
   blockLoad,
@@ -112,6 +113,28 @@ describe('journée : heures et blocs', () => {
     const busy = [{ key: 'cours', title: 'Maths', start: 8 * 60, end: 10 * 60 + 30 }];
     expect(overlapsOf(block('a', '10:00', '12:00'), busy).map((b) => b.title)).toEqual(['Maths']);
     expect(overlapsOf(block('c', '13:00', '14:00'), busy)).toEqual([]);
+  });
+
+  it('un cours et un bloc qui se chevauchent se rangent côte à côte', () => {
+    type Entry = { key: string; start: number; end: number };
+    const entries: Entry[] = [
+      { key: 'cours', start: 9 * 60, end: 12 * 60 },
+      { key: 'bloc', start: 10 * 60, end: 11 * 60 },
+      { key: 'après', start: 12 * 60, end: 13 * 60 },
+    ];
+    expect(layoutIntervals(entries, (e) => e).map((p) => [p.item.key, p.lane, p.lanes])).toEqual([
+      ['cours', 0, 2],
+      ['bloc', 1, 2],
+      ['après', 0, 1],
+    ]);
+  });
+
+  it('la corbeille prend les blocs et les modules, jamais les tâches', () => {
+    expect(accepts('block', 'trash')).toBe(true);
+    expect(accepts('module', 'trash')).toBe(true);
+    expect(accepts('task', 'trash')).toBe(false);
+    expect(accepts('task', 'block')).toBe(true);
+    expect(accepts('block', 'column')).toBe(true);
   });
 
   it('dit ce qui reste de temps dans un bloc (30 min pour une tâche sans estimation)', () => {

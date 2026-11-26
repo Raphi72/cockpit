@@ -7,14 +7,21 @@ export type DayDragData =
   | { type: 'block'; block: DayBlock }
   | { type: 'task'; task: TaskItem };
 
-/** Où on le dépose : une colonne (un jour, à une heure), un bloc (pour une tâche), ou la liste « À caser ». */
+/**
+ * Où on le dépose : une colonne (un jour, à une heure), un bloc (pour une tâche), la liste « À caser »,
+ * ou la corbeille (qui n'apparaît que pendant qu'on tient un bloc ou un module).
+ */
 export type DayDropData =
   | { kind: 'column'; day: string; firstHour: number; hourHeight: number }
   | { kind: 'block'; block: DayBlock }
-  | { kind: 'to-place' };
+  | { kind: 'to-place' }
+  | { kind: 'trash' };
 
-/** Un module ou un bloc se pose dans une colonne ; une tâche, dans un bloc ou dans « À caser ». */
+/**
+ * Un module ou un bloc se pose dans une colonne, ou part à la corbeille ; une tâche va dans un bloc ou
+ * dans « À caser » (jamais à la corbeille : la sortir d'un bloc ne la supprime pas).
+ */
 export function accepts(drag: DayDragData['type'], drop: DayDropData['kind']): boolean {
   if (drag === 'task') return drop === 'block' || drop === 'to-place';
-  return drop === 'column';
+  return drop === 'column' || drop === 'trash';
 }

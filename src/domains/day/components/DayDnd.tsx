@@ -3,6 +3,7 @@ import {
   DragOverlay,
   PointerSensor,
   pointerWithin,
+  useDroppable,
   useSensor,
   useSensors,
   type CollisionDetection,
@@ -10,11 +11,12 @@ import {
   type DragMoveEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateField } from '@/core/dates';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
-import { useCreateBlock, useMoveTasksToBlock, useUpdateBlock } from '../hooks';
+import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import { blockFromModule, movedBlock } from '../model';
 import { accepts, type DayDragData, type DayDropData } from './drag';
@@ -47,13 +49,42 @@ function minutesOf(event: DragMoveEvent | DragEndEvent, pointerY: number, grabOf
 }
 
 /**
+ * La corbeille, en bas de l'écran, seulement pendant qu'on tient un bloc ou un module : y lâcher l'un
+ * ou l'autre le supprime (« Annuler » le remet). Toujours montée, pour que le glisser la connaisse dès
+ * le début du geste ; cachée et inerte le reste du temps.
+ */
+function TrashZone({ shown }: { shown: boolean }) {
+  const drop = useDroppable({ id: 'trash', data: { kind: 'trash' } satisfies DayDropData });
+  return createPortal(
+    <div
+      ref={drop.setNodeRef}
+      aria-hidden={!shown}
+      className={
+        'fixed bottom-8 left-1/2 z-[60] flex h-14 -translate-x-1/2 items-center gap-2.5 rounded-full border px-6 text-sm shadow-overlay ' +
+        'transition-[opacity,translate,scale,background-color,color,border-color] duration-[160ms] ease-soft ' +
+        (shown ? 'opacity-100' : 'pointer-events-none translate-y-4 opacity-0') +
+        ' ' +
+        (drop.isOver ? 'scale-110 border-danger bg-danger text-white' : 'border-line-strong bg-elevated text-ink-2')
+      }
+    >
+      <Trash2 className="size-5" strokeWidth={1.75} />
+      {drop.isOver ? 'Lâche pour supprimer' : 'Glisse ici pour supprimer'}
+    </div>,
+    document.body,
+  );
+}
+
+/**
  * Glisser-déposer de la page Journée : un module de la bibliothèque devient un bloc à l'heure où on
  * le dépose ; un bloc change d'heure (et de jour, en semaine) en gardant sa durée ; une tâche entre dans
- * un bloc, ou en sort en revenant dans « À caser ». Tout se fait au quart d'heure, avec « Annuler ».
+ * un bloc, ou en sort en revenant dans « À caser » ; un bloc ou un module lâché dans la corbeille est
+ * supprimé. Tout se fait au quart d'heure, avec « Annuler ».
  */
 export function DayDnd({ children, today }: { children: ReactNode; today: string }) {
   const createBlock = useCreateBlock();
   const updateBlock = useUpdateBlock();
+  const deleteBlock = useDeleteBlock();
+  const deleteModule = useDeleteModule();
   const moveTasks = useMoveTasksToBlock();
   const [dragging, setDragging] = useState<DayDragData | null>(null);
   const [label, setLabel] = useState<string | null>(null);
@@ -86,6 +117,7 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   };
 
   const onDragMove = (event: DragMoveEvent) => {
+    if ((event.over?.data.current as DayDropData | undefined)?.kind === 'trash') return setLabel('Supprimer');
     const at = minutesOf(event, pointerY.current, grabOffset.current);
     if (!at || !dragging || dragging.type === 'task') return setLabel(null);
     const time =
@@ -107,6 +139,11 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
       } else if (drop?.kind === 'to-place' && current.task.blockId !== null) {
         moveTasks.mutate({ taskIds: [current.task.id], blockId: null, message: 'Sortie du bloc.' });
       }
+      return;
+    }
+    if (drop?.kind === 'trash') {
+      if (current.type === 'block') deleteBlock.mutate(current.block.id);
+      else deleteModule.mutate(current.module.id);
       return;
     }
     const at = minutesOf(event, pointerY.current, grabOffset.current);
@@ -141,6 +178,7 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
       onDragCancel={reset}
     >
       {children}
+      <TrashZone shown={dragging?.type === 'block' || dragging?.type === 'module'} />
       {createPortal(
         <DragOverlay dropAnimation={null}>
           {overlay && (

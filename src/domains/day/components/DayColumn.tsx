@@ -5,6 +5,8 @@ import { blockInterval, layoutIntervals, overlapsOf, snap, type BusyItem, type D
 import { BlockCard } from './BlockCard';
 import type { DayDropData } from './drag';
 
+type Entry = { kind: 'busy'; item: BusyItem } | { kind: 'block'; block: DayBlock };
+
 type DayColumnProps = {
   day: string;
   hours: { first: number; last: number };
@@ -24,8 +26,9 @@ type DayColumnProps = {
 };
 
 /**
- * Une journée, heure par heure. Les cours et les rendez-vous sont en dessous, en pointillés ; les blocs
- * par-dessus. Un clic dans un créneau libre pose un bloc à cette heure (au quart d'heure).
+ * Une journée, heure par heure. Les cours et les rendez-vous sont en pointillés, les blocs pleins ; ce
+ * qui se chevauche se range côte à côte. Un clic dans un créneau libre pose un bloc à cette heure (au
+ * quart d'heure).
  */
 export function DayColumn(props: DayColumnProps) {
   const { day, hours, hourHeight } = props;
@@ -48,8 +51,14 @@ export function DayColumn(props: DayColumnProps) {
     props.onCreateAt(day, snap(hours.first * 60 + (y / hourHeight) * 60, 15));
   };
 
-  const busyPlaced = layoutIntervals(props.busy, (item) => item);
-  const blocksPlaced = layoutIntervals(props.blocks, blockInterval);
+  // Cours, rendez-vous et blocs partagent les mêmes couloirs : ce qui se chevauche est côte à côte,
+  // jamais l'un sur l'autre.
+  const placed = layoutIntervals<Entry>(
+    [...props.busy.map((item): Entry => ({ kind: 'busy', item })), ...props.blocks.map((block): Entry => ({ kind: 'block', block }))],
+    (entry) => (entry.kind === 'busy' ? entry.item : blockInterval(entry.block)),
+  );
+  const busyPlaced = placed.flatMap(({ item, lane, lanes }) => (item.kind === 'busy' ? [{ item: item.item, lane, lanes }] : []));
+  const blocksPlaced = placed.flatMap(({ item, lane, lanes }) => (item.kind === 'block' ? [{ item: item.block, lane, lanes }] : []));
 
   return (
     <div
