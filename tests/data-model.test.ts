@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { humanizeError, UserError } from '@/core/db/errors';
-import { describeCandidate, parseBackupStamp, type RestoreCandidate } from '@/domains/data/model';
+import { describeCandidate, parseBackupStamp, recoveryMessage, type RestoreCandidate } from '@/domains/data/model';
 
 const candidate: RestoreCandidate = {
   fileName: 'cockpit_2026-09-21_090200_auto.db',
@@ -36,5 +36,14 @@ describe('restauration', () => {
   it('affiche tels quels les messages déjà rédigés par l’app native', () => {
     expect(humanizeError(new UserError('Ce fichier est endommagé.'))).toBe('Ce fichier est endommagé.');
     expect(humanizeError(new Error('disk I/O error'))).toBe('Une erreur est survenue : disk I/O error');
+  });
+});
+
+describe('données : base reprise au démarrage', () => {
+  it('dit quelle sauvegarde a été reprise', () => {
+    expect(recoveryMessage({ restoredFrom: 'cockpit_2026-11-25_212740_auto.db', stamp: '2026-11-25_212740', keptIn: 'backups/abimee_2026-11-26_090000' })).toBe(
+      'Cockpit a repris ta sauvegarde du 25 nov. 2026 à 21:27.',
+    );
+    expect(recoveryMessage({ restoredFrom: 'cockpit_x.db', stamp: null, keptIn: '' })).toBe('Cockpit a repris la sauvegarde « cockpit_x.db ».');
   });
 });

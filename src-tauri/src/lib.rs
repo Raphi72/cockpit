@@ -59,7 +59,10 @@ pub fn run() {
             std::fs::create_dir_all(&default_backup_dir)?;
             let db_path = data_dir.join(db_file);
 
-            let mut conn = db::open(&db_path)?;
+            // Une base abîmée est mise de côté et remplacée par la dernière sauvegarde intacte
+            // (l'interface le dit au lancement) ; sans sauvegarde intacte, rien n'est touché.
+            let (mut conn, recovery) = db::recovery::open_checked(&db_path, &default_backup_dir)?;
+            app.manage(db::recovery::RecoveryNotice(std::sync::Mutex::new(recovery)));
             // Le dossier choisi dans Paramètres (OneDrive…), s'il est joignable ; sinon celui d'AppData.
             let dirs = BackupDirs { default: default_backup_dir, chosen: backup::read_chosen_dir(&conn) };
             db::migrations::run(&mut conn, dirs.active())?;
@@ -81,6 +84,7 @@ pub fn run() {
             db::commands::db_execute,
             db::commands::db_batch,
             db::commands::app_info,
+            db::commands::db_recovery,
             data::backup_export,
             data::backup_choose_dir,
             data::backup_reset_dir,
@@ -116,6 +120,17 @@ pub fn run() {
             sync::sync_download,
             sync::sync_upload,
         ])
-        .run(tauri::generate_context!())
-        .expect("impossible de lancer Cockpit");
+        .build(tauri::generate_context!())
+        .expect("impossible de lancer Cockpit")
+        .run(|app, event| {
+            // En quittant (« Quitter » de l'icône) : le journal est versé dans la base, qui tient alors
+            // en un seul fichier, sans rien en suspens.
+            if let tauri::RunEvent::Exit = event {
+                if let Some(database) = app.try_state::<db::Database>() {
+                    if let Ok(conn) = database.lock() {
+                        db::recovery::checkpoint(&conn);
+                    }
+                }
+            }
+        });
 }

@@ -115,3 +115,9 @@ pub async fn app_info(db: State<'_, Database>) -> Result<AppInfo, String> {
         last_backup: backup::latest_stamp(dirs.active()),
     })
 }
+
+/// Une base abîmée a été remplacée au démarrage par une sauvegarde : le compte rendu, une seule fois.
+#[tauri::command]
+pub fn db_recovery(notice: State<'_, super::recovery::RecoveryNotice>) -> Option<super::recovery::Recovery> {
+    notice.0.lock().ok().and_then(|mut recovery| recovery.take())
+}

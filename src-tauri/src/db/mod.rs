@@ -1,6 +1,7 @@
 pub mod commands;
 mod convert;
 pub mod migrations;
+pub mod recovery;
 
 use crate::backup::BackupDirs;
 use rusqlite::Connection;

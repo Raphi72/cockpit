@@ -4,6 +4,7 @@ import { CreateEventDialog } from '@/domains/agenda/components/CreateEventDialog
 import { EventSheet } from '@/domains/agenda/components/EventSheet';
 import { ClientEditorDialog, CreateClientDialog } from '@/domains/clients/components/ClientDialog';
 import { announceRestoreIfDone } from '@/domains/data';
+import { RecoveryNotice } from '@/domains/data/components/RecoveryNotice';
 import { CreatePaymentDialog, PaymentEditorDialog } from '@/domains/finance/payments/components/PaymentDialog';
 import { ReceivePaymentDialog } from '@/domains/finance/payments/components/ReceivePaymentDialog';
 import { CreateTransactionDialog, TransactionEditorDialog } from '@/domains/finance/transactions/components/TransactionDialog';
@@ -101,6 +102,8 @@ export function AppShell() {
         <ShortcutsDialog />
         {/* Le compagnon : écran du matin, mode focus, célébrations, sons. */}
         <Companion />
+        {/* Une base abîmée reprise au démarrage : ce qui a été fait, une seule fois. */}
+        <RecoveryNotice />
       </OverlaysBoundary>
       <Toaster />
     </div>

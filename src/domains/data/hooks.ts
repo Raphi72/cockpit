@@ -7,12 +7,21 @@ import { queryKeys } from '@/core/query-keys';
 import { toast } from '@/ui/overlays/toast';
 import { exportFileName, exportMimeType, type ExportKind } from './export/model';
 import { buildExport } from './export/service';
-import type { AppInfo, RestoreCandidate } from './model';
+import type { AppInfo, Recovery, RestoreCandidate } from './model';
 
 /** Commandes natives de src-tauri/src/data.rs : leurs erreurs sont déjà rédigées pour l'utilisateur. */
 function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   return invoke<T>(command, args).catch((error: unknown) => {
     throw new UserError(String(error));
+  });
+}
+
+/** Le compte rendu d'une base reprise au démarrage (une seule fois ; rien dans un simple navigateur). */
+export function useRecovery() {
+  return useQuery({
+    queryKey: ['db-recovery'],
+    queryFn: async () => (isTauri() ? ((await invoke<Recovery | null>('db_recovery')) ?? null) : null),
+    staleTime: Infinity,
   });
 }
 

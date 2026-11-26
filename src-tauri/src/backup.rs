@@ -105,6 +105,21 @@ fn list(dir: &Path, reason: Reason) -> io::Result<Vec<String>> {
     Ok(names)
 }
 
+/// Toutes les sauvegardes de Cockpit d'un dossier (toutes raisons confondues), la plus récente d'abord.
+pub fn newest_first(dir: &Path) -> Vec<PathBuf> {
+    let mut names: Vec<String> = fs::read_dir(dir)
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .filter(|name| name.starts_with(PREFIX) && name.ends_with(".db"))
+                .collect()
+        })
+        .unwrap_or_default();
+    names.sort();
+    names.into_iter().rev().map(|name| dir.join(name)).collect()
+}
+
 // ─── Dossier des sauvegardes ────────────────────────────────────────────────
 
 /// Où vont les sauvegardes : le dossier choisi (OneDrive, clé USB…) s'il est joignable, sinon celui d'AppData.

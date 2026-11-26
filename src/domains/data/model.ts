@@ -37,6 +37,18 @@ export function parseBackupStamp(stamp: string): Date | null {
   return new Date(y, mo - 1, d, h, mi, s);
 }
 
+/**
+ * La base était abîmée au démarrage : Cockpit l'a mise de côté et a repris la dernière sauvegarde
+ * intacte (src-tauri/src/db/recovery.rs). Rien n'a été supprimé.
+ */
+export type Recovery = { restoredFrom: string; stamp: string | null; keptIn: string };
+
+/** La phrase qui le dit : « Cockpit a repris ta sauvegarde du 25 nov. 2026 à 21:27. » */
+export function recoveryMessage(recovery: Recovery): string {
+  const date = recovery.stamp ? parseBackupStamp(recovery.stamp) : null;
+  return date ? `Cockpit a repris ta sauvegarde du ${formatBackupDate(date)}.` : `Cockpit a repris la sauvegarde « ${recovery.restoredFrom} ».`;
+}
+
 /** « aujourd'hui à 10:15 » ou « 21 sept. 2026 à 09:02 » */
 export function formatBackupDate(date: Date): string {
   const time = format(date, 'HH:mm');
