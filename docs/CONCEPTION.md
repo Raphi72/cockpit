@@ -675,7 +675,7 @@ gestion_projets/
 
 - **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), l'organisateur de journée en blocs, et **Pages** (V2, étape 4), sous la boîte de réception ; les pages favorites sont listées sous la navigation ;
 - **mode Travail** : Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
-- **mode Cours** : Aujourd'hui, Boîte de réception, Matières, Devoirs, Calendrier, Emploi du temps, Examens, Notes ; en bas, Paramètres.
+- **mode Cours** : Aujourd'hui, Boîte de réception, Matières, Devoirs, Calendrier, Emploi du temps, Examens, Révisions (V2, étape 5), Notes ; en bas, Paramètres.
 
 La « Vue globale » de ta liste devient **Planning** (la timeline), puisque le dashboard joue déjà le rôle de vue globale. La sidebar utilise des icônes Lucide plutôt que des emojis, pour un rendu plus net et plus sobre.
 
@@ -927,9 +927,18 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 5, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Révisions, session complète au clavier, carte à revoir qui repasse). À essayer à la main : « Créer les flashcards » depuis une vraie fiche de cours, et la fenêtre des révisions à rebours en créant un examen.
 - **V2, étape 4, dans la vraie fenêtre** : vérifié dans le navigateur de test (créer une page, titre, enregistrement, « / », tableau, case, lien « [[ » qui crée une sous-page, liens entrants, favoris). Les raccourcis Markdown n'ont pu être essayés qu'en simulant la frappe : à vérifier au clavier. Pas encore essayés : coller ou déposer une image, l'export Markdown dans la vraie fenêtre « Enregistrer sous », et **l'import Notion** (seulement dans l'app ; couvert par des tests Rust et TypeScript).
 - **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 5 (« Révisions »)**, à confirmer à l'usage :
+- **Flashcards** (migration `0011`, `school/flashcards`) : un recto, un verso, une matière. Seules les révisions sont stockées (`flashcard_reviews`) ; l'état d'une carte (intervalle, facilité, échéance) est recalculé en les rejouant : SM-2 simplifié, à la façon d'Anki. Notes : 1 à revoir (la carte repart de zéro et revient le jour même), 2 difficile, 3 bien, 4 facile ; le prochain intervalle est écrit sous chaque bouton.
+- **Cartes du jour** : celles dont l'échéance est arrivée (la plus en retard d'abord), puis les nouvelles, **20 par jour au plus** (une carte vue pour la première fois aujourd'hui en fait partie).
+- **Session** : une fenêtre au clavier, Espace pour voir la réponse, 1 à 4 pour se noter ; une carte « à revoir » repasse à la fin. Chaque note est enregistrée aussitôt (fermer en cours de route ne perd rien). Depuis la page **Révisions** (mode Cours : par matière, « Tout réviser »), la fiche d'une matière (section Flashcards) et « Cartes à revoir » sur Aujourd'hui en mode Cours.
+- **Cartes depuis une page** : dans une page rattachée à une matière, chaque ligne « question :: réponse » devient une carte avec « Créer les flashcards » (menu de la page) ; une réponse changée met la carte à jour ; une ligne retirée ne supprime pas sa carte (on garde l'historique). Une fiche de cours est donc une page rattachée à sa matière (P19).
+- **Révisions à rebours** (`exams/revision-plan.ts`) : à la création d'un examen à venir, une fenêtre propose J-7, J-3 et J-1 (les jours encore à venir), chacun en bloc « Révision » d'une heure dans le premier créneau libre de 17 h à 22 h (pas avant l'heure qu'il est, aujourd'hui) ; sans créneau libre, 18 h, signalé par un triangle. On décoche ce qu'on ne veut pas ; « Annuler » retire les blocs posés.
+- **Pas encore** : la notification « cartes à revoir » (étape 7).
 
 **Choix faits en V2, étape 4 (« Pages »)**, à confirmer à l'usage :
 - **Éditeur** : TipTap 3 (`domains/pages/editor`), sans style imposé (styles dans `global.css`, classe `page-editor`). Le schéma des blocs (`editor/nodes.ts`) est séparé de leurs vues React (`editor/extensions.ts`) : l'import et l'export Markdown l'utilisent sans l'éditeur (`@tiptap/markdown`).
@@ -1147,7 +1156,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1220,10 +1229,10 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - **Matières** : nom, couleur, prof, salle, coefficient. *(Fait, étape 2.)*
 - **Emploi du temps** : cours récurrents (P15) et vacances (période sans cours). *(Fait, étape 2 : une semaine type pour toute l'année, sans semaines A/B ; semestres et vacances réglables.)*
 - **Devoirs** (P14) : à rendre, en retard, rendus. *(Fait, étape 2.)*
-- **Contrôles et examens** : rattachés à une matière. À sa création, l'app propose des **révisions à rebours** (J-7, J-3, J-1), créées comme des blocs « Révision ». *(Examens faits à l'étape 2 ; les révisions à rebours viennent avec l'étape 5.)*
+- **Contrôles et examens** : rattachés à une matière. À sa création, l'app propose des **révisions à rebours** (J-7, J-3, J-1), créées comme des blocs « Révision ». *(Examens faits à l'étape 2 ; révisions à rebours à l'étape 5.)*
 - **Notes** : note, sur combien, coefficient, date ; **moyenne** par matière et générale, calculées. *(Fait, étape 2 : par semestre et pour l'année.)*
-- **Fiches et flashcards** : une fiche est une page (P19) ; une flashcard a un recto et un verso, par matière. **Répétition espacée** : chaque jour, l'app dit quelles cartes revoir, et la session se fait au clavier (Espace pour retourner, 1 à 4 pour noter).
-- Dashboard en mode Cours : les cours du jour, les devoirs à rendre, le prochain examen, les cartes à revoir. *(Fait, étape 2, en deux colonnes, avec les prochains jours ; les cartes à revoir viendront avec l'étape 5.)*
+- **Fiches et flashcards** : une fiche est une page (P19) ; une flashcard a un recto et un verso, par matière. **Répétition espacée** : chaque jour, l'app dit quelles cartes revoir, et la session se fait au clavier (Espace pour retourner, 1 à 4 pour noter). *(Fait, étape 5 : 20 nouvelles cartes par jour au plus, cartes tirées des lignes « question :: réponse » d'une page.)*
+- Dashboard en mode Cours : les cours du jour, les devoirs à rendre, le prochain examen, les cartes à revoir. *(Fait, étape 2, en deux colonnes, avec les prochains jours ; cartes à revoir ajoutées à l'étape 5.)*
 
 #### Pages
 - *(Fait, étape 4 ; détail au §7.3. Images gardées dans la base plutôt que dans un dossier.)*
@@ -1293,6 +1302,8 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
 
 **Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
+
+**Fait à l'étape 5** (migration `0011`) : `flashcards` (matière, page d'origine, recto, verso) et `flashcard_reviews` (jour, note de 1 à 4) ; l'échéance n'est pas stockée.
 
 **Fait à l'étape 4** (migration `0010`) : `pages` (arborescence, contenu JSON, texte brut pour la recherche, rattachement, favori, modèle, journal), `page_links` et `attachments` (images en data URL, dans la base). Trois modèles proposés.
 
@@ -1389,6 +1400,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - une page « Pages » et les favoris dans la barre latérale ;
    - import d'un export Notion (pages, sous-pages, images).
 
+10. **Étape 5, « Révisions »** (26/11/2026) :
+   - 20 nouvelles flashcards par jour au plus ;
+   - cartes créées dans la matière, et depuis une page avec des lignes « question :: réponse » ;
+   - révisions à rebours dans le premier créneau libre du soir ;
+   - notation à 4 boutons, façon Anki.
+
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
 
@@ -1400,7 +1417,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes. **Fait le 26/11/2026** (branche `v2-modes-cours`, 8 sous-étapes ; détail au §7.3).
 3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir. **Fait le 26/11/2026** (branche `v2-journee` ; détail au §7.3).
 4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion. **Fait le 26/11/2026** (branche `v2-pages` ; détail au §7.3).
-5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens.
+5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens. **Fait le 26/11/2026** (branche `v2-revisions` ; détail au §7.3).
 6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine.
 7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications.
 8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda.
