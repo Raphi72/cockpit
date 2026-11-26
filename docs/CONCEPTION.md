@@ -673,7 +673,7 @@ gestion_projets/
 
 **Sidebar** (232 px, réductible à 56 px avec Ctrl+B). Depuis la V2 (étape 2), elle dépend du mode, choisi en haut à gauche par un sélecteur à deux icônes (Travail, Cours ; `Ctrl M`) :
 
-- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), l'organisateur de journée en blocs, et **Pages** (V2, étape 4), sous la boîte de réception ; les pages favorites sont listées sous la navigation ;
+- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), l'organisateur de journée en blocs, puis, sous la boîte de réception, **Pages** (V2, étape 4) et **Habitudes** (V2, étape 6 : habitudes, objectifs, séances, revue de la semaine) ; les pages favorites sont listées sous la navigation ;
 - **mode Travail** : Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
 - **mode Cours** : Aujourd'hui, Boîte de réception, Matières, Devoirs, Calendrier, Emploi du temps, Examens, Révisions (V2, étape 5), Notes ; en bas, Paramètres.
 
@@ -869,7 +869,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
-| **V2** | En cours : étape 1 sur 10 faite | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
+| **V2** | En cours : étapes 1 à 6 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
 
 ### 7.2 Détail des jalons restants
 
@@ -927,10 +927,20 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 6, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Habitudes et ses trois onglets, cocher sur Aujourd'hui, habitude cochée par un bloc Sport fait, objectif et étapes, séance notée depuis la page et depuis un bloc, nouvel exercice, courbe, revue de la semaine, commande de la palette). Pas encore vus : le **bandeau du dimanche** (seulement le dimanche ; la règle est testée), le **rappel d'habitude** en vraie notification Windows, et la mise en page à 125 %.
 - **V2, étape 5, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Révisions, session complète au clavier, carte à revoir qui repasse). À essayer à la main : « Créer les flashcards » depuis une vraie fiche de cours, et la fenêtre des révisions à rebours en créant un examen.
 - **V2, étape 4, dans la vraie fenêtre** : vérifié dans le navigateur de test (créer une page, titre, enregistrement, « / », tableau, case, lien « [[ » qui crée une sous-page, liens entrants, favoris). Les raccourcis Markdown n'ont pu être essayés qu'en simulant la frappe : à vérifier au clavier. Pas encore essayés : coller ou déposer une image, l'export Markdown dans la vraie fenêtre « Enregistrer sous », et **l'import Notion** (seulement dans l'app ; couvert par des tests Rust et TypeScript).
 - **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 6 (« Sport, habitudes et objectifs »)**, à confirmer à l'usage :
+- **Habitudes** (migration `0012`, `domains/habits`, P20) : chaque jour, X fois par semaine ou certains jours ; icône et couleur ; rappel facultatif ; un **module** de la Journée (un bloc fait de ce module la coche tout seul) ; un objectif servi. Seules les coches sont stockées (`habit_logs`, un jour par ligne). La semaine va du lundi au dimanche. **Série** : jours prévus faits d'affilée (aujourd'hui compte s'il est déjà fait, sinon la série court jusqu'à hier ; un jour non prévu ne la casse pas), ou semaines réussies d'affilée pour « X fois par semaine ». **Taux** : jours prévus faits sur les 30 derniers jours (semaines réussies pour « X fois par semaine »). Arrêter une habitude l'archive (ses coches restent pour les revues passées), avec « Annuler ».
+- **Page Habitudes**, commune aux deux modes, en trois onglets : **Habitudes et objectifs** (une ligne par habitude : case du jour, la semaine en points, la série, le taux ; la fenêtre d'une habitude montre la grille du mois), **Séances**, **Revue de la semaine**.
+- **Aujourd'hui** (les deux modes, aujourd'hui seulement) : une rangée de pastilles, une par habitude attendue ce jour (pour « X fois par semaine » : tant que la semaine n'est pas tenue, avec « 1/3 ») ; un clic la coche. Aussi sur l'Aujourd'hui vide d'un nouvel utilisateur.
+- **Objectifs** : titre, date visée, notes, étapes à cocher ; progression = étapes faites (atteint = complet) ; atteints repliés sous la liste. Supprimer un objectif garde ses habitudes, avec « Annuler ».
+- **Carnet de séances** : une séance a une date, un ressenti (Dure, Difficile, Correcte, Bonne, Excellente), des notes et des séries ; muscu : répétitions × charge (sans charge : poids du corps) ; cardio : durée et distance. Les exercices se créent dans la séance et se réutilisent. **Courbe** par exercice : le meilleur de chaque séance (charge la plus lourde, sinon le plus de répétitions ; distance, sinon durée). Un **bloc de sport** (module Sport ou icône haltère) propose « Noter la séance » : le bloc est marqué fait au passage, la séance lui est rattachée (« Voir la séance » ensuite) ; supprimer le bloc garde la séance.
+- **Revue de la semaine** (`habits/service.ts`) : heures de travail, de cours et devoirs (blocs Cours faits et emploi du temps) et de sport (blocs de sport faits), tâches terminées, devoirs faits, encaissé, habitudes tenues (« 3/7 »), et une phrase de bilan ; toute semaine passée se consulte (flèches ← →). Le **dimanche**, un bandeau sur Aujourd'hui la propose ; fermé, il revient la semaine suivante.
+- **Rappel d'habitude** : nouvelle règle de notification « Rappels d'habitude » (désactivable) : à l'heure choisie, pendant 30 minutes, une fois par jour, si l'habitude est attendue et pas encore faite.
 
 **Choix faits en V2, étape 5 (« Révisions »)**, à confirmer à l'usage :
 - **Flashcards** (migration `0011`, `school/flashcards`) : un recto, un verso, une matière. Seules les révisions sont stockées (`flashcard_reviews`) ; l'état d'une carte (intervalle, facilité, échéance) est recalculé en les rejouant : SM-2 simplifié, à la façon d'Anki. Notes : 1 à revoir (la carte repart de zéro et revient le jour même), 2 difficile, 3 bien, 4 facile ; le prochain intervalle est écrit sous chaque bouton.
@@ -1156,7 +1166,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1246,10 +1256,10 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - **Export** : une page en Markdown.
 
 #### Sport, habitudes et objectifs
-- **Habitudes** (P20) : fréquence (chaque jour, X fois par semaine, certains jours), heure de rappel facultative, série en cours et grille du mois.
-- **Objectifs** : étapes, échéance facultative, habitudes liées, progression calculée.
-- **Carnet de séances** : un bloc de sport fait peut recevoir sa séance (exercices, séries, répétitions, charges ou durée, ressenti). Les exercices sont réutilisables, et chacun a sa courbe de progression.
-- **Revue de la semaine** : heures de travail, de cours et de sport (d'après les blocs faits), habitudes tenues, devoirs rendus, chiffre d'affaires encaissé ; un écran court, une phrase de bilan.
+- **Habitudes** (P20) : fréquence (chaque jour, X fois par semaine, certains jours), heure de rappel facultative, série en cours et grille du mois. *(Fait, étape 6 : une page « Habitudes », et cochables aussi sur Aujourd'hui.)*
+- **Objectifs** : étapes, échéance facultative, habitudes liées, progression calculée. *(Fait, étape 6, sous les habitudes.)*
+- **Carnet de séances** : un bloc de sport fait peut recevoir sa séance (exercices, séries, répétitions, charges ou durée, ressenti). Les exercices sont réutilisables, et chacun a sa courbe de progression. *(Fait, étape 6 : muscu et cardio ; une séance peut aussi être notée sans bloc.)*
+- **Revue de la semaine** : heures de travail, de cours et de sport (d'après les blocs faits), habitudes tenues, devoirs rendus, chiffre d'affaires encaissé ; un écran court, une phrase de bilan. *(Fait, étape 6 : proposée le dimanche par un bandeau, consultable pour toute semaine.)*
 
 #### Le compagnon (fluidité et envie)
 - **Animations douces** partout : changement de page, blocs qui glissent et se posent, tâche cochée qui se range (dans la continuité de la V1.1.2). Elles respectent le réglage Windows « Réduire les animations ».
@@ -1263,7 +1273,7 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 #### Toujours là
 - **Lancé au démarrage de Windows** (réglable) et **gardé dans la zone de notification** : fermer la fenêtre ne quitte pas l'app, donc les notifications arrivent toujours. *(Fait, étape 1.)*
 - **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception. *(Fait, étape 1 : `Ctrl+Maj+Espace` par défaut.)*
-- **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir.
+- **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir. *(Début et fin de bloc faits à l'étape 3, rappel d'habitude à l'étape 6.)*
 
 #### Mobile (Android)
 - **Application Android** construite avec Tauri 2, avec le même code React et des écrans adaptés au téléphone : Journée, Capture rapide, Tâches et devoirs du jour, Habitudes, Pages (lecture et petite édition).
@@ -1295,13 +1305,15 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 | `attachments` | Images des pages | fichiers dans un dossier `attachments\` à côté de la base, référencés par id |
 | `habits`, `habit_logs` | Habitudes | fréquence, module lié ; une ligne par jour coché |
 | `goals`, `goal_steps` | Objectifs | échéance, étapes |
-| `exercises`, `workout_sets` | Carnet de séances | séries rattachées à un bloc fait |
+| `exercises`, `workouts`, `workout_sets` | Carnet de séances | séance (date, ressenti, bloc facultatif) et ses séries |
 | `inbox_items` | Boîte de réception | texte, date de capture. **Fait** (migration `0006`) |
 | `sync_changes`, `sync_state` | Synchronisation | journal des modifications locales, dernier fichier lu par appareil |
 
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
 
 **Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
+
+**Fait à l'étape 6** (migration `0012`) : `goals` et `goal_steps`, `habits` (fréquence, jours, rappel, module et objectif liés, archivage) et `habit_logs` (un jour coché par ligne), `exercises` (muscu ou cardio), `workouts` (date, ressenti, notes, bloc facultatif) et `workout_sets` (répétitions, charge, durée, distance). Séries, taux et progression ne sont pas stockés.
 
 **Fait à l'étape 5** (migration `0011`) : `flashcards` (matière, page d'origine, recto, verso) et `flashcard_reviews` (jour, note de 1 à 4) ; l'échéance n'est pas stockée.
 
@@ -1406,6 +1418,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - révisions à rebours dans le premier créneau libre du soir ;
    - notation à 4 boutons, façon Anki.
 
+11. **Étape 6, « Sport, habitudes et objectifs »** (26/11/2026) :
+   - habitudes cochables aussi sur Aujourd'hui, dans les deux modes ;
+   - une seule page « Habitudes », les objectifs dessous ;
+   - carnet de muscu et de cardio, avec la courbe de chaque exercice ;
+   - revue de la semaine proposée le dimanche, consultable pour toute semaine.
+
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
 
@@ -1418,7 +1436,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir. **Fait le 26/11/2026** (branche `v2-journee` ; détail au §7.3).
 4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion. **Fait le 26/11/2026** (branche `v2-pages` ; détail au §7.3).
 5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens. **Fait le 26/11/2026** (branche `v2-revisions` ; détail au §7.3).
-6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine.
+6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine. **Fait le 26/11/2026** (branche `v2-habitudes` ; détail au §7.3).
 7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications.
 8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda.
 9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord.
