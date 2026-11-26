@@ -869,7 +869,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
-| **V2** | En cours : étapes 1 à 6 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
+| **V2** | En cours : étapes 1 à 7 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
 
 ### 7.2 Détail des jalons restants
 
@@ -927,11 +927,20 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 7, dans la vraie fenêtre** : vérifié dans le navigateur de test (écran du matin, mode focus et Pomodoro, tâche cochée depuis le focus, journée bouclée fêtée, mini-fenêtre ouverte comme page à part, Paramètres). Pas encore essayés dans l'app : la **mini-fenêtre native** (toujours au-dessus, glisser pour la déplacer, place retenue, la fenêtre principale qui suit une tâche cochée), le **plein écran** natif du mode focus, l'écran du matin après un démarrage caché avec Windows, les **sons** et les quatre nouvelles notifications en vraies notifications Windows.
 - **V2, étape 6, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Habitudes et ses trois onglets, cocher sur Aujourd'hui, habitude cochée par un bloc Sport fait, objectif et étapes, séance notée depuis la page et depuis un bloc, nouvel exercice, courbe, revue de la semaine, commande de la palette). Pas encore vus : le **bandeau du dimanche** (seulement le dimanche ; la règle est testée), le **rappel d'habitude** en vraie notification Windows, et la mise en page à 125 %.
 - **V2, étape 5, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Révisions, session complète au clavier, carte à revoir qui repasse). À essayer à la main : « Créer les flashcards » depuis une vraie fiche de cours, et la fenêtre des révisions à rebours en créant un examen.
 - **V2, étape 4, dans la vraie fenêtre** : vérifié dans le navigateur de test (créer une page, titre, enregistrement, « / », tableau, case, lien « [[ » qui crée une sous-page, liens entrants, favoris). Les raccourcis Markdown n'ont pu être essayés qu'en simulant la frappe : à vérifier au clavier. Pas encore essayés : coller ou déposer une image, l'export Markdown dans la vraie fenêtre « Enregistrer sous », et **l'import Notion** (seulement dans l'app ; couvert par des tests Rust et TypeScript).
 - **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 7 (« Le compagnon »)**, à confirmer à l'usage :
+- **Écran du matin** (`domains/companion`, P21) : plein écran, à la première ouverture du jour (fenêtre visible) et **avant midi** ; une fois par jour (jour retenu dans l'état d'interface). La journée en une phrase (blocs, cours en mode Cours, rendez-vous, tâches du mode), le premier bloc (ou celui en cours), le devoir à rendre au plus tard demain, l'examen des 7 prochains jours, les habitudes encore attendues. Entrée, Échap ou Espace le ferment ; « Ne plus afficher le matin » le désactive (Paramètres › Compagnon le rallume).
+- **Mode focus** : `F` partout (hors saisie et fenêtres), la palette, ou « Focus → » sous la date de la Journée quand un bloc est en cours. Plein écran (dans l'app, la fenêtre passe aussi en plein écran) : le bloc en cours, le temps qui lui reste, ses tâches (la première en grand, cochable). **Pomodoro** au choix : 25 min de travail et 5 de pause par défaut (durées réglables dans le focus, gardées en réglage), les phases s'enchaînent seules ; il vit le temps du mode focus. Sans bloc en cours : le suivant, et le Pomodoro. Échap en sort.
+- **Mini-fenêtre « En ce moment »** (`now.html`, `src-tauri/src/now.rs`) : `Ctrl Maj E` ou la palette l'ouvrent et la ferment. 320 × 140, sans bordure, toujours au-dessus, hors de la barre des tâches ; on la déplace en la faisant glisser, sa place est retenue. Elle relit la base toutes les 15 secondes et quand on y revient ; cocher sa tâche prévient la fenêtre principale (`cockpit:data-changed`). Dans le navigateur de développement, une petite fenêtre de navigateur la remplace.
+- **Célébrations** (discrètes, désactivables) : un toast avec une étincelle quand la journée est bouclée (il restait des tâches du jour, il n'en reste plus, au moins une faite aujourd'hui), quand une habitude cochée atteint un palier de série (3, 5, 7, 10, 14, 21, 30… jours ; 2, 3, 4, 6… semaines) et quand un objectif est atteint (marqué, ou toutes ses étapes faites). Seulement pendant que Cockpit est ouvert, jamais au lancement.
+- **Sons** (désactivés par défaut) : quelques notes douces jouées par Web Audio, sans fichier : fin d'un bloc prévu, fin d'un tour de Pomodoro, fin de pause. Les activer en fait entendre un.
+- **Notifications ajoutées** (chacune désactivable) : bilan du soir à 20 h s'il reste des blocs à marquer (une fois) ; devoir à rendre demain et examen à J-3 (à l'ouverture ou à 8 h) ; cartes à revoir (idem). « Révisions du jour » n'a pas de règle à part : ce sont des blocs Révision, annoncés comme les autres blocs.
 
 **Choix faits en V2, étape 6 (« Sport, habitudes et objectifs »)**, à confirmer à l'usage :
 - **Habitudes** (migration `0012`, `domains/habits`, P20) : chaque jour, X fois par semaine ou certains jours ; icône et couleur ; rappel facultatif ; un **module** de la Journée (un bloc fait de ce module la coche tout seul) ; un objectif servi. Seules les coches sont stockées (`habit_logs`, un jour par ligne). La semaine va du lundi au dimanche. **Série** : jours prévus faits d'affilée (aujourd'hui compte s'il est déjà fait, sinon la série court jusqu'à hier ; un jour non prévu ne la casse pas), ou semaines réussies d'affilée pour « X fois par semaine ». **Taux** : jours prévus faits sur les 30 derniers jours (semaines réussies pour « X fois par semaine »). Arrêter une habitude l'archive (ses coches restent pour les revues passées), avec « Annuler ».
@@ -1166,7 +1175,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes` ; **étape 7 (« Le compagnon ») faite le 26/11/2026**, branche `v2-compagnon`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1263,17 +1272,17 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 
 #### Le compagnon (fluidité et envie)
 - **Animations douces** partout : changement de page, blocs qui glissent et se posent, tâche cochée qui se range (dans la continuité de la V1.1.2). Elles respectent le réglage Windows « Réduire les animations ».
-- **Écran du matin** (P21) : la journée en une phrase, le premier bloc, le devoir du jour, l'habitude à tenir. Une touche le ferme.
-- **Mode focus** : plein écran sur le bloc en cours, avec un minuteur (Pomodoro au choix), la tâche en cours et rien d'autre.
-- **Mini-fenêtre « En ce moment »** : petite fenêtre toujours au-dessus, avec le bloc en cours, le temps restant et la case de la tâche.
-- **Petites célébrations** : une journée bouclée, une série qui continue, un objectif atteint. Discrètes et désactivables.
-- **Sons** facultatifs (fin de bloc, fin de Pomodoro), désactivés par défaut.
+- **Écran du matin** (P21) : la journée en une phrase, le premier bloc, le devoir du jour, l'habitude à tenir. Une touche le ferme. *(Fait, étape 7 : plein écran, avant midi.)*
+- **Mode focus** : plein écran sur le bloc en cours, avec un minuteur (Pomodoro au choix), la tâche en cours et rien d'autre. *(Fait, étape 7 : touche F ; fin du bloc par défaut, Pomodoro 25/5 réglable.)*
+- **Mini-fenêtre « En ce moment »** : petite fenêtre toujours au-dessus, avec le bloc en cours, le temps restant et la case de la tâche. *(Fait, étape 7 : à la demande, Ctrl Maj E.)*
+- **Petites célébrations** : une journée bouclée, une série qui continue, un objectif atteint. Discrètes et désactivables. *(Fait, étape 7 : un toast avec une étincelle ; les séries à certains paliers.)*
+- **Sons** facultatifs (fin de bloc, fin de Pomodoro), désactivés par défaut. *(Fait, étape 7.)*
 - **Boîte de réception** : tout ce qui est capturé vite (idée, tâche, devoir, note) atterrit là, et se trie plus tard en un geste. *(Fait, étape 1 : en tâche, en idée de projet ou en événement ; les devoirs et les notes viendront avec leurs espaces.)*
 
 #### Toujours là
 - **Lancé au démarrage de Windows** (réglable) et **gardé dans la zone de notification** : fermer la fenêtre ne quitte pas l'app, donc les notifications arrivent toujours. *(Fait, étape 1.)*
 - **Raccourci global** de capture rapide, même fenêtre cachée : une petite fenêtre s'ouvre, on tape, Entrée, c'est dans la boîte de réception. *(Fait, étape 1 : `Ctrl+Maj+Espace` par défaut.)*
-- **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir. *(Début et fin de bloc faits à l'étape 3, rappel d'habitude à l'étape 6.)*
+- **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir. *(Début et fin de bloc faits à l'étape 3, rappel d'habitude à l'étape 6, les autres à l'étape 7 ; les révisions du jour sont des blocs Révision.)*
 
 #### Mobile (Android)
 - **Application Android** construite avec Tauri 2, avec le même code React et des écrans adaptés au téléphone : Journée, Capture rapide, Tâches et devoirs du jour, Habitudes, Pages (lecture et petite édition).
@@ -1424,6 +1433,12 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - carnet de muscu et de cardio, avec la courbe de chaque exercice ;
    - revue de la semaine proposée le dimanche, consultable pour toute semaine.
 
+12. **Étape 7, « Le compagnon »** (26/11/2026) :
+   - écran du matin en plein écran, fermé d'une touche ;
+   - mode focus : le temps restant du bloc, Pomodoro au choix ;
+   - mini-fenêtre « En ce moment » ouverte à la demande ;
+   - célébrations discrètes.
+
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
 
@@ -1437,7 +1452,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion. **Fait le 26/11/2026** (branche `v2-pages` ; détail au §7.3).
 5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens. **Fait le 26/11/2026** (branche `v2-revisions` ; détail au §7.3).
 6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine. **Fait le 26/11/2026** (branche `v2-habitudes` ; détail au §7.3).
-7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications.
+7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications. **Fait le 26/11/2026** (branche `v2-compagnon` ; détail au §7.3).
 8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda.
 9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord.
 10. **Application Android** : écrans du téléphone, synchro, notifications, widget.
