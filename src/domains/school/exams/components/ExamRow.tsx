@@ -4,7 +4,7 @@ import { formatDecimal } from '../../subjects/model';
 import { examCountdown, examWhen, type Exam } from '../model';
 
 /** Un examen proche se voit : le jour même en rouge, dans les 3 jours en orange. */
-function countdownTone(exam: Exam, today: string): string {
+export function countdownTone(exam: Pick<Exam, 'date'>, today: string): string {
   const diff = daysBetween(today, exam.date);
   if (diff < 0) return 'text-ink-3';
   if (diff === 0) return 'text-danger';
