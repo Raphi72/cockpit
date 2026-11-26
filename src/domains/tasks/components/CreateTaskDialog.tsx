@@ -3,7 +3,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
 import { addDaysISO, formatDateField, toISODate, todayISO } from '@/core/dates';
 import { CoursePicker } from '@/domains/google/components/CoursePicker';
-import { useHasSchoolCalendar } from '@/domains/google/hooks';
+import { useCourse, useCoursesBetween, useHasSchoolCalendar } from '@/domains/google/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { PRIORITY_LABELS, type Priority } from '@/domains/projects/model';
 import { SubjectMenu } from '@/domains/school/subjects/components/SubjectMenu';
@@ -71,6 +71,10 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
   const [subjectId, setSubjectId] = useState<string | null>(defaults.subjectId ?? null);
   const [courseEvent, setCourseEvent] = useState<string | null>(homework ? (defaults.courseEvent ?? null) : null);
   const { data: hasSchoolCalendar = false } = useHasSchoolCalendar();
+  // Devoir ajouté depuis un cours : ce cours-là, ou le suivant du même nom, en un clic.
+  const { data: anchor } = useCourse(homework ? (defaults.courseEvent ?? null) : null);
+  const { data: upcoming = [] } = useCoursesBetween(today, addDaysISO(today, 120));
+  const following = anchor ? upcoming.find((c) => c.course === anchor.course && c.startsAt > anchor.startsAt) : undefined;
   // « Sans cours précis » : on repasse à une matière et une date, comme sans Google.
   const [withoutCourse, setWithoutCourse] = useState(false);
   const byCourse = homework && !withoutCourse && (hasSchoolCalendar || courseEvent !== null);
@@ -160,7 +164,25 @@ function CreateTaskForm({ defaults, homework, onDone }: { defaults: CreateDefaul
                 </Row>
                 {courseEvent && dueDate && (
                   <Row label="À rendre">
-                    <p className="pt-2 first-letter:uppercase">{formatDateField(dueDate, today)}, le jour du cours</p>
+                    {anchor && following ? (
+                      <ChoiceChips
+                        label="À rendre"
+                        options={[
+                          { value: anchor.itemId, label: `Pour ce cours · ${formatDateField(anchor.startsAt.slice(0, 10), today)}` },
+                          { value: following.itemId, label: `Au cours suivant · ${formatDateField(following.startsAt.slice(0, 10), today)}` },
+                        ]}
+                        value={courseEvent === anchor.itemId || courseEvent === following.itemId ? courseEvent : null}
+                        onChange={(id) => {
+                          const chosen = id === anchor.itemId ? anchor : following;
+                          setCourseEvent(chosen.itemId);
+                          setSubjectId(chosen.subjectId);
+                          setDueDate(chosen.startsAt.slice(0, 10));
+                        }}
+                      />
+                    ) : (
+                      <p className="pt-2 first-letter:uppercase">{formatDateField(dueDate, today)}, le jour du cours</p>
+                    )}
+                    <p className="mt-1.5 text-meta text-ink-3">Pour un autre cours, choisis-le juste au-dessus.</p>
                   </Row>
                 )}
               </>

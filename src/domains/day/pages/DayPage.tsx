@@ -15,7 +15,7 @@ import { useSetting } from '@/domains/settings/hooks';
 import { SETTINGS, resolveDayHours } from '@/domains/settings/model';
 import { useCompanion } from '@/domains/companion/store';
 import { useOpenTasks, useTasksInBlocks } from '@/domains/tasks/hooks';
-import { selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
+import type { TaskItem } from '@/domains/tasks/model';
 import { Page } from '@/ui/layout/Page';
 import { Button } from '@/ui/primitives/Button';
 import { SegmentedTabs } from '@/ui/primitives/SegmentedTabs';
@@ -39,7 +39,7 @@ import {
   type DayBlock,
 } from '../model';
 import type { DayView } from '../search';
-import { buildFillProposals, busyItemsOn, type FillProposal } from '../service';
+import { buildFillProposals, busyItemsOn, toPlaceOn, type FillProposal } from '../service';
 
 const HOUR_HEIGHT = { day: 52, week: 40 };
 
@@ -119,12 +119,8 @@ export function DayPage() {
   const todayBlocks = blocksOn(today);
   const current = currentBlock(todayBlocks, now);
   const reviewDue = isReviewTime(todayBlocks, now);
-  const toPlace =
-    view === 'day' && day >= today
-      ? (day === today ? (() => { const g = selectToday(open, today); return [...g.overdue, ...g.today]; })() : selectPlannedOn(open, day, today)).filter(
-          (t) => t.blockId === null && t.subtasksTotal === 0,
-        )
-      : null;
+  // « À caser » : ce qui est prévu ce jour-là, puis les échéances des deux semaines à venir.
+  const toPlace = view === 'day' && day >= today ? toPlaceOn(open, day, today) : null;
   const openFill = () =>
     setFill(
       buildFillProposals({
@@ -274,7 +270,7 @@ export function DayPage() {
               ))}
             </div>
           </div>
-          <SidePanel modules={library} oneOffs={oneOffs} mode={mode} toPlace={toPlace} />
+          <SidePanel modules={library} oneOffs={oneOffs} mode={mode} toPlace={toPlace?.planned ?? null} deadlines={toPlace?.deadlines ?? []} />
         </div>
       </DayDnd>
 

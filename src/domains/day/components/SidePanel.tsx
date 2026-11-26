@@ -2,6 +2,8 @@ import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { GripVertical, Plus } from 'lucide-react';
 import { useState } from 'react';
 import type { AppMode } from '@/core/app-mode';
+import { formatShortDate } from '@/core/dates';
+import { useToday } from '@/core/use-today';
 import type { TaskItem } from '@/domains/tasks/model';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { ColorDot, colorVar } from '@/ui/data/ColorDot';
@@ -32,9 +34,10 @@ function ModuleRow({ module, onEdit }: { module: Module; onEdit: () => void }) {
   );
 }
 
-function ToPlaceRow({ task }: { task: TaskItem }) {
+function ToPlaceRow({ task, due }: { task: TaskItem; due?: string }) {
   const drag = useDraggable({ id: `task:${task.id}@side`, data: { type: 'task', task } satisfies DayDragData });
   const openTask = useTaskSheet((state) => state.openTask);
+  const today = useToday();
   const context = task.projectName ?? task.subjectName;
   const color = task.projectColor ?? task.subjectColor;
   return (
@@ -47,8 +50,15 @@ function ToPlaceRow({ task }: { task: TaskItem }) {
       className={`-mx-2 flex min-h-9 cursor-grab items-center gap-2 rounded-md px-2 text-left transition-colors duration-[120ms] ease-soft hover:bg-hover active:cursor-grabbing ${drag.isDragging ? 'opacity-40' : ''}`}
     >
       {color ? <ColorDot color={color} /> : <span className="size-2 shrink-0 rounded-full border border-line-strong" />}
-      <span className="min-w-0 flex-1 truncate" title={context ?? undefined}>
-        {task.title}
+      {/* L'échéance passe sous le titre : sur une ligne, elle le coupait dans ce panneau étroit. */}
+      <span className={`min-w-0 flex-1 ${due ? 'py-1' : ''}`} title={context ?? undefined}>
+        <span className="block truncate">{task.title}</span>
+        {due && (
+          <span className="block truncate text-meta text-ink-3">
+            pour {formatShortDate(due, today)}
+            {context && ` · ${context}`}
+          </span>
+        )}
       </span>
       <span className="tnum text-meta text-ink-3">{formatMinutes(taskMinutes(task))}</span>
     </li>
@@ -61,7 +71,20 @@ function ToPlaceRow({ task }: { task: TaskItem }) {
  * disparaissent), puis les tâches et devoirs du jour pas encore dans un bloc (on les glisse dans un
  * bloc ; on les y reprend en les déposant ici).
  */
-export function SidePanel({ modules, oneOffs, mode, toPlace }: { modules: Module[]; oneOffs: Module[]; mode: AppMode; toPlace: TaskItem[] | null }) {
+export function SidePanel({
+  modules,
+  oneOffs,
+  mode,
+  toPlace,
+  deadlines = [],
+}: {
+  modules: Module[];
+  oneOffs: Module[];
+  mode: AppMode;
+  toPlace: TaskItem[] | null;
+  /** Ce qui a une échéance dans les deux semaines, pas encore placé : à caser avant la date. */
+  deadlines?: TaskItem[];
+}) {
   const [editing, setEditing] = useState<{ module?: Module; oneOff?: boolean } | null>(null);
   const [showAll, setShowAll] = useState(false);
   const drop = useDroppable({ id: 'to-place', data: { kind: 'to-place' } satisfies DayDropData });
@@ -120,7 +143,7 @@ export function SidePanel({ modules, oneOffs, mode, toPlace }: { modules: Module
               ))}
             </ul>
           )}
-          {toPlace.length === 0 && oneOffs.length === 0 ? (
+          {toPlace.length === 0 && oneOffs.length === 0 && deadlines.length === 0 ? (
             <p className="text-meta text-ink-3">Tout ce qui est prévu ce jour-là est dans un bloc.</p>
           ) : (
             <ul>
@@ -128,6 +151,16 @@ export function SidePanel({ modules, oneOffs, mode, toPlace }: { modules: Module
                 <ToPlaceRow key={task.id} task={task} />
               ))}
             </ul>
+          )}
+          {deadlines.length > 0 && (
+            <>
+              <p className="mt-3 mb-1 text-meta text-ink-3">Avant leur échéance</p>
+              <ul>
+                {deadlines.map((task) => (
+                  <ToPlaceRow key={task.id} task={task} due={task.dueDate ?? undefined} />
+                ))}
+              </ul>
+            </>
           )}
           <p className="mt-2 text-meta text-ink-3">Glisse une tâche dans un bloc ; dépose-la ici pour l’en sortir. Un bloc lâché ici revient à caser.</p>
         </section>

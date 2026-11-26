@@ -38,8 +38,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /**
  * Un cours de l'agenda des cours : son nom (sa matière, créée toute seule), sa couleur, ses profs, les
- * devoirs à rendre pour ce cours, et « Ajouter un devoir », à rendre par défaut au cours suivant du même
- * nom. « Ce n'est pas un cours » l'écarte pour de bon (une réunion, un atelier…).
+ * devoirs à rendre pour ce cours, et « Ajouter un devoir », à rendre pour ce cours-ci (le cours suivant
+ * est proposé d'un clic). « Ce n'est pas un cours » l'écarte pour de bon (une réunion, un atelier…).
  */
 function CourseSection({ event, itemId, onAddHomework }: { event: GoogleEventDetail; itemId: string; onAddHomework: () => void }) {
   const today = useToday();
@@ -75,14 +75,14 @@ function CourseSection({ event, itemId, onAddHomework }: { event: GoogleEventDet
           className="mt-3"
           onClick={() => {
             onAddHomework();
-            const target = next ?? { itemId, startsAt: event.startsAt };
-            openCreate('homework', { subjectId: event.subjectId, courseEvent: target.itemId, dueDate: target.startsAt.slice(0, 10) });
+            // Pour ce cours-ci : la fenêtre du devoir propose aussi le cours suivant, d'un clic.
+            openCreate('homework', { subjectId: event.subjectId, courseEvent: itemId, dueDate: event.startsAt.slice(0, 10) });
           }}
         >
           Ajouter un devoir
         </Button>
         <span className="mt-1 block text-meta text-ink-3">
-          {next ? `À rendre au cours suivant, ${formatDateField(next.startsAt.slice(0, 10), today)} (modifiable).` : 'À rendre pour ce cours (modifiable).'}
+          {next ? `Pour ce cours, ou le suivant (${formatDateField(next.startsAt.slice(0, 10), today)}) : au choix.` : 'Pour ce cours.'}
         </span>
       </Row>
     </>

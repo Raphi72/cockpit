@@ -1,5 +1,6 @@
+import { addDaysISO } from '@/core/dates';
 import type { AgendaItem } from '@/domains/agenda/model';
-import { isHomework, type TaskItem } from '@/domains/tasks/model';
+import { isHomework, selectPlannedOn, selectToday, type TaskItem } from '@/domains/tasks/model';
 import { planCandidates, rankForPlan } from '@/domains/tasks/work-plan';
 import {
   FILL_WINDOW,
@@ -14,6 +15,35 @@ import {
   type DayBlock,
   type Module,
 } from './model';
+
+/** « À caser » regarde les échéances des deux semaines qui suivent le jour affiché. */
+export const TO_PLACE_DEADLINE_DAYS = 14;
+
+/**
+ * « À caser » d'un jour : d'abord ce qui est prévu ce jour-là (aujourd'hui : le retard compris), puis ce
+ * qui a une échéance dans les deux semaines (un devoir pour lundi, une deadline de tâche) et qu'il faut
+ * bien faire un jour : pas encore dans un bloc, ni prévu un jour plus tard. Les plus proches d'abord.
+ * Ce sont des tâches, jamais des modules : les modules, eux, se répètent.
+ */
+export function toPlaceOn(open: TaskItem[], day: string, today: string): { planned: TaskItem[]; deadlines: TaskItem[] } {
+  const free = (task: TaskItem) => task.blockId === null && task.subtasksTotal === 0;
+  const groups = selectToday(open, today);
+  const planned = (day === today ? [...groups.overdue, ...groups.today] : selectPlannedOn(open, day, today)).filter(free);
+  const listed = new Set(planned.map((task) => task.id));
+  const limit = addDaysISO(day, TO_PLACE_DEADLINE_DAYS);
+  const deadlines = open
+    .filter(
+      (task) =>
+        free(task) &&
+        !listed.has(task.id) &&
+        task.dueDate !== null &&
+        task.dueDate >= day &&
+        task.dueDate <= limit &&
+        (task.scheduledDate === null || task.scheduledDate <= day),
+    )
+    .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
+  return { planned, deadlines };
+}
 
 /**
  * Ce qui occupe déjà une journée, à côté des blocs : rendez-vous à heure fixe, cours, examens à heure

@@ -36,7 +36,7 @@ import {
   listModules,
   setTasksBlockStatement,
 } from '@/domains/day/repository';
-import { buildFillProposals, busyItemsOn } from '@/domains/day/service';
+import { buildFillProposals, busyItemsOn, toPlaceOn } from '@/domains/day/service';
 import { blockNotices } from '@/domains/notifications/model';
 import { effectiveDate, isTaskForToday } from '@/domains/tasks/model';
 import { getTask, insertTaskStatement, listOpenTasks, listTasksInBlocks } from '@/domains/tasks/repository';
@@ -346,5 +346,41 @@ describe('journée : notifications', () => {
     expect(evening.map((n) => n.title)).toEqual(['Fin du bloc : Sport', 'C’est l’heure : Devoirs']);
     expect(evening[0]!.body).toBe('Ensuite : Devoirs, jusqu’à 19:00');
     expect(evening[0]!.key).toBe(`block-end:Sport:${TODAY}T18:00`);
+  });
+});
+
+describe('journée : à caser', () => {
+  it('montre ce qui est prévu ce jour-là, puis les échéances des deux semaines pas encore placées', async () => {
+    const { db } = createTestDb();
+    const add = (id: string, title: string, patch: { scheduledDate?: string | null; dueDate?: string | null } = {}) =>
+      insertTaskStatement(
+        id,
+        { title, projectId: null, subjectId: null, scheduledDate: patch.scheduledDate ?? null, dueDate: patch.dueDate ?? null, priority: 1, estimateMin: 30, notes: null },
+        NOW,
+      );
+    await db.batch([
+      add('prevue', 'Prévue aujourd’hui', { scheduledDate: TODAY }),
+      add('retard', 'En retard', { dueDate: '2026-11-20' }),
+      add('lundi', 'Devoir pour lundi', { dueDate: '2026-11-30' }),
+      add('mardi', 'Deadline mardi', { dueDate: '2026-12-01' }),
+      add('plus-tard', 'Prévue samedi, pour mardi', { scheduledDate: '2026-11-28', dueDate: '2026-12-01' }),
+      add('loin', 'Dans un mois', { dueDate: '2026-12-26' }),
+      add('placee', 'Déjà dans un bloc', { dueDate: '2026-11-29' }),
+      add('sans-date', 'Sans date'),
+      insertBlockStatement('b1', blockFromModule(sport, TODAY, 18 * 60), NOW),
+      setTasksBlockStatement(['placee'], 'b1', NOW),
+    ]);
+    const open = await listOpenTasks(db);
+    const titles = (tasks: { title: string }[]) => tasks.map((t) => t.title);
+
+    const today = toPlaceOn(open, TODAY, TODAY);
+    expect(titles(today.planned).sort()).toEqual(['En retard', 'Prévue aujourd’hui']);
+    // Les plus proches d'abord ; ni ce qui est prévu un jour plus tard, ni ce qui est loin, ni ce qui est placé.
+    expect(titles(today.deadlines)).toEqual(['Devoir pour lundi', 'Deadline mardi']);
+
+    // Le samedi : ce qui est prévu ce jour-là, puis les échéances à partir de samedi.
+    const saturday = toPlaceOn(open, '2026-11-28', TODAY);
+    expect(titles(saturday.planned)).toEqual(['Prévue samedi, pour mardi']);
+    expect(titles(saturday.deadlines)).toEqual(['Devoir pour lundi', 'Deadline mardi']);
   });
 });

@@ -64,9 +64,10 @@ Tu y poses des **blocs** :
 - **Supprimer** : prends le bloc et lâche-le dans la **corbeille** qui apparaît en bas de l'écran.
 - Ce qui se chevauche se range côte à côte.
 
-**À caser** (à droite) liste les tâches et devoirs du jour pas encore placés : glisse-les **dans un bloc**.
-Un devoir lié à un cours apparaît aussi dans ce cours sur la journée, mais il faut quand même lui trouver
-du temps.
+**À caser** (à droite) liste les tâches et devoirs du jour pas encore placés, puis, sous « Avant leur
+échéance », ceux qui ont une deadline dans les deux semaines (un devoir pour lundi, un devis pour mardi) :
+glisse-les **dans un bloc** du jour où tu veux les faire. Un devoir lié à un cours apparaît aussi dans ce
+cours sur la journée, mais il faut quand même lui trouver du temps.
 
 **À caser › Ajouter** crée un module **pour une fois** (« Courses · 1 h ») : il attend les jours suivants,
 puis disparaît quand tu le poses. Changé d'avis ? Glisse un bloc de la journée sur **À caser** : il y revient,
@@ -136,8 +137,9 @@ reconnecter. Un clic sur « Se connecter à Google » suffit.
 
 ### Devoirs
 
-**Nouveau › Nouveau devoir**, ou **Ajouter un devoir** depuis un cours. Choisis **pour quel cours** il est
-à rendre, parmi les séances des 4 prochaines semaines. Le jour de rendu suit le cours, même s'il change de
+**Nouveau › Nouveau devoir**, ou **Ajouter un devoir** depuis un cours (dans la Journée, Aujourd'hui ou
+l'Emploi du temps). Depuis un cours, le devoir est **pour ce cours** ; « Au cours suivant » le décale d'un
+clic. Sinon, choisis **pour quel cours** il est à rendre, parmi les séances des 4 prochaines semaines. Le jour de rendu suit le cours, même s'il change de
 date dans Google. « Sans cours précis » revient à une matière et une date.
 
 ### Examens et notes
