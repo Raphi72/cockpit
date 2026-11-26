@@ -123,6 +123,7 @@ export function PageDetailPage() {
           {page.isTemplate && <span className="mr-2 text-meta text-ink-3">Modèle</span>}
           <Button
             variant="ghost"
+            size="lg"
             icon={Star}
             aria-label={page.pinned ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             title={page.pinned ? 'Retirer des favoris' : 'Ajouter aux favoris (barre latérale)'}
@@ -131,7 +132,7 @@ export function PageDetailPage() {
           />
           <Menu>
             <MenuTrigger asChild>
-              <Button variant="ghost" icon={Ellipsis} aria-label="Actions de la page" />
+              <Button variant="ghost" size="lg" icon={Ellipsis} aria-label="Actions de la page" title="Actions de la page" />
             </MenuTrigger>
             <MenuContent align="end">
               <MenuItem icon={Link2} onSelect={() => setAttaching(true)}>
