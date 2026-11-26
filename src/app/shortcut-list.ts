@@ -78,6 +78,15 @@ export const SHORTCUT_SECTIONS: ShortcutSection[] = [
     ],
   },
   {
+    title: 'Journée',
+    entries: [
+      { keys: ['←', '→'], label: 'Jour (ou semaine) précédent ou suivant' },
+      { keys: ['T'], label: 'Revenir à aujourd’hui' },
+      { keys: ['J', 'S'], label: 'Vue jour ou semaine' },
+      { keys: ['D'], label: 'Choisir un jour dans le calendrier' },
+    ],
+  },
+  {
     title: 'Planning',
     entries: [
       { keys: ['←', '→'], label: 'Période précédente ou suivante' },

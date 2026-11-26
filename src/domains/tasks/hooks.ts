@@ -15,6 +15,7 @@ import {
   insertTaskStatement,
   listDoneTasks,
   listOpenTasks,
+  listTasksInBlocks,
   listProjectTasks,
   listParentCandidates,
   listSubtasks,
@@ -54,6 +55,14 @@ export function useDoneOn(day: string, enabled = true) {
 
 export function useDoneTasks() {
   return useQuery({ queryKey: queryKeys.tasks.done({ recent: true }), queryFn: () => listDoneTasks(db) });
+}
+
+/** Tâches rangées dans les blocs de [from, to[ (page Journée), faites comprises. */
+export function useTasksInBlocks(range: { from: string; to: string }) {
+  return useQuery({
+    queryKey: queryKeys.tasks.inBlocks(range.from, range.to),
+    queryFn: () => listTasksInBlocks(db, range.from, range.to),
+  });
 }
 
 export function useProjectTasks(projectId: string) {

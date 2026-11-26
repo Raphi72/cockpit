@@ -265,9 +265,9 @@ export function seriesChangeFromOccurrence(
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
 
 /** D'où vient une date : elle n'est stockée qu'à cet endroit. */
-export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'exam' | 'class';
+export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'exam' | 'class' | 'block';
 
-export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'exam', 'class'];
+export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'exam', 'class', 'block'];
 
 /** Filtres du calendrier. */
 export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
@@ -277,6 +277,7 @@ export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
   payment: 'Encaissements',
   exam: 'Examens',
   class: 'Cours',
+  block: 'Blocs',
 };
 
 export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
@@ -286,6 +287,7 @@ export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
   payment: 'échéances non reçues',
   exam: 'contrôles, partiels, oraux',
   class: 'emploi du temps (vues semaine et jour)',
+  block: 'organisateur de journée (vues semaine et jour)',
 };
 
 /** Option du filtre « Tâches » : les tâches ordinaires, sans deadline ni priorité, à leur début. */
@@ -300,7 +302,8 @@ export type AgendaKind =
   | 'task_scheduled'
   | 'payment_due'
   | 'exam'
-  | 'class';
+  | 'class'
+  | 'block';
 
 export type AgendaItem = {
   /** `${source}:${id}:${kind}` */
@@ -336,6 +339,7 @@ const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
   payment_due: 'Encaissement attendu',
   exam: 'Examen',
   class: 'Cours',
+  block: 'Bloc',
 };
 
 export function agendaKindLabel(kind: AgendaKind): string {
@@ -534,9 +538,9 @@ export function isMovable(item: Pick<AgendaItem, 'source'>): boolean {
   return item.source !== 'class';
 }
 
-/** La vue mois ne montre pas les cours : une routine de chaque semaine qui cacherait le reste. */
+/** La vue mois ne montre ni les cours ni les blocs de la journée : une routine qui cacherait le reste. */
 export function isShownInMonth(item: Pick<AgendaItem, 'source'>): boolean {
-  return item.source !== 'class';
+  return item.source !== 'class' && item.source !== 'block';
 }
 
 export type CalendarDrop = { day: string; time: string | null };
@@ -602,13 +606,14 @@ export type UpcomingDay = { day: string; items: AgendaItem[] };
 /**
  * « Prochains jours » du dashboard : les jours de [today, today + count[ qui ont quelque chose.
  * Les tâches n'y sont pas : celles du jour sont déjà dans « Aujourd'hui », les autres dans la page Tâches.
+ * Ni les blocs de la journée : ils sont dans la page Journée.
  * Un élément sur plusieurs jours n'apparaît qu'une fois, à son premier jour visible.
  */
 export function upcomingDays(items: AgendaItem[], today: string, count = UPCOMING_AGENDA_DAYS): UpcomingDay[] {
   const days = daysFrom(today, count);
   const groups = new Map<string, AgendaItem[]>(days.map((day) => [day, []]));
   for (const item of items) {
-    if (item.source === 'task') continue;
+    if (item.source === 'task' || item.source === 'block') continue;
     const { first, last } = itemDays(item);
     if (last < today) continue;
     groups.get(first > today ? first : today)?.push(item);

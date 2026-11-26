@@ -31,7 +31,10 @@ import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { useSaveSetting, useSetting } from '../hooks';
 import {
   DEADLINE_DAYS_CHOICES,
+  DAY_END_CHOICES,
+  DAY_START_CHOICES,
   SETTINGS,
+  resolveDayHours,
   THEME_CHOICES,
   WEEK_START_CHOICES,
   resolveDeadlineDays,
@@ -245,11 +248,43 @@ function DashboardSection() {
   );
 }
 
+/** Journée : la plage d'heures de la colonne (6 h à 24 h par défaut). */
+function DaySection() {
+  const { data: start } = useSetting(SETTINGS.dayStartHour);
+  const { data: end } = useSetting(SETTINGS.dayEndHour);
+  const saveStart = useSaveSetting(SETTINGS.dayStartHour);
+  const saveEnd = useSaveSetting(SETTINGS.dayEndHour);
+  if (start === undefined || end === undefined) return null;
+  const hours = resolveDayHours(start, end);
+  return (
+    <Section title="Journée">
+      <InfoRow label="Début de la journée">
+        <ChoiceChips
+          label="Début de la journée"
+          options={DAY_START_CHOICES.map((h) => ({ value: String(h), label: `${h} h` }))}
+          value={String(hours.first)}
+          onChange={(v) => saveStart.mutate(Number(v))}
+        />
+      </InfoRow>
+      <InfoRow label="Fin de la journée">
+        <ChoiceChips
+          label="Fin de la journée"
+          options={DAY_END_CHOICES.map((h) => ({ value: String(h), label: `${h} h` }))}
+          value={String(hours.last)}
+          onChange={(v) => saveEnd.mutate(Number(v))}
+        />
+        <span className="mt-1.5 block text-meta text-ink-3">Les heures montrées par la page Journée.</span>
+      </InfoRow>
+    </Section>
+  );
+}
+
 export function SettingsPage() {
   return (
     <Page title="Paramètres">
       <AppearanceSection />
       <DashboardSection />
+      <DaySection />
       <PresenceSettings />
       <CaptureSettings />
       <NotificationSettings />

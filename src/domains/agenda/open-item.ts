@@ -32,6 +32,9 @@ export function useOpenAgendaItem(): (item: AgendaItem) => void {
         case 'exam':
           openExam(item.id);
           break;
+        case 'block':
+          void navigate({ to: '/day', search: { day: item.start.slice(0, 10) } });
+          break;
         case 'class':
           if (item.subjectId) void navigate({ to: '/subjects/$subjectId', params: { subjectId: item.subjectId } });
           break;

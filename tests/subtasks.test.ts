@@ -194,6 +194,8 @@ describe('sous-tâches : règles d’affichage', () => {
     subjectId: null,
     subjectName: null,
     subjectColor: null,
+    blockId: null,
+    blockDate: null,
     ...overrides,
   });
 

@@ -1,4 +1,5 @@
 import type { BatchContext } from '@/core/batch';
+import { sqlDaysModifier } from '@/core/dates';
 import type { Statement } from '@/core/db';
 import { shiftPaymentDueStatement } from '@/domains/finance/payments/repository';
 import { shiftProjectDateStatement } from '@/domains/projects/repository';
@@ -36,6 +37,8 @@ export function buildShiftBatch(item: AgendaItem, days: number, now: string): Mo
         return shiftProjectDateStatement(item.id, item.kind === 'project_start' ? 'startDate' : 'deadline', by, now);
       case 'exam':
         return shiftExamDateStatement(item.id, by, now);
+      case 'block':
+        return { sql: 'UPDATE day_blocks SET date = date(date, ?), updated_at = ? WHERE id = ?', params: [sqlDaysModifier(by), now, item.id] };
       case 'class':
         // Un cours vient de la semaine type : il ne se glisse pas (isMovable).
         throw new Error('Un cours se change dans l’emploi du temps.');

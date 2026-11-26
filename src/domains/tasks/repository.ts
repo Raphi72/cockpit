@@ -6,7 +6,7 @@ const COLUMNS = `
   t.id, t.project_id, p.name AS project_name, pt.color AS project_color,
   t.title, t.notes, t.status, t.priority, t.scheduled_date, t.due_date, t.estimate_min,
   t.sort_order, t.completed_at, t.created_at, t.parent_id, par.title AS parent_title, t.planned_on,
-  t.subject_id, s.name AS subject_name, s.color AS subject_color,
+  t.subject_id, s.name AS subject_name, s.color AS subject_color, t.block_id, blk.date AS block_date,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id) AS subtasks_total,
   (SELECT COUNT(*) FROM tasks c WHERE c.parent_id = t.id AND c.status = 'done') AS subtasks_done`;
 
@@ -15,7 +15,8 @@ const FROM = `
   LEFT JOIN tasks par ON par.id = t.parent_id
   LEFT JOIN projects p ON p.id = t.project_id
   LEFT JOIN project_types pt ON pt.id = p.type_id
-  LEFT JOIN subjects s ON s.id = t.subject_id`;
+  LEFT JOIN subjects s ON s.id = t.subject_id
+  LEFT JOIN day_blocks blk ON blk.id = t.block_id`;
 
 /** Tâches d'un projet clos ou archivé : visibles dans sa fiche, jamais dans les vues globales. */
 const IN_OPEN_PROJECT = `(p.id IS NULL OR (p.status NOT IN ('done', 'cancelled') AND p.archived_at IS NULL))`;
@@ -48,6 +49,14 @@ export function listDoneTasks(
   return db.query<TaskItem>(
     `SELECT ${COLUMNS} ${FROM} WHERE ${where} ORDER BY t.completed_at DESC LIMIT ?`,
     params,
+  );
+}
+
+/** Tâches rangées dans les blocs de [from, to[, faites ou non : ce que montrent les blocs de la Journée. */
+export function listTasksInBlocks(db: Db, from: string, to: string): Promise<TaskItem[]> {
+  return db.query<TaskItem>(
+    `SELECT ${COLUMNS} ${FROM} WHERE blk.date >= ? AND blk.date < ? ORDER BY t.status = 'done', t.sort_order`,
+    [from, to],
   );
 }
 
@@ -133,8 +142,8 @@ export function restoreTaskStatement(task: TaskItem, now: string): Statement {
   return {
     sql: `INSERT INTO tasks
             (id, project_id, subject_id, parent_id, title, notes, status, priority, scheduled_date, due_date,
-             estimate_min, sort_order, completed_at, planned_on, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             estimate_min, sort_order, completed_at, planned_on, block_id, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT id FROM day_blocks WHERE id = ?), ?, ?)`,
     params: [
       task.id,
       task.projectId,
@@ -150,6 +159,7 @@ export function restoreTaskStatement(task: TaskItem, now: string): Statement {
       task.sortOrder,
       task.completedAt,
       task.plannedOn,
+      task.blockId,
       task.createdAt,
       now,
     ],

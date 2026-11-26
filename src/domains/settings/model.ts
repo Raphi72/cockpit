@@ -36,7 +36,19 @@ export const SETTINGS = {
   theme: { key: 'appearance.theme', fallback: 'system' } as SettingDef<ThemeChoice>,
   /** Calendrier (mois et semaine), planning et sélecteur de date. */
   weekStartsOn: { key: 'calendar.weekStartsOn', fallback: 1 } as SettingDef<WeekStart>,
+  /** Journée (organisateur) : première et dernière heure de la colonne. */
+  dayStartHour: { key: 'day.startHour', fallback: 6 } as SettingDef<number>,
+  dayEndHour: { key: 'day.endHour', fallback: 24 } as SettingDef<number>,
 };
+
+export const DAY_START_CHOICES = [5, 6, 7, 8, 9] as const;
+export const DAY_END_CHOICES = [20, 21, 22, 23, 24] as const;
+
+export function resolveDayHours(start: unknown, end: unknown): { first: number; last: number } {
+  const first = DAY_START_CHOICES.some((h) => h === start) ? (start as number) : SETTINGS.dayStartHour.fallback;
+  const last = DAY_END_CHOICES.some((h) => h === end) ? (end as number) : SETTINGS.dayEndHour.fallback;
+  return { first, last };
+}
 
 /** Une valeur inattendue en base (modifiée à la main…) retombe sur la valeur par défaut. */
 export function resolveTheme(value: unknown): ThemeChoice {

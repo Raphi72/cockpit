@@ -136,8 +136,16 @@ export async function listAgenda(
             x.starts_at IS NULL, NULL, s.color, NULL, NULL, x.subject_id
      FROM exams x
      JOIN subjects s ON s.id = x.subject_id
-     WHERE x.date >= ? AND x.date < ?`,
-    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to, from, to],
+     WHERE x.date >= ? AND x.date < ?
+
+     UNION ALL
+     -- Un bloc de la journée (organisateur) ; minuit s'écrit 24:00 dans le bloc, 23:59 ici.
+     SELECT 'block', b.id, 'block', b.title, NULL, b.date || 'T' || b.starts_at,
+            b.date || 'T' || CASE WHEN b.ends_at = '24:00' THEN '23:59' ELSE b.ends_at END,
+            0, NULL, b.color, NULL, NULL, NULL
+     FROM day_blocks b
+     WHERE b.date >= ? AND b.date < ?`,
+    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to, from, to, from, to],
   );
   const recurring = rows.filter((row) => row.recurrence !== null);
   const [exceptions, classes] = await Promise.all([

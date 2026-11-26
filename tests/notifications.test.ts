@@ -31,6 +31,7 @@ describe('règles et moments', () => {
   it('active toute règle absente du réglage', () => {
     expect(resolveRules(null)).toEqual({
       events: true,
+      blocks: true,
       deadlines: true,
       priorityTasks: true,
       payments: true,

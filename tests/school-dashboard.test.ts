@@ -29,6 +29,8 @@ const task = (patch: Partial<TaskItem>): TaskItem => ({
   subjectId: 'maths',
   subjectName: 'Maths',
   subjectColor: 'blue',
+  blockId: null,
+  blockDate: null,
   ...patch,
 });
 

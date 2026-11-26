@@ -8,11 +8,19 @@ import type { SettingDef } from '@/domains/settings/model';
 
 // ─── Règles et réglage ──────────────────────────────────────────────────────
 
-export type NotificationRule = 'events' | 'deadlines' | 'priorityTasks' | 'payments' | 'projectStarts' | 'morningSummary';
+export type NotificationRule =
+  | 'events'
+  | 'blocks'
+  | 'deadlines'
+  | 'priorityTasks'
+  | 'payments'
+  | 'projectStarts'
+  | 'morningSummary';
 
 /** Les règles, dans l'ordre de Paramètres › Notifications. */
 export const NOTIFICATION_RULES: { rule: NotificationRule; label: string; hint: string }[] = [
   { rule: 'events', label: 'Rendez-vous', hint: '15 minutes avant un événement à heure fixe' },
+  { rule: 'blocks', label: 'Blocs de la journée', hint: 'au début et à la fin de chaque bloc' },
   { rule: 'deadlines', label: 'Deadlines', hint: 'projets et échéances, 3 jours avant puis le jour même' },
   { rule: 'priorityTasks', label: 'Tâches prioritaires', hint: 'la veille de leur deadline' },
   { rule: 'payments', label: 'Encaissements', hint: 'la veille de la date prévue, puis s’ils sont en retard' },
@@ -94,6 +102,39 @@ export type DaySummary = { todayCount: number; overdueCount: number; nextEvent: 
 
 /** Une notification à envoyer. La clé, gardée dans `notification_log`, garantit qu'elle ne part qu'une fois. */
 export type Notice = { key: string; title: string; body: string };
+
+/** Un bloc est annoncé à son début et à sa fin, pendant 2 minutes (si Cockpit a manqué la minute exacte). */
+export const BLOCK_WINDOW_MIN = 2;
+
+type BlockForNotice = { id: string; date: string; startsAt: string; endsAt: string; title: string; status: string };
+
+const blockMinutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+
+/**
+ * Blocs de la journée (organisateur) : « C'est l'heure : Sport » à son début, « Fin du bloc » à sa fin,
+ * avec le bloc qui suit s'il commence tout de suite. Les blocs déjà marqués (fait, raté) ne disent rien.
+ */
+export function blockNotices(blocks: BlockForNotice[], moment: Moment): Notice[] {
+  const now = blockMinutes(moment.time);
+  const today = blocks.filter((b) => b.date === moment.today && b.status === 'planned');
+  const notices: Notice[] = [];
+  for (const block of today) {
+    const start = blockMinutes(block.startsAt);
+    const end = blockMinutes(block.endsAt);
+    if (now >= start && now < start + BLOCK_WINDOW_MIN) {
+      notices.push({ key: `block-start:${block.id}:${block.date}T${block.startsAt}`, title: `C’est l’heure : ${block.title}`, body: `Jusqu’à ${block.endsAt}` });
+    }
+    if (now >= end && now < end + BLOCK_WINDOW_MIN) {
+      const next = today.find((b) => b.id !== block.id && b.startsAt === block.endsAt);
+      notices.push({
+        key: `block-end:${block.id}:${block.date}T${block.endsAt}`,
+        title: `Fin du bloc : ${block.title}`,
+        body: next ? `Ensuite : ${next.title}, jusqu’à ${next.endsAt}` : 'Pense à le marquer dans le bilan du soir.',
+      });
+    }
+  }
+  return notices;
+}
 
 // ─── Textes ─────────────────────────────────────────────────────────────────
 

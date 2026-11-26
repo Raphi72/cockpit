@@ -11,6 +11,7 @@ import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
 import { validateDashboardSearch } from '@/domains/dashboard/search';
 import { validateFinancesSearch } from '@/domains/finance/search';
 import { validateHomeworkSearch } from '@/domains/school/homework/model';
+import { validateDaySearch } from '@/domains/day/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateTasksSearch } from '@/domains/tasks/search';
 import { AppShell } from './shell/AppShell';
@@ -21,6 +22,12 @@ const rootRoute = createRootRoute({ component: AppShell });
 // Le dashboard est chargé immédiatement ; les autres pages à la demande.
 const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/', validateSearch: validateDashboardSearch, component: DashboardPage }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/day',
+    validateSearch: validateDaySearch,
+    component: lazyRouteComponent(() => import('@/domains/day/pages/DayPage'), 'DayPage'),
+  }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/inbox',

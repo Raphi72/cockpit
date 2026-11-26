@@ -26,6 +26,7 @@ export const queryKeys = {
     open: ['tasks', 'open'] as const,
     done: (options: object) => ['tasks', 'done', options] as const,
     project: (projectId: string) => ['tasks', 'project', projectId] as const,
+    inBlocks: (from: string, to: string) => ['tasks', 'in-blocks', from, to] as const,
     subtasks: (parentId: string) => ['tasks', 'subtasks', parentId] as const,
     parentCandidates: (id: string, projectId: string | null, subjectId: string | null) =>
       ['tasks', 'parent-candidates', id, projectId, subjectId] as const,
@@ -52,6 +53,13 @@ export const queryKeys = {
     slots: ['school', 'slots'] as const,
     exams: (filter: object) => ['school', 'exams', filter] as const,
     grades: (filter: object) => ['school', 'grades', filter] as const,
+  },
+  /** Organisateur de journée : modules, blocs posés, semaines types. */
+  day: {
+    all: ['day'] as const,
+    modules: ['day', 'modules'] as const,
+    blocks: (from: string, to: string) => ['day', 'blocks', from, to] as const,
+    weekTemplates: ['day', 'week-templates'] as const,
   },
   payments: {
     all: ['payments'] as const,

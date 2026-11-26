@@ -39,6 +39,8 @@ const task = (overrides: Partial<TaskItem>): TaskItem => ({
   subjectId: null,
   subjectName: null,
   subjectColor: null,
+  blockId: null,
+  blockDate: null,
   ...overrides,
 });
 

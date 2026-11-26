@@ -38,6 +38,8 @@ export const EXPORT_TABLES = [
   { table: 'clients', key: 'clients' },
   { table: 'projects', key: 'projects' },
   { table: 'subjects', key: 'subjects' },
+  { table: 'block_templates', key: 'blockTemplates' },
+  { table: 'day_blocks', key: 'dayBlocks' },
   { table: 'tasks', key: 'tasks' },
   { table: 'ideas', key: 'ideas' },
   { table: 'events', key: 'events' },
@@ -49,6 +51,8 @@ export const EXPORT_TABLES = [
   { table: 'timetable_slots', key: 'timetableSlots' },
   { table: 'exams', key: 'exams' },
   { table: 'grades', key: 'grades' },
+  { table: 'week_templates', key: 'weekTemplates' },
+  { table: 'week_template_blocks', key: 'weekTemplateBlocks' },
 ] as const;
 
 export type ExportTableKey = (typeof EXPORT_TABLES)[number]['key'];

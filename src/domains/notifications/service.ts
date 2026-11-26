@@ -1,6 +1,7 @@
 import { addDaysISO, timeToMinutes } from '@/core/dates';
 import type { Db } from '@/core/db';
 import { listAgenda } from '@/domains/agenda/repository';
+import { listBlocks } from '@/domains/day/repository';
 import { nextTimedEvent } from '@/domains/dashboard/model';
 import { SETTINGS } from '@/domains/settings/model';
 import { getSetting } from '@/domains/settings/repository';
@@ -13,6 +14,7 @@ import {
   addMinutesToStamp,
   bundleNotices,
   deadlineNotices,
+  blockNotices,
   eventNotices,
   paymentNotices,
   priorityTaskNotices,
@@ -65,6 +67,9 @@ export async function collectNotices(db: Db, moment: Moment, round: Round): Prom
     const from = stampOf(moment);
     const events = await listTimedEventsBetween(db, from, addMinutesToStamp(from, EVENT_LEAD_MIN));
     notices.push(...eventNotices(events, moment));
+  }
+  if (rules.blocks) {
+    notices.push(...blockNotices(await listBlocks(db, today, addDaysISO(today, 1)), moment));
   }
   if (round === null) return notices;
 

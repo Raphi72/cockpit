@@ -51,6 +51,12 @@ export type TaskItem = {
   subjectId: string | null;
   subjectName: string | null;
   subjectColor: PaletteKey | null;
+  /**
+   * Bloc de la journée où la tâche est placée (P17) : elle prend son jour (`blockDate`), qui n'est pas
+   * recopié. Déplacer le bloc déplace donc la tâche.
+   */
+  blockId: string | null;
+  blockDate: string | null;
 };
 
 export type TaskPatch = Partial<{
@@ -109,23 +115,25 @@ export function isTaskLate(task: Pick<TaskItem, 'status' | 'dueDate'>, today: st
 
 /**
  * Tâche du jour : non terminée, prévue aujourd'hui ou avant (report automatique), dont la
- * deadline est aujourd'hui ou passée, ou mise au programme du jour (« Je veux travailler… »).
+ * deadline est aujourd'hui ou passée, mise au programme du jour (« Je veux travailler… »), ou placée
+ * dans un bloc d'aujourd'hui (ou d'un jour passé, pas encore faite).
  */
 export function isTaskForToday(
-  task: Pick<TaskItem, 'status' | 'scheduledDate' | 'dueDate'> & Partial<Pick<TaskItem, 'plannedOn'>>,
+  task: Pick<TaskItem, 'status' | 'scheduledDate' | 'dueDate'> & Partial<Pick<TaskItem, 'plannedOn' | 'blockDate'>>,
   today: string,
 ): boolean {
   if (!isOpen(task)) return false;
   return (
     task.plannedOn === today ||
+    (task.blockDate != null && task.blockDate <= today) ||
     (task.scheduledDate !== null && task.scheduledDate <= today) ||
     (task.dueDate !== null && task.dueDate <= today)
   );
 }
 
-/** Date qui situe la tâche dans le temps : son début, sinon la deadline. */
-export function effectiveDate(task: Pick<TaskItem, 'scheduledDate' | 'dueDate'>): string | null {
-  return task.scheduledDate ?? task.dueDate;
+/** Date qui situe la tâche dans le temps : le jour de son bloc, sinon son début, sinon la deadline. */
+export function effectiveDate(task: Pick<TaskItem, 'scheduledDate' | 'dueDate'> & Partial<Pick<TaskItem, 'blockDate'>>): string | null {
+  return task.blockDate ?? task.scheduledDate ?? task.dueDate;
 }
 
 export type TodayGroups = { overdue: TaskItem[]; today: TaskItem[] };
@@ -168,7 +176,9 @@ export function selectPlannedOn(open: TaskItem[], day: string, today: string): T
 
 /** Tâches qui commencent un jour à venir (« Prochains jours » du dashboard). */
 export function selectStartingOn(open: TaskItem[], day: string, today: string): TaskItem[] {
-  return open.filter((t) => isOpen(t) && t.scheduledDate === day && !isTaskForToday(t, today)).sort(byPriorityThenOrder);
+  return open
+    .filter((t) => isOpen(t) && (t.blockDate ?? t.scheduledDate) === day && !isTaskForToday(t, today))
+    .sort(byPriorityThenOrder);
 }
 
 /** Horizon de « À prévoir » : les deadlines des 7 prochains jours. */
