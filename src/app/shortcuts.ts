@@ -3,8 +3,9 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import { todayISO } from '@/core/dates';
 import { undoLatest } from '@/ui/overlays/toast';
 import { defaultsFromPath, useCreateStore } from './create-store';
-import { mainNav } from './navigation';
+import { shortcutTarget } from './navigation';
 import { useUiStore } from './ui-store';
+import { useSwitchMode } from './use-mode';
 
 /** Caractères produits par les touches 1 à 6 en AZERTY (sans Maj). */
 const AZERTY_DIGITS: Record<string, string> = { '&': '1', é: '2', '"': '3', "'": '4', '(': '5', '-': '6' };
@@ -37,7 +38,8 @@ function isTyping(target: EventTarget | null): boolean {
 
 /**
  * Raccourcis disponibles partout :
- * Ctrl+K pour la palette, Ctrl+1…6 pour les pages, Ctrl+B pour la barre latérale, Ctrl+Z pour annuler,
+ * Ctrl+K pour la palette, Ctrl+1…6 pour les pages du mode, Ctrl+M pour changer de mode,
+ * Ctrl+B pour la barre latérale, Ctrl+Z pour annuler,
  * N (ou Ctrl+N) pour une nouvelle tâche, C pour le menu « Nouveau », ? pour l'aide des raccourcis.
  */
 export function useGlobalShortcuts(): void {
@@ -48,13 +50,14 @@ export function useGlobalShortcuts(): void {
   const setPaletteOpen = useUiStore((state) => state.setPaletteOpen);
   const setShortcutsOpen = useUiStore((state) => state.setShortcutsOpen);
   const openCreate = useCreateStore((state) => state.openCreate);
+  const switchMode = useSwitchMode();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey && !event.altKey && !event.metaKey) {
         // Ctrl+1 et Ctrl+Maj+1 fonctionnent tous les deux (en AZERTY, « 1 » demande Maj).
         const digit = digitFromEvent(event);
-        const target = digit ? mainNav.find((item) => item.shortcut === digit) : undefined;
+        const target = digit ? shortcutTarget(useUiStore.getState().mode, digit) : undefined;
         if (target) {
           event.preventDefault();
           void navigate({ to: target.to });
@@ -71,6 +74,12 @@ export function useGlobalShortcuts(): void {
         // Ctrl+Z : annule la dernière suppression encore affichée, sauf pendant la saisie (annulation du texte).
         if (!event.shiftKey && letter === 'z' && !isBusy(event.target)) {
           if (undoLatest()) event.preventDefault();
+          return;
+        }
+        // Ctrl+M : Travail ↔ Cours, sauf pendant la saisie ou dans une fenêtre.
+        if (!event.shiftKey && letter === 'm' && !isBusy(event.target)) {
+          event.preventDefault();
+          switchMode();
           return;
         }
         if (!event.shiftKey && letter === 'b') {
@@ -107,7 +116,7 @@ export function useGlobalShortcuts(): void {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [navigate, router, toggleSidebar, setNewMenuOpen, setPaletteOpen, setShortcutsOpen, openCreate]);
+  }, [navigate, router, toggleSidebar, setNewMenuOpen, setPaletteOpen, setShortcutsOpen, openCreate, switchMode]);
 }
 
 /**

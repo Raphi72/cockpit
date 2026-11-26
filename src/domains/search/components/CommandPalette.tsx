@@ -18,6 +18,7 @@ import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { createDefaultsFor, useCreateStore } from '@/app/create-store';
 import { useUiStore } from '@/app/ui-store';
+import { useSwitchMode } from '@/app/use-mode';
 import { relativeDateLabel } from '@/core/dates';
 import { formatMoney, formatSignedMoney } from '@/core/money';
 import { useToday } from '@/core/use-today';
@@ -138,6 +139,7 @@ function usePaletteActions(close: () => void) {
   const today = useToday();
   const openCreate = useCreateStore((state) => state.openCreate);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const switchMode = useSwitchMode();
   const setShortcutsOpen = useUiStore((state) => state.setShortcutsOpen);
   const openPlan = useWorkPlanDialog((state) => state.openPlan);
   const openTask = useTaskSheet((state) => state.openTask);
@@ -196,6 +198,9 @@ function usePaletteActions(close: () => void) {
       case 'sidebar':
         toggleSidebar();
         break;
+      case 'mode':
+        switchMode();
+        break;
       case 'backup':
         backupNow.mutate();
         break;
@@ -219,6 +224,7 @@ function PaletteBody({ close }: { close: () => void }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState('');
   const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
+  const appMode = useUiStore((state) => state.mode);
   const { openResult, runAction, receive } = usePaletteActions(close);
 
   const searching = mode === 'root' && searchTerms(query).length > 0;
@@ -226,8 +232,8 @@ function PaletteBody({ close }: { close: () => void }) {
   const { data: openPayments = [] } = useOpenPayments();
 
   const commands = useMemo(
-    () => filterCommands(paletteCommands({ desktop: isTauri(), sidebarCollapsed }), query),
-    [query, sidebarCollapsed],
+    () => filterCommands(paletteCommands({ desktop: isTauri(), sidebarCollapsed, mode: appMode }), query),
+    [query, sidebarCollapsed, appMode],
   );
   const groups = useMemo(() => (searching ? groupResults(results) : []), [searching, results]);
   const payments = useMemo(

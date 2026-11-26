@@ -14,7 +14,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { CreateKind } from '@/app/create-store';
-import { mainNav, secondaryNav, type AppPath } from '@/app/navigation';
+import { MODE_ICONS, MODE_LABELS, MODE_SHORTCUT, otherMode, type AppMode } from '@/app/modes';
+import { NAV, allNavItems, type AppPath } from '@/app/navigation';
 import { matchesAllTerms } from './model';
 
 export type PaletteAction =
@@ -24,6 +25,7 @@ export type PaletteAction =
   | { type: 'work-plan' }
   | { type: 'shortcuts' }
   | { type: 'sidebar' }
+  | { type: 'mode' }
   | { type: 'backup' }
   | { type: 'quit' };
 
@@ -63,23 +65,42 @@ const CREATE_COMMANDS: PaletteCommand[] = [
   action: { type: 'create' as const, kind: kind as CreateKind },
 }));
 
-const GO_COMMANDS: PaletteCommand[] = [...mainNav, ...secondaryNav].map((item) => ({
-  id: `go-${item.to}`,
-  group: 'go',
-  label: item.label,
-  keywords: 'aller ouvrir page',
-  icon: item.icon,
-  shortcut: item.shortcut ? `Ctrl ${item.shortcut}` : undefined,
-  action: { type: 'go', to: item.to },
-  suggested: true,
-}));
+/**
+ * Les pages des deux modes : ouvrir une page de l'autre mode y fait passer (useModeFollowsPage).
+ * Seules celles du mode en cours sont suggérées avant toute saisie.
+ */
+function goCommands(mode: AppMode): PaletteCommand[] {
+  const current = new Set([...NAV[mode].main, ...NAV[mode].secondary].map((item) => item.to));
+  return allNavItems().map((item) => ({
+    id: `go-${item.to}`,
+    group: 'go',
+    label: item.label,
+    keywords: 'aller ouvrir page',
+    icon: item.icon,
+    shortcut: item.shortcut && current.has(item.to) ? `Ctrl ${item.shortcut}` : undefined,
+    action: { type: 'go', to: item.to },
+    suggested: current.has(item.to),
+  }));
+}
 
 /**
  * Toutes les commandes de la palette. Certaines dépendent du contexte :
- * la sauvegarde n'existe que dans l'application desktop, la barre latérale se réduit ou se déplie.
+ * la sauvegarde n'existe que dans l'application desktop, la barre latérale se réduit ou se déplie,
+ * le changement de mode mène à l'autre mode.
  */
-export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: boolean }): PaletteCommand[] {
+export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: boolean; mode: AppMode }): PaletteCommand[] {
+  const next = otherMode(context.mode);
   const actions: PaletteCommand[] = [
+    {
+      id: 'mode',
+      group: 'action',
+      label: `Passer en mode ${MODE_LABELS[next]}`,
+      keywords: 'mode travail cours école études basculer changer',
+      icon: MODE_ICONS[next],
+      shortcut: MODE_SHORTCUT,
+      action: { type: 'mode' },
+      suggested: true,
+    },
     {
       id: 'receive',
       group: 'action',
@@ -136,7 +157,7 @@ export function paletteCommands(context: { desktop: boolean; sidebarCollapsed: b
       action: { type: 'quit' },
     });
   }
-  return [...CREATE_COMMANDS, ...actions, ...GO_COMMANDS];
+  return [...CREATE_COMMANDS, ...actions, ...goCommands(context.mode)];
 }
 
 /** Sans saisie : les suggestions. En tapant : les commandes dont le libellé ou les synonymes contiennent chaque mot. */

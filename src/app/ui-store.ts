@@ -3,12 +3,16 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { AgendaSource, CalendarView } from '@/domains/agenda/model';
 import type { PlanningZoom } from '@/domains/agenda/timeline/model';
 import { DEFAULT_PLAN_REQUEST, type PlanRequest } from '@/domains/tasks/work-plan';
+import type { AppMode } from './modes';
 
 /**
  * État d'interface uniquement (jamais de données métier ici).
  * Les composants lisent avec des sélecteurs fins : changer un champ ne re-rend que ses lecteurs.
  */
 type UiState = {
+  /** Mode Travail ou Cours (P13), retrouvé au lancement suivant. Changer de mode : useSwitchMode. */
+  mode: AppMode;
+  setMode: (mode: AppMode) => void;
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   newMenuOpen: boolean;
@@ -48,6 +52,8 @@ type UiState = {
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
+      mode: 'work',
+      setMode: (mode) => set({ mode }),
       sidebarCollapsed: false,
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       newMenuOpen: false,
@@ -82,6 +88,7 @@ export const useUiStore = create<UiState>()(
       name: 'cockpit-ui',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
+        mode: state.mode,
         sidebarCollapsed: state.sidebarCollapsed,
         lastProjectTypeId: state.lastProjectTypeId,
         projectTasksMode: state.projectTasksMode,

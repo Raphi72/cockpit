@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
+import { useUiStore } from '@/app/ui-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { addDaysISO, daysBetween } from '@/core/dates';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
@@ -38,6 +39,7 @@ import { Button } from '@/ui/primitives/Button';
 import { DatePicker, type DayMark } from '@/ui/primitives/DatePicker';
 import { Deadlines } from '../components/Deadlines';
 import { UpcomingDays } from '../components/UpcomingDays';
+import { SchoolDashboard } from './SchoolDashboard';
 import {
   buildAlerts,
   dashboardSummary,
@@ -265,7 +267,8 @@ function DayTasksSection(props: { day: string; today: string; openTasks: TaskIte
   );
 }
 
-export function DashboardPage() {
+/** Aujourd’hui en mode Travail : la journée de travail, les projets, l’argent. */
+function WorkDashboard() {
   const today = useToday();
   const search = useSearch({ from: '/' });
   const navigate = useNavigate({ from: '/' });
@@ -418,4 +421,10 @@ export function DashboardPage() {
       </div>
     </Page>
   );
+}
+
+/** Aujourd’hui suit le mode (P13) : la journée de travail, ou la journée de cours. */
+export function DashboardPage() {
+  const mode = useUiStore((state) => state.mode);
+  return mode === 'school' ? <SchoolDashboard /> : <WorkDashboard />;
 }

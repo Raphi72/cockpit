@@ -21,6 +21,7 @@ import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
 import { useGlobalShortcuts } from '../shortcuts';
 import { useUiStore } from '../ui-store';
+import { useModeFollowsPage } from '../use-mode';
 import { OverlaysBoundary } from './OverlaysBoundary';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { Sidebar } from './Sidebar';
@@ -30,7 +31,11 @@ export function AppShell() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   // La page seule, sans ses filtres : changer de mois ou d'onglet ne rejoue pas le fondu.
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // Aujourd'hui change de contenu avec le mode : le fondu se rejoue aussi quand on change de mode.
+  const mode = useUiStore((state) => state.mode);
+  const pageKey = pathname === '/' ? `/:${mode}` : pathname;
   useGlobalShortcuts();
+  useModeFollowsPage();
   useNotificationScheduler();
   usePresence();
   useInboxSync();
@@ -47,7 +52,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-col overflow-hidden">
         <Topbar />
         <main className="min-h-0 flex-1 overflow-auto">
-          <PageTransition pageKey={pathname}>
+          <PageTransition pageKey={pageKey}>
             <Outlet />
           </PageTransition>
         </main>

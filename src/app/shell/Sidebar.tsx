@@ -1,10 +1,15 @@
 import { Link } from '@tanstack/react-router';
+import { useReducedMotion } from 'motion/react';
+import * as m from 'motion/react-m';
 import { PanelLeft } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useInboxCount } from '@/domains/inbox';
 import { ActiveProjectsNav } from '@/domains/projects/components/ActiveProjectsNav';
-import { mainNav, secondaryNav, type NavItem } from '../navigation';
+import { transitionFor } from '@/ui/motion/presets';
+import { APP_MODES, MODE_ICONS, MODE_LABELS, MODE_SHORTCUT } from '../modes';
+import { NAV, type NavItem } from '../navigation';
 import { useUiStore } from '../ui-store';
+import { useSwitchMode } from '../use-mode';
 
 const itemClass =
   'flex h-[34px] w-full shrink-0 items-center gap-3 rounded-md px-[9px] whitespace-nowrap text-ink-2 ' +
@@ -36,41 +41,95 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   );
 }
 
+/**
+ * Sélecteur de mode (P13) : deux icônes sans texte, l'active posée en relief, comme le sélecteur
+ * Chat / Code de Claude Desktop. Côte à côte, ou l'une sous l'autre quand la barre est réduite.
+ */
+function ModeSwitch({ collapsed }: { collapsed: boolean }) {
+  const mode = useUiStore((state) => state.mode);
+  const switchMode = useSwitchMode();
+  return (
+    <div role="radiogroup" aria-label="Mode" className={`flex w-fit gap-0.5 rounded-lg bg-active p-0.5 ${collapsed ? 'flex-col' : ''}`}>
+      {APP_MODES.map((option) => {
+        const Icon = MODE_ICONS[option];
+        const active = option === mode;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={MODE_LABELS[option]}
+            title={active ? `Mode ${MODE_LABELS[option]}` : `Passer en mode ${MODE_LABELS[option]} · ${MODE_SHORTCUT}`}
+            onClick={() => switchMode(option)}
+            className={
+              'grid h-7 w-8 place-items-center rounded-md outline-none transition-colors duration-[120ms] ease-soft ' +
+              'focus-visible:ring-2 focus-visible:ring-accent-soft ' +
+              (active ? 'bg-elevated text-ink shadow-[0_1px_2px_rgb(0_0_0/0.08)]' : 'text-ink-3 hover:text-ink')
+            }
+          >
+            <Icon className="size-4" strokeWidth={1.75} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Les pages du mode : elles apparaissent en fondu quand on change de mode (rien au démarrage). */
+function ModeNavLinks({ collapsed }: { collapsed: boolean }) {
+  const mode = useUiStore((state) => state.mode);
+  const reduced = useReducedMotion();
+  const first = useRef(true);
+  useEffect(() => {
+    first.current = false;
+  }, []);
+  return (
+    <m.div
+      key={mode}
+      initial={first.current ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={transitionFor('page', reduced)}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <nav className="flex flex-col gap-0.5">
+        {NAV[mode].main.map((item) => (
+          <NavLink key={item.to} item={item} collapsed={collapsed} />
+        ))}
+      </nav>
+
+      {!collapsed && mode === 'work' && <ActiveProjectsNav />}
+
+      <div className="mt-auto flex flex-col gap-0.5 pt-4">
+        {NAV[mode].secondary.map((item) => (
+          <NavLink key={item.to} item={item} collapsed={collapsed} />
+        ))}
+      </div>
+    </m.div>
+  );
+}
+
 export const Sidebar = memo(function Sidebar() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
 
   return (
     <aside className="flex min-h-0 flex-col gap-0.5 overflow-hidden border-r border-line bg-sidebar px-2.5 py-3 select-none">
-      <div className="mb-3.5 flex h-[34px] shrink-0 items-center gap-2.5 px-2">
-        <span className="grid size-[18px] shrink-0 place-items-center rounded-[5px] bg-ink">
-          <span className="size-[7px] rounded-full border-[1.75px] border-sidebar" />
-        </span>
-        {!collapsed && <span className="font-semibold tracking-tight">Cockpit</span>}
+      <div className="mb-3.5 flex min-h-[34px] shrink-0 items-center">
+        <ModeSwitch collapsed={collapsed} />
       </div>
 
-      <nav className="flex flex-col gap-0.5">
-        {mainNav.map((item) => (
-          <NavLink key={item.to} item={item} collapsed={collapsed} />
-        ))}
-      </nav>
+      <ModeNavLinks collapsed={collapsed} />
 
-      {!collapsed && <ActiveProjectsNav />}
-
-      <div className="mt-auto flex flex-col gap-0.5 pt-4">
-        {secondaryNav.map((item) => (
-          <NavLink key={item.to} item={item} collapsed={collapsed} />
-        ))}
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          title={collapsed ? 'Déplier la barre latérale · Ctrl B' : 'Réduire la barre latérale · Ctrl B'}
-          className={itemClass}
-        >
-          <PanelLeft className="size-4 shrink-0" strokeWidth={1.75} />
-          {!collapsed && <span>Réduire</span>}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={toggleSidebar}
+        title={collapsed ? 'Déplier la barre latérale · Ctrl B' : 'Réduire la barre latérale · Ctrl B'}
+        className={`mt-0.5 ${itemClass}`}
+      >
+        <PanelLeft className="size-4 shrink-0" strokeWidth={1.75} />
+        {!collapsed && <span>Réduire</span>}
+      </button>
     </aside>
   );
 });
