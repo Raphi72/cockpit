@@ -2,6 +2,7 @@ import type { BatchContext } from '@/core/batch';
 import type { Statement } from '@/core/db';
 import { shiftPaymentDueStatement } from '@/domains/finance/payments/repository';
 import { shiftProjectDateStatement } from '@/domains/projects/repository';
+import { shiftExamDateStatement } from '@/domains/school/exams/repository';
 import { shiftTaskDatesStatement } from '@/domains/tasks/repository';
 import { moveTimingDate, moveTimingStart, timingColumns, timingOf, type AgendaEvent, type AgendaItem } from './model';
 import { endSeriesBefore, formatRecurrence, occurrenceMoment, parseRecurrence, type EventException } from './recurrence';
@@ -33,6 +34,8 @@ export function buildShiftBatch(item: AgendaItem, days: number, now: string): Mo
         return shiftEventStatement(item.id, by, now);
       case 'project':
         return shiftProjectDateStatement(item.id, item.kind === 'project_start' ? 'startDate' : 'deadline', by, now);
+      case 'exam':
+        return shiftExamDateStatement(item.id, by, now);
       case 'class':
         // Un cours vient de la semaine type : il ne se glisse pas (isMovable).
         throw new Error('Un cours se change dans l’emploi du temps.');

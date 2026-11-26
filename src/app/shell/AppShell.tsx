@@ -18,6 +18,7 @@ import { WorkPlanDialog } from '@/domains/tasks/components/WorkPlanDialog';
 import { CommandPalette } from '@/domains/search/components/CommandPalette';
 import { CreateSubjectDialog } from '@/domains/school/subjects/components/SubjectDialog';
 import { CreateSlotDialog } from '@/domains/school/timetable/components/SlotDialog';
+import { CreateExamDialog, ExamEditorDialog } from '@/domains/school/exams/components/ExamDialog';
 import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -68,6 +69,8 @@ export function AppShell() {
         <CreateClientDialog />
         <CreateSubjectDialog />
         <CreateSlotDialog />
+        <CreateExamDialog />
+        <ExamEditorDialog />
         <CreatePaymentDialog />
         <CreateTransactionDialog />
         <ReceivePaymentDialog />

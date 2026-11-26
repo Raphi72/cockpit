@@ -118,6 +118,13 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
        WHERE h.id IS NOT NULL OR e.project_id IN (SELECT id FROM scope)
 
        UNION ALL
+       SELECT 'exam', x.id, x.title, NULL, s.name, s.color, x.date, NULL, x.date < ?, h.id IS NOT NULL, h.score
+       FROM exams x
+       JOIN subjects s ON s.id = x.subject_id
+       LEFT JOIN hits h ON h.entity = 'exam' AND h.id = x.id
+       WHERE h.id IS NOT NULL OR x.subject_id IN (SELECT id FROM matched_subjects)
+
+       UNION ALL
        SELECT 'payment', pay.id, pay.label, pay.project_id, COALESCE(p.name, pc.name), pt.color,
               COALESCE(pay.received_date, pay.due_date), pay.amount_cents,
               pay.status = 'received', h.id IS NOT NULL, h.score
@@ -151,7 +158,7 @@ export async function searchEverything(db: Db, text: string, today: string): Pro
      FROM ranked
      WHERE position <= ?
      ORDER BY entity, position`,
-    [...hits.params, today, SEARCH_LIMIT_PER_GROUP],
+    [...hits.params, today, today, SEARCH_LIMIT_PER_GROUP],
   );
 
   return rows.map((row) => ({

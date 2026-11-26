@@ -10,7 +10,8 @@ export type CreateKind =
   | 'payment'
   | 'transaction'
   | 'subject'
-  | 'class';
+  | 'class'
+  | 'exam';
 
 /** Contexte pré-rempli : depuis une fiche projet, la tâche (ou l'encaissement, la dépense) est rattachée à ce projet. */
 export type CreateDefaults = {
@@ -61,6 +62,6 @@ export function subjectFromPath(pathname: string): string | null {
 }
 
 export function createDefaultsFor(kind: CreateKind, pathname: string, today: string): CreateDefaults {
-  if (kind === 'homework' || kind === 'class') return { subjectId: subjectFromPath(pathname) };
+  if (kind === 'homework' || kind === 'class' || kind === 'exam') return { subjectId: subjectFromPath(pathname) };
   return PROJECT_AWARE.includes(kind) ? defaultsFromPath(pathname, today) : {};
 }

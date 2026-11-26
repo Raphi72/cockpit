@@ -126,8 +126,18 @@ export async function listAgenda(
      LEFT JOIN projects p ON p.id = pay.project_id
      LEFT JOIN project_types pt ON pt.id = p.type_id
      LEFT JOIN clients c ON c.id = pay.client_id
-     WHERE ${EXPECTED_PAYMENT} AND pay.due_date >= ? AND pay.due_date < ?`,
-    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to],
+     WHERE ${EXPECTED_PAYMENT} AND pay.due_date >= ? AND pay.due_date < ?
+
+     UNION ALL
+     -- Un examen : à son heure s'il en a une, sinon sur la journée.
+     SELECT 'exam', x.id, 'exam', x.title, s.name,
+            CASE WHEN x.starts_at IS NULL THEN x.date ELSE x.date || 'T' || x.starts_at END,
+            CASE WHEN x.ends_at IS NULL THEN NULL ELSE x.date || 'T' || x.ends_at END,
+            x.starts_at IS NULL, NULL, s.color, NULL, NULL, x.subject_id
+     FROM exams x
+     JOIN subjects s ON s.id = x.subject_id
+     WHERE x.date >= ? AND x.date < ?`,
+    [to, from, from, to, from, to, options.plainTasks ? 1 : 0, to, from, from, to, from, to],
   );
   const recurring = rows.filter((row) => row.recurrence !== null);
   const [exceptions, classes] = await Promise.all([

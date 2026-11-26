@@ -1,4 +1,4 @@
-import { CalendarClock, Flag, HandCoins, Play, type LucideIcon } from 'lucide-react';
+import { CalendarClock, FileCheck, Flag, HandCoins, Play, type LucideIcon } from 'lucide-react';
 import { memo } from 'react';
 import { DEADLINE_HORIZON, deadlineStatus, type DeadlineTone } from '@/core/deadline';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
@@ -10,6 +10,7 @@ import { useAgendaDrag } from './drag';
 
 /** Les dates dérivées et les échéances portent une icône ; les autres événements, la pastille de leur projet. */
 const ICONS: Partial<Record<AgendaKind, LucideIcon>> = {
+  exam: FileCheck,
   project_start: Play,
   project_deadline: Flag,
   task_due: Flag,

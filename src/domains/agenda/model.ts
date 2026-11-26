@@ -265,9 +265,9 @@ export function seriesChangeFromOccurrence(
 // ─── Agenda (P8) ────────────────────────────────────────────────────────────
 
 /** D'où vient une date : elle n'est stockée qu'à cet endroit. */
-export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'class';
+export type AgendaSource = 'event' | 'project' | 'task' | 'payment' | 'exam' | 'class';
 
-export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'class'];
+export const AGENDA_SOURCES: AgendaSource[] = ['event', 'project', 'task', 'payment', 'exam', 'class'];
 
 /** Filtres du calendrier. */
 export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
@@ -275,6 +275,7 @@ export const AGENDA_SOURCE_LABELS: Record<AgendaSource, string> = {
   project: 'Projets',
   task: 'Tâches',
   payment: 'Encaissements',
+  exam: 'Examens',
   class: 'Cours',
 };
 
@@ -283,6 +284,7 @@ export const AGENDA_SOURCE_HINTS: Record<AgendaSource, string> = {
   project: 'débuts et deadlines',
   task: 'deadlines et tâches prioritaires',
   payment: 'échéances non reçues',
+  exam: 'contrôles, partiels, oraux',
   class: 'emploi du temps (vues semaine et jour)',
 };
 
@@ -297,6 +299,7 @@ export type AgendaKind =
   | 'task_due'
   | 'task_scheduled'
   | 'payment_due'
+  | 'exam'
   | 'class';
 
 export type AgendaItem = {
@@ -331,6 +334,7 @@ const KIND_LABELS: Record<Exclude<AgendaKind, EventKind>, string> = {
   task_due: 'Deadline de la tâche',
   task_scheduled: 'Début de la tâche',
   payment_due: 'Encaissement attendu',
+  exam: 'Examen',
   class: 'Cours',
 };
 

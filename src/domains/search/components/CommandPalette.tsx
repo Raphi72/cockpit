@@ -6,6 +6,7 @@ import {
   BookOpen,
   CalendarDays,
   Circle,
+  FileCheck,
   CircleCheck,
   FolderClosed,
   HandCoins,
@@ -33,6 +34,7 @@ import { PaymentDate } from '@/domains/finance/payments/components/PaymentRow';
 import { paymentContext, type PaymentListItem } from '@/domains/finance/payments/model';
 import { useReceiveDialog } from '@/domains/finance/payments/receive-store';
 import { useTransactionEditor } from '@/domains/finance/transactions/editor-store';
+import { useExamEditor } from '@/domains/school/exams/components/ExamDialog';
 import { useTaskSheet } from '@/domains/tasks/sheet-store';
 import { useWorkPlanDialog } from '@/domains/tasks/work-plan-store';
 import { ColorDot, type PaletteKey } from '@/ui/data/ColorDot';
@@ -52,6 +54,7 @@ const groupClass =
 const ENTITY_ICONS: Record<SearchEntity, LucideIcon> = {
   project: FolderClosed,
   subject: BookOpen,
+  exam: FileCheck,
   task: Circle,
   idea: Lightbulb,
   inbox: Inbox,
@@ -147,6 +150,7 @@ function usePaletteActions(close: () => void) {
   const openTask = useTaskSheet((state) => state.openTask);
   const openEvent = useEventSheet((state) => state.openEvent);
   const openPayment = usePaymentEditor((state) => state.openPayment);
+  const openExam = useExamEditor((state) => state.openExam);
   const openClient = useClientEditor((state) => state.openClient);
   const openTransaction = useTransactionEditor((state) => state.openTransaction);
   const openReceive = useReceiveDialog((state) => state.openReceive);
@@ -163,6 +167,9 @@ function usePaletteActions(close: () => void) {
         break;
       case 'task':
         openTask(result.id);
+        break;
+      case 'exam':
+        openExam(result.id);
         break;
       case 'idea':
         if (result.projectId) void navigate({ to: '/projects/$projectId', params: { projectId: result.projectId } });

@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarPlus,
   CircleCheck,
+  FileCheck,
   FolderClosed,
   HandCoins,
   HardDriveDownload,
@@ -67,6 +68,7 @@ const CREATE: CreateCommand[] = [
   { kind: 'payment', label: 'Nouvel encaissement', icon: HandCoins, keywords: 'paiement facture argent' },
   { kind: 'transaction', label: 'Nouvelle transaction', icon: ArrowRightLeft, keywords: 'dépense revenu virement' },
   { kind: 'homework', label: 'Nouveau devoir', icon: NotebookPen, keywords: 'exercice rendre cours école', suggestedIn: 'school' },
+  { kind: 'exam', label: 'Nouvel examen', icon: FileCheck, keywords: 'contrôle partiel oral interro', suggestedIn: 'school' },
   { kind: 'class', label: 'Nouveau cours', icon: CalendarClock, keywords: 'emploi du temps créneau semaine' },
   { kind: 'subject', label: 'Nouvelle matière', icon: BookOpen, keywords: 'cours école discipline', suggestedIn: 'school' },
 ];

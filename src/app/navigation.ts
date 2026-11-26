@@ -3,6 +3,7 @@ import {
   CalendarClock,
   CalendarDays,
   ChartGantt,
+  FileCheck,
   FolderClosed,
   Inbox,
   LayoutDashboard,
@@ -27,7 +28,8 @@ export type AppPath =
   | '/settings'
   | '/subjects'
   | '/homework'
-  | '/timetable';
+  | '/timetable'
+  | '/exams';
 
 export type NavItem = {
   to: AppPath;
@@ -71,6 +73,7 @@ export const NAV: Record<AppMode, ModeNav> = {
       { to: '/homework', label: 'Devoirs', icon: NotebookPen, shortcut: '3' },
       calendar,
       { to: '/timetable', label: 'Emploi du temps', icon: CalendarClock, shortcut: '5' },
+      { to: '/exams', label: 'Examens', icon: FileCheck },
     ],
     secondary: [settings],
   },
