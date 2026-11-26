@@ -673,6 +673,7 @@ gestion_projets/
 
 **Sidebar** (232 px, réductible à 56 px avec Ctrl+B). Depuis la V2 (étape 2), elle dépend du mode, choisi en haut à gauche par un sélecteur à deux icônes (Travail, Cours ; `Ctrl M`) :
 
+- **dans les deux modes**, sous Aujourd'hui : **Journée** (V2, étape 3), l'organisateur de journée en blocs ;
 - **mode Travail** : Aujourd'hui (dashboard), Boîte de réception (V2, avec le nombre de captures à trier), Projets, Tâches, Calendrier, Planning, Finances ; une section « Projets en cours » pour accéder directement à chaque projet (pastille couleur du type) ; en bas, Clients et Paramètres ;
 - **mode Cours** : Aujourd'hui, Boîte de réception, Matières, Devoirs, Calendrier, Emploi du temps, Examens, Notes ; en bas, Paramètres.
 
@@ -926,7 +927,19 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 3 (« Organisateur de journée »)**, à confirmer à l'usage :
+- **Page Journée** (`domains/day`, migration `0009`) : une page à part, commune aux deux modes, juste sous Aujourd'hui (qui reste l'accueil). Une colonne de 6 h à 24 h (Paramètres › Journée), ouverte sur l'heure qu'il est ; vue jour (avec la bibliothèque et « À caser ») ou semaine (`J`, `S`, `←` `→`, `T`, `D`). Les cours, les rendez-vous et les examens à heure fixe sont dessinés dessous, en pointillés ; un bloc qui les chevauche porte un triangle, sans être interdit.
+- **Modules** (P16) : quatre proposés (Sport 3 h, Devoirs 1 h 30, Deep work 2 h, Révision 1 h), à modifier ou supprimer. Un module a un nom, une icône (liste fermée de 18), une couleur, une durée et un mode (la bibliothèque montre ceux du mode, « N de l'autre mode » montre le reste). Un bloc recopie le nom, l'icône, la couleur et le mode du module au moment où il est posé : modifier ou supprimer le module ne touche pas les blocs déjà posés.
+- **Poser et bouger** : glisser un module sur la colonne pose un bloc à cette heure (au quart d'heure) ; un clic dans un créneau libre propose les modules ou un bloc libre. Un bloc se glisse (aussi d'un jour à l'autre en vue semaine), s'étire par sa poignée du bas (15 minutes au moins, jamais après minuit), et s'ouvre d'un clic (titre, jour, horaire, statut, ses tâches). Chaque geste a son « Annuler ».
+- **Tâches dans les blocs** (P17, `tasks.block_id`) : on glisse une tâche ou un devoir de « À caser » (ce qui est prévu ce jour-là et pas encore dans un bloc) dans un bloc ; la redéposer dans « À caser » l'en sort. La tâche prend le jour du bloc sans le recopier : elle est dans Aujourd'hui ce jour-là (et reportée ensuite si elle n'est pas faite), et suit le bloc qu'on déplace. Le bloc montre ses tâches (à cocher) et le temps qui reste, 30 minutes comptées pour une tâche sans estimation. Supprimer un bloc libère ses tâches.
+- **Semaines types** (P18) : plusieurs, nommées. On les crée à partir d'une vraie semaine (« Enregistrer cette semaine comme semaine type… »), on en applique une aux jours affichés (des blocs ordinaires, retirables avec « Annuler »), on peut la remplacer par la semaine affichée, la renommer ou la supprimer. Pas d'éditeur à part : on ajuste une semaine, puis on la réenregistre.
+- **Remplir les trous** : dans les créneaux libres d'au moins 30 minutes, de 8 h à 21 h (et pas avant l'heure qu'il est), des blocs « Devoirs » ou « Deep work » (l'allure de ces modules) avec les tâches les plus pressantes, dans l'ordre de « Je veux travailler… » ; un bloc ne mélange pas devoirs et travail et dure 2 h au plus. On décoche ce qu'on ne veut pas ; rien n'est posé avant « Poser ».
+- **Bloc en cours** : sous la date, le bloc en cours et le temps qui reste, puis le suivant ; le bloc en cours est entouré. **Notifications** (Paramètres › Notifications › Blocs de la journée, activée) : au début et à la fin de chaque bloc pas encore marqué.
+- **Bilan du soir** : à partir de 20 h (ou dès que tous les blocs du jour sont finis), un bandeau propose « Faire le bilan » : chaque bloc passé se marque Fait, Raté ou Demain (même heure, avec ses tâches) d'un clic, et se change en recliquant. La notification du bilan viendra avec l'étape 7.
+- **Ailleurs** : les blocs sont dans le calendrier (filtre « Blocs », vues semaine et jour, glissables d'un jour à l'autre), pas au mois ni dans « Prochains jours ».
 
 **Choix faits en V2, étape 2 (« Modes et espace Cours »)**, à confirmer à l'usage :
 - **Modes** (P13, `app/modes.ts`) : le mode est mémorisé (`ui-store`) et suit la page ouverte (ouvrir un projet depuis la recherche repasse en Travail). Changer de mode sur une page de l'autre mode ramène à Aujourd'hui ; une page commune (calendrier, boîte de réception, paramètres) reste affichée. Les pages de l'autre mode se trouvent toujours par `Ctrl K` ; seules celles du mode en cours y sont suggérées. Le menu « Nouveau » et `N` suivent le mode.
@@ -1118,7 +1131,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1176,6 +1189,7 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 ### 9.3 Les fonctionnalités, espace par espace
 
 #### Journée (organisateur)
+- *(Fait, étape 3, sauf Google Agenda qui vient à l'étape 8 ; détail au §7.3.)*
 - Une colonne pour la journée, de 6 h à 24 h (plage réglable), avec une ligne « maintenant ». Les cours, les événements et Google Agenda y sont affichés, sous les blocs.
 - **Bibliothèque de modules** à côté : on les crée, les modifie et les range ; chacun se glisse sur la journée.
 - **Glisser-déposer** au pas de 15 minutes ; étirer un bloc change sa durée ; un chevauchement avec un cours ou un rendez-vous est signalé, sans être interdit.
@@ -1263,6 +1277,8 @@ Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, 
 
 **Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
 
+**Fait à l'étape 3** (migration `0009`) : `block_templates` (modules, quatre proposés), `day_blocks`, `tasks.block_id`, `week_templates` et `week_template_blocks`. Un bloc recopie le nom, l'icône, la couleur et le mode de son module (P16) ; il a un statut (prévu, fait, raté).
+
 **Fait à l'étape 2** (migration `0008`) : `subjects`, `tasks.subject_id`, `school_periods` (semestres et vacances), `timetable_slots` (la semaine type), `exams` et `grades`, avec les triggers de recherche des matières et des examens. Les cours et les examens ont leurs propres tables au lieu d'être des événements (`events.subject_id` n'existe donc pas) : voir les choix de l'étape 2 au §7.3.
 
 ```sql
@@ -1328,12 +1344,6 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 4. **Propositions P13 à P22** : retenues (25/11/2026).
 5. **Sélecteur de mode** (P13, étape 2) : un interrupteur à deux icônes, sans texte, en haut à gauche de la barre latérale, sur le modèle du sélecteur Chat / Code de l'application Claude Desktop. Le mode actif est mis en évidence (demandé le 25/11/2026).
 
-7. **Étape 2, « Modes et espace Cours »** (26/11/2026) :
-   - chaque mode montre les siens : les devoirs n'apparaissent pas dans les tâches du mode Travail ; le calendrier et la boîte de réception montrent tout ;
-   - moyennes par semestre, avec des dates réglables, plus la moyenne de l'année ;
-   - une semaine type toute l'année, avec des vacances (périodes sans cours) ;
-   - dashboard du mode Cours en deux colonnes : cours du jour et devoirs à rendre à gauche, prochain examen et prochains jours à droite.
-
 6. **Étape 1, « Toujours là »** (25/11/2026) :
    - le démarrage avec Windows est activé d'office, et Cockpit démarre alors caché dans la zone de notification ;
    - le raccourci global de capture est `Ctrl+Maj+Espace`, modifiable dans Paramètres (jamais `Ctrl+Alt`, qui est AltGr en AZERTY) ;
@@ -1341,6 +1351,18 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - la répétition se saisit par un menu de choix tout faits, des pastilles de jours en hebdomadaire et une fin facultative ;
    - sur une occurrence : modifier ou déplacer « cette fois » ou « toute la série » ; supprimer « cette fois », « celle-ci et les suivantes » ou « toute la série » ;
    - le chiffre d'affaires compte tous les encaissements reçus, à leur date de réception.
+
+7. **Étape 2, « Modes et espace Cours »** (26/11/2026) :
+   - chaque mode montre les siens : les devoirs n'apparaissent pas dans les tâches du mode Travail ; le calendrier et la boîte de réception montrent tout ;
+   - moyennes par semestre, avec des dates réglables, plus la moyenne de l'année ;
+   - une semaine type toute l'année, avec des vacances (périodes sans cours) ;
+   - dashboard du mode Cours en deux colonnes : cours du jour et devoirs à rendre à gauche, prochain examen et prochains jours à droite.
+
+8. **Étape 3, « Organisateur de journée »** (26/11/2026) :
+   - la Journée est une page à part, commune aux deux modes, sous Aujourd'hui (qui reste l'accueil) ;
+   - quelques modules prêts au départ (Sport, Devoirs, Deep work, Révision) ;
+   - plusieurs semaines types, nommées ;
+   - « Remplir les trous » pose des blocs (Devoirs ou Travail) avec les tâches urgentes dans les créneaux libres, après validation.
 
 Encore à trancher, au moment de l'étape concernée :
 - Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
@@ -1352,7 +1374,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 
 1. **Toujours là** : démarrage avec Windows, zone de notification, raccourci global et boîte de réception, événements récurrents, chiffre d'affaires par mois et par trimestre, premières animations. **Fait le 25/11/2026** (branche `v2-toujours-la`, 8 sous-étapes ; détail au §7.3).
 2. **Modes et espace Cours** : modes Travail et Cours (P13), matières, emploi du temps, devoirs (P14), examens, notes et moyennes. **Fait le 26/11/2026** (branche `v2-modes-cours`, 8 sous-étapes ; détail au §7.3).
-3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir.
+3. **Organisateur de journée** : modules, blocs, glisser-déposer, tâches dans les blocs, semaines types, remplir les trous, bloc en cours, bilan du soir. **Fait le 26/11/2026** (branche `v2-journee` ; détail au §7.3).
 4. **Pages** : éditeur, arborescence, rattachement, liens, modèles, journal du jour, recherche, import Notion.
 5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens.
 6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine.
