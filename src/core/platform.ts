@@ -12,6 +12,14 @@ export function revealWindow(): void {
   });
 }
 
+/**
+ * L'appli du téléphone (V2, étape 10) : construite pour Android (`tauri android`), ou essayée dans le
+ * navigateur de développement avec `?mobile` dans l'adresse.
+ */
+export function isMobileApp(): boolean {
+  return import.meta.env.TAURI_ENV_PLATFORM === 'android' || new URLSearchParams(window.location.search).has('mobile');
+}
+
 /** En production, le menu contextuel du navigateur (Actualiser, Imprimer…) n'a rien à faire dans l'app. */
 export function disableBrowserContextMenu(): void {
   if (!import.meta.env.PROD) return;

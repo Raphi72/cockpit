@@ -8,13 +8,17 @@ import { Input } from '@/ui/primitives/Input';
 import { useCreateSyncKey, useJoinSync, useStopSync, useSyncNow, useSyncStatus } from '../hooks';
 import { normalizeKeyCode } from '../model';
 import { showSyncCode } from '../native';
+import { KeyQrCode } from './KeyQrCode';
 
-/** Le code de la clé, lisible : à recopier sur l'autre appareil (et à garder en lieu sûr). */
+/** Le code de la clé : à scanner avec le téléphone, ou à recopier sur un autre PC (et à garder en lieu sûr). */
 function CodeBox({ code }: { code: string }) {
   return (
-    <p className="my-3 w-fit rounded-lg bg-hover px-4 py-3 font-mono text-[15px] tracking-wider select-all" aria-label="Code de synchronisation">
-      {code}
-    </p>
+    <div className="flex flex-wrap items-center gap-6">
+      <KeyQrCode code={code} />
+      <p className="my-3 w-fit max-w-72 rounded-lg bg-hover px-4 py-3 font-mono text-[15px] tracking-wider select-all" aria-label="Code de synchronisation">
+        {code}
+      </p>
+    </div>
   );
 }
 
@@ -89,7 +93,7 @@ export function SyncSettings() {
         </p>
         {code ? (
           <>
-            <p className="text-ink-2">Synchronisation activée. Voici le code à saisir sur tes autres appareils ; note-le aussi en lieu sûr :</p>
+            <p className="text-ink-2">Synchronisation activée. Scanne ce code QR avec le téléphone, ou recopie le code sur un autre PC ; note-le aussi en lieu sûr :</p>
             <CodeBox code={code} />
           </>
         ) : (
