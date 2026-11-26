@@ -19,6 +19,12 @@ It installs for the current user only (no administrator rights needed). The inst
 - **Finances**: accounts and balances, expected and received payments, transactions, transfers.
 - **Windows notifications**: deadlines, priority tasks, payments, appointments, morning summary.
 - **Your data**: daily automatic backups, manual backup and restore, JSON and CSV exports (Excel).
+- **Work and School modes** (`Ctrl M`): homework tied to a specific class, the real week from Google Calendar, exams and grades.
+- **Day planner**: time blocks dragged onto the day, a "to place" list, and a full-screen focus mode with a timer and a checklist.
+- **Pages**: Notion-like notes; any line can become a task, homework, event or project.
+- **Google**: Google Calendar (read-only), and encrypted sync through a hidden Google Drive folder (Android app in progress).
+
+Getting started: the [tutorial](docs/TUTO.md) (in French).
 
 ## Stack
 
@@ -57,4 +63,4 @@ The repository never contains a database, backup or export (see `.gitignore`).
 
 ## Roadmap
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) (in French): what is done (up to V1.1.2, then the first step of V2), the rest of V2 and V2.5.
+See [CONTRIBUTING.md](CONTRIBUTING.md) (in French): what is done (up to V1.1.2, then V2 steps 1 to 9), the Android app (V2 step 10, in progress) and V2.5.

@@ -19,6 +19,12 @@ Il s'installe pour l'utilisateur courant (pas besoin de droits administrateur). 
 - **Finances** : comptes et soldes, encaissements attendus et reçus, transactions, virements.
 - **Notifications Windows** : deadlines, tâches prioritaires, encaissements, rendez-vous, résumé du matin.
 - **Tes données** : sauvegarde automatique chaque jour, sauvegarde et restauration à la main, exports JSON et CSV (Excel).
+- **Modes Travail et Cours** (`Ctrl M`) : devoirs reliés à un cours précis, vraie semaine de cours lue dans Google Agenda, examens et notes.
+- **Journée** : des blocs glissés sur la journée, une liste « À caser », et un mode focus plein écran avec minuteur et liste à cocher.
+- **Pages** : des notes comme dans Notion ; une ligne devient tâche, devoir, événement ou projet.
+- **Google** : Google Agenda (en lecture seule) et synchronisation chiffrée par un dossier caché de Google Drive (appli Android en cours).
+
+Pour commencer : le [tuto](docs/TUTO.md).
 
 ## Stack
 
@@ -57,4 +63,4 @@ Le dépôt ne contient jamais de base, de sauvegarde ni d'export (voir `.gitigno
 
 ## Feuille de route
 
-Voir [CONTRIBUTING.md](CONTRIBUTING.md) : ce qui est fait (jusqu’à la V1.1.2, puis la première étape de la V2), la suite de la V2 et la V2.5.
+Voir [CONTRIBUTING.md](CONTRIBUTING.md) : ce qui est fait (jusqu’à la V1.1.2, puis les étapes 1 à 9 de la V2), l’appli Android (étape 10 de la V2, en cours) et la V2.5.
