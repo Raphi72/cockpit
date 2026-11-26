@@ -869,7 +869,7 @@ Chaque jalon aboutit à une version utilisable, développée sur sa branche Git 
 | **6. Vitesse & données** | ✓ Fait | Palette Ctrl+K (FTS5), Paramètres › Données (sauvegarder, restaurer), aide des raccourcis, « Annuler » généralisé | Toute action courante en moins de 3 secondes ; données restaurables → **MVP** |
 | **V1.1** | ✓ Fait | Retours d'usage, dates et deadlines, glisser-déposer, planning (timeline), notifications Windows, exports JSON / CSV, paramètres complets, petits défauts | Détail par étape au §7.2 |
 | **V1.1.2** | ✓ Fait | Terminer une tâche en douceur, titres complets dans les panneaux, bloc Deadlines qui suit le jour affiché (horizon réglable), « Je veux travailler… » | Détail par étape au §7.2 |
-| **V2** | En cours : étapes 1 à 7 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
+| **V2** | En cours : étapes 1 à 8 sur 10 faites | Modes Travail et Cours, espace Cours, organisateur de journée en blocs, pages (à la place de Notion), révisions, habitudes et sport, compagnon, toujours lancé, Google Agenda, synchronisation par Google Drive, application Android | Détail au §9, étapes au §9.7 |
 
 ### 7.2 Détail des jalons restants
 
@@ -927,12 +927,22 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 - **V2, étape 1, dans l'app installée seulement** : démarrage avec Windows (activé d'office au premier lancement, Cockpit démarre caché), instance unique (relancer Cockpit ramène sa fenêtre), temps de démarrage réel (objectif : moins d'une seconde, 0,7 s mesuré en développement). Installer cette version met la vraie base au schéma 7, avec la sauvegarde automatique d'avant migration.
 - **« Réduire les animations »** (Windows › Accessibilité › Effets visuels) : la règle est testée, son effet réel reste à voir à l'écran.
 - **Événements récurrents** : changer la date d'une occurrence « pour toute la série » depuis le sélecteur de date du panneau est couvert par les tests, pas encore essayé à l'écran.
+- **V2, étape 8, la vraie connexion Google** : la connexion (OAuth, coffre d'identifiants, appels à Google Agenda) est couverte par des tests Rust (PKCE, adresse d'autorisation, retour du navigateur, lecture des réponses), la relecture et l'affichage par des tests TypeScript avec un faux Google, et l'affichage a été vérifié dans le navigateur de test avec des événements copiés à la main. **Pas encore essayé avec un vrai compte** : il faut d'abord le projet Google Cloud de l'utilisateur ([docs/google-cloud.md](google-cloud.md)), puis se connecter depuis l'app de développement (`npm run tauri dev`, Paramètres › Google Agenda). À vérifier alors : la page de Google, le retour vers Cockpit, la liste des agendas, les fuseaux horaires, les séries, la relecture toutes les 15 minutes, la déconnexion.
 - **V2, étape 7, dans la vraie fenêtre** : vérifié dans le navigateur de test (écran du matin, mode focus et Pomodoro, tâche cochée depuis le focus, journée bouclée fêtée, mini-fenêtre ouverte comme page à part, Paramètres). Pas encore essayés dans l'app : la **mini-fenêtre native** (toujours au-dessus, glisser pour la déplacer, place retenue, la fenêtre principale qui suit une tâche cochée), le **plein écran** natif du mode focus, l'écran du matin après un démarrage caché avec Windows, les **sons** et les quatre nouvelles notifications en vraies notifications Windows.
 - **V2, étape 6, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Habitudes et ses trois onglets, cocher sur Aujourd'hui, habitude cochée par un bloc Sport fait, objectif et étapes, séance notée depuis la page et depuis un bloc, nouvel exercice, courbe, revue de la semaine, commande de la palette). Pas encore vus : le **bandeau du dimanche** (seulement le dimanche ; la règle est testée), le **rappel d'habitude** en vraie notification Windows, et la mise en page à 125 %.
 - **V2, étape 5, dans la vraie fenêtre** : vérifié dans le navigateur de test (page Révisions, session complète au clavier, carte à revoir qui repasse). À essayer à la main : « Créer les flashcards » depuis une vraie fiche de cours, et la fenêtre des révisions à rebours en créant un examen.
 - **V2, étape 4, dans la vraie fenêtre** : vérifié dans le navigateur de test (créer une page, titre, enregistrement, « / », tableau, case, lien « [[ » qui crée une sous-page, liens entrants, favoris). Les raccourcis Markdown n'ont pu être essayés qu'en simulant la frappe : à vérifier au clavier. Pas encore essayés : coller ou déposer une image, l'export Markdown dans la vraie fenêtre « Enregistrer sous », et **l'import Notion** (seulement dans l'app ; couvert par des tests Rust et TypeScript).
 - **V2, étape 3, dans la vraie fenêtre** : vérifié dans le navigateur de test (poser un module, déplacer, étirer, ranger des tâches, remplir les trous, semaines types, vue semaine), pas encore dans l'app. La migration `0009` passe dans les trois SQLite. À essayer à la main : le glisser-déposer à la souris réelle, l'étirement, les notifications de blocs, et le bilan du soir après 20 h.
 - **V2, étape 2, dans la vraie fenêtre** : tout a été vérifié dans le navigateur de test (`npm run dev`), pas encore dans l'app de développement ni installée. La migration `0008` passe dans `node:sqlite`, sql.js et le SQLite de Rust (`cargo test --lib`) ; installer cette version met la vraie base au schéma 8, avec la sauvegarde automatique d'avant migration. À essayer à la main : le sélecteur de mode et `Ctrl M`, la saisie d'une semaine type complète, et la mise en page à 125 %.
+
+**Choix faits en V2, étape 8 (« Connexion Google et Google Agenda »)**, à confirmer à l'usage :
+- **Lecture seule** (choix de l'étape) : seul le droit `calendar.readonly` est demandé. Drive viendra à l'étape 9, avec une nouvelle autorisation.
+- **Projet Google Cloud de l'utilisateur** : Cockpit n'a pas d'identifiant à lui (dépôt public). L'utilisateur crée un client « Application de bureau » ([docs/google-cloud.md](google-cloud.md)) et colle son ID et son code secret dans Paramètres › Google Agenda. Le projet est passé **en production** sans validation par Google (sinon la connexion expire au bout de 7 jours) : un avertissement s'affiche à la connexion.
+- **Connexion** (`src-tauri/src/google.rs`) : le navigateur s'ouvre sur la page de Google, qui revient sur un serveur local d'un instant (`http://127.0.0.1:<port>`), avec PKCE et un état aléatoire ; 5 minutes au plus. L'ID et le code secret du client, et le jeton de renouvellement, sont dans le **Gestionnaire d'identification de Windows** (un coffre à part pour l'app de développement) ; le jeton d'accès ne vit qu'en mémoire. Rien de tout cela n'est dans la base, les exports ou le dépôt. HTTP par `ureq` (rustls), coffre par `keyring`.
+- **Copie locale** (migration `0013`) : les agendas (`google_calendars`) et leurs événements (`google_events`), d'un mois en arrière à un peu plus d'un an en avant, séries dépliées par Google, heures écrites dans le fuseau de l'ordinateur. Relue au lancement, toutes les 15 minutes tant que Cockpit tourne, et avec « Actualiser » ; chaque agenda est remplacé d'un coup (une erreur réseau garde la copie d'avant). Ni annulés ni refusés. Pas exportée : elle se relit.
+- **Agendas** : tous, chacun réglable dans Paramètres (affiché ou non, couleur). Un nouvel agenda est affiché s'il est coché dans Google, avec la couleur de la palette la plus proche de la sienne (par la teinte ; grise pour une couleur terne). Un agenda masqué n'est plus relu.
+- **Dans Cockpit** (les deux modes) : une source de l'agenda, « Google Agenda » (filtre du calendrier) ; calendrier, Journée (dessinés sous les blocs), Prochains jours, prochain rendez-vous sous la date d'Aujourd'hui, écran du matin, et le rappel « Rendez-vous » 15 minutes avant. Ils ne se glissent pas ; un clic ouvre leur détail en lecture seule (quand, où, agenda) avec « Ouvrir dans Google Agenda ».
+- **Déconnexion** : le jeton est révoqué chez Google et retiré du coffre, la copie locale est effacée ; l'ID du client reste (« Tout oublier » le retire aussi).
 
 **Choix faits en V2, étape 7 (« Le compagnon »)**, à confirmer à l'usage :
 - **Écran du matin** (`domains/companion`, P21) : plein écran, à la première ouverture du jour (fenêtre visible) et **avant midi** ; une fois par jour (jour retenu dans l'état d'interface). La journée en une phrase (blocs, cours en mode Cours, rendez-vous, tâches du mode), le premier bloc (ou celui en cours), le devoir à rendre au plus tard demain, l'examen des 7 prochains jours, les habitudes encore attendues. Entrée, Échap ou Espace le ferment ; « Ne plus afficher le matin » le désactive (Paramètres › Compagnon le rallume).
@@ -1175,7 +1185,7 @@ Retours d'usage après la V1.1, en 4 étapes (branche `v1.1.2`, un commit par é
 ## 9. V2 : tout dans Cockpit
 
 > Statut : **en cours**. Conception rédigée le 25/11/2026 à partir des envies de l'utilisateur ; les propositions P13 à P22 sont validées (25/11/2026) et les choix faits sont au §9.6.
-> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes` ; **étape 7 (« Le compagnon ») faite le 26/11/2026**, branche `v2-compagnon`. Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
+> Cette V2 n'est plus « si l'usage le demande » : c'est une vraie version, faite en entier, étape par étape (§9.7). **Étape 1 (« Toujours là ») faite le 25/11/2026**, branche `v2-toujours-la` ; **étape 2 (« Modes et espace Cours ») faite le 26/11/2026**, branche `v2-modes-cours` ; **étape 3 (« Organisateur de journée ») faite le 26/11/2026**, branche `v2-journee` ; **étape 4 (« Pages ») faite le 26/11/2026**, branche `v2-pages` ; **étape 5 (« Révisions ») faite le 26/11/2026**, branche `v2-revisions` ; **étape 6 (« Sport, habitudes et objectifs ») faite le 26/11/2026**, branche `v2-habitudes` ; **étape 7 (« Le compagnon ») faite le 26/11/2026**, branche `v2-compagnon` ; **étape 8 (« Connexion Google et Google Agenda ») faite le 26/11/2026**, branche `v2-google` (la connexion avec un vrai compte reste à essayer). Leurs choix de réalisation et ce qui reste à vérifier sont au §7.3.
 
 ### 9.1 L'intention
 
@@ -1291,8 +1301,8 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - **Widget** sur l'écran d'accueil : le bloc en cours et le suivant, et un bouton de capture.
 
 #### Google Agenda
-- **Lecture** : les événements Google apparaissent dans le calendrier, la Journée et les Prochains jours du dashboard, avec leur propre couleur ; ils ne se modifient pas dans Cockpit.
-- **Écriture** (option) : les blocs de la journée peuvent être envoyés dans un agenda Google dédié (« Cockpit »), pour les voir ailleurs.
+- **Lecture** : les événements Google apparaissent dans le calendrier, la Journée et les Prochains jours du dashboard, avec leur propre couleur ; ils ne se modifient pas dans Cockpit. *(Fait, étape 8 : tous les agendas, réglables un par un, dans les deux modes.)*
+- **Écriture** (option) : les blocs de la journée peuvent être envoyés dans un agenda Google dédié (« Cockpit »), pour les voir ailleurs. *(Écartée à l'étape 8 : lecture seule.)*
 - La connexion Google est la même que pour la synchronisation (§9.5). Elle remplace la piste de l'adresse iCal secrète, qui ne permettait que la lecture.
 
 #### Restes de la V2 d'origine
@@ -1321,6 +1331,8 @@ Nouvelles tables, à préciser étape par étape (une migration par étape) :
 Colonnes ajoutées : `tasks.subject_id`, `tasks.block_id`, `events.subject_id`, `events.recurrence` (règle au format RRULE) et une table `event_exceptions` pour les occurrences annulées ou déplacées.
 
 **Fait à l'étape 1** (migration `0007`) : `events.recurrence` et `event_exceptions`.
+
+**Fait à l'étape 8** (migration `0013`) : `google_calendars` (nom, couleur Google et couleur de la palette, principal, affiché, dernière relecture) et `google_events` (copie locale en lecture seule, heure locale ou journées) ; non exportées.
 
 **Fait à l'étape 6** (migration `0012`) : `goals` et `goal_steps`, `habits` (fréquence, jours, rappel, module et objectif liés, archivage) et `habit_logs` (un jour coché par ligne), `exercises` (muscu ou cardio), `workouts` (date, ressenti, notes, bloc facultatif) et `workout_sets` (répétitions, charge, durée, distance). Séries, taux et progression ne sont pas stockés.
 
@@ -1365,7 +1377,7 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
 - **Conflits** : pour une même ligne, la modification la plus récente l'emporte, colonne par colonne. Pour une page modifiée sur les deux appareils, la plus récente l'emporte, et l'autre version est gardée dans l'historique de la page.
 - **Clé de chiffrement** : créée au premier appareil et transmise au téléphone une seule fois (code QR affiché sur le PC). Google ne voit que des fichiers illisibles.
 - **Côté Rust** : la connexion Google (OAuth), le jeton (dans le coffre d'identifiants de Windows ou d'Android, jamais dans la base ni les exports), les appels réseau et le chiffrement. L'interface ne fait toujours aucun appel réseau.
-- **À faire une fois** : créer un projet Google Cloud pour avoir le droit de se connecter (Drive, dossier de l'app, et Agenda).
+- **À faire une fois** : créer un projet Google Cloud pour avoir le droit de se connecter (Drive, dossier de l'app, et Agenda). *(Guide : [docs/google-cloud.md](google-cloud.md). Connexion faite à l'étape 8, pour l'agenda ; le jeton est dans le Gestionnaire d'identification de Windows.)*
 - Les sauvegardes quotidiennes restent, sur chaque appareil.
 
 **Mobile**
@@ -1439,8 +1451,11 @@ Les nouvelles tables cherchables (pages, matières, boîte de réception) ajoute
    - mini-fenêtre « En ce moment » ouverte à la demande ;
    - célébrations discrètes.
 
-Encore à trancher, au moment de l'étape concernée :
-- Google Agenda : la lecture seule suffit-elle, ou faut-il aussi y écrire les blocs ? (La connexion Google le permet dans les deux cas.)
+13. **Étape 8, « Connexion Google et Google Agenda »** (26/11/2026) :
+   - lecture seule (les blocs ne sont pas envoyés dans Google) ;
+   - tous les agendas, réglables un par un dans Paramètres ;
+   - événements Google visibles dans les deux modes ;
+   - seulement l'accès à l'agenda pour l'instant ; Drive sera demandé à l'étape 9.
 
 ### 9.7 Ordre de construction
 
@@ -1453,7 +1468,7 @@ Tout est fait. L'ordre suit seulement les dépendances : chaque étape s'appuie 
 5. **Révisions** : fiches, flashcards et répétition espacée, révisions à rebours des examens. **Fait le 26/11/2026** (branche `v2-revisions` ; détail au §7.3).
 6. **Sport, habitudes et objectifs** : habitudes, objectifs, carnet de séances, revue de la semaine. **Fait le 26/11/2026** (branche `v2-habitudes` ; détail au §7.3).
 7. **Le compagnon** : écran du matin, mode focus, mini-fenêtre, célébrations, sons, nouvelles notifications. **Fait le 26/11/2026** (branche `v2-compagnon` ; détail au §7.3).
-8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda.
+8. **Connexion Google et Google Agenda** : projet Google Cloud, connexion, lecture (et écriture si retenue) de l'agenda. **Fait le 26/11/2026** (branche `v2-google`, lecture seule ; connexion avec un vrai compte à essayer ; détail au §7.3).
 9. **Synchronisation** : journal des modifications, traces de suppression, chiffrement, échange par Google Drive, entre deux instances du PC d'abord.
 10. **Application Android** : écrans du téléphone, synchro, notifications, widget.
 
