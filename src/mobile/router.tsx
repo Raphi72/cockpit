@@ -16,8 +16,8 @@ import { SettingsScreen } from './screens/SettingsScreen';
 
 /**
  * Les écrans du téléphone. Mêmes chemins que sur le PC : les pages reprises du PC (Aujourd'hui, Tâches,
- * Projets, Devoirs, Examens, une matière) y trouvent les liens qu'elles connaissent. Le PC a son calendrier,
- * sa Journée et son emploi du temps ; le téléphone, un seul Agenda pour les trois.
+ * Projets, Devoirs, Examens, une matière, Journée) y trouvent les liens qu'elles connaissent. Le PC a son
+ * calendrier et son emploi du temps ; le téléphone, un seul Agenda pour les deux.
  */
 const root = createRootRoute({ component: MobileShell });
 
@@ -32,9 +32,10 @@ export const mobileRouter = createRouter({
     route('/projects/$projectId', lazyRouteComponent(() => import('@/domains/projects/pages/ProjectDetailPage'), 'ProjectDetailPage')),
     route('/homework', lazyRouteComponent(() => import('@/domains/school/pages/HomeworkPage'), 'HomeworkPage'), validateHomeworkSearch),
     route('/exams', lazyRouteComponent(() => import('@/domains/school/pages/ExamsPage'), 'ExamsPage')),
+    route('/subjects', lazyRouteComponent(() => import('@/domains/school/pages/SubjectsPage'), 'SubjectsPage')),
     route('/subjects/$subjectId', lazyRouteComponent(() => import('@/domains/school/pages/SubjectDetailPage'), 'SubjectDetailPage')),
+    route('/day', lazyRouteComponent(() => import('@/domains/day/pages/DayPage'), 'DayPage'), validateDaySearch),
     route('/calendar', AgendaScreen, validateDaySearch),
-    route('/day', AgendaScreen, validateDaySearch),
     route('/timetable', AgendaScreen, validateDaySearch),
     route('/habits', HabitsScreen, validateHabitsSearch),
     route('/pages', PagesScreen),

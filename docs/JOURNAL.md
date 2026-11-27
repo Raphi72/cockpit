@@ -7,6 +7,25 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**V2, étape 10 suite : retours sur l'appli du téléphone (27/11/2026, 2.6.1)** :
+- **Icône** : celle du PC (fond sombre, anneau, point bleu) au lieu de celle de Tauri, en icône adaptative
+  Android, dessinée par `scripts/android_icons.py` d'après `src-tauri/icons/icon.png`.
+- **Rien ne défile de côté** : pas de barres de défilement, l'écran ne déborde jamais en largeur (`main` en
+  `overflow-x: hidden`, un long mot passe à la ligne), et les onglets d'une page passent à la ligne au lieu de
+  défiler.
+- **Glisser pour changer d'onglet** : un balayage franc et horizontal sur un écran d'onglet (pas une fiche, ni
+  depuis un champ) passe au suivant ou au précédent ; l'écran arrive du bon côté (`slide`, coupé par « Réduire
+  les animations »).
+- **Journée** : la page du PC, en vue jour, devient un onglet (à la place des Pages, passées dans la barre du
+  haut). Toucher une heure pose un module ; déplacer un bloc demande un appui long ; modules et « À caser »
+  sous la journée. L'Agenda ne montre plus les blocs (ils sont dans Journée).
+- **Examens** : deux lignes sur le téléphone, l'intitulé (sur deux lignes au besoin) et le compte à rebours,
+  puis la matière et le jour (pas répété au-delà d'une semaine, quand le compte à rebours est déjà une date).
+- **Cours du jour** (Aujourd'hui, mode Cours) : la matière prend la place de la salle ; toute la ligne s'ouvre
+  au doigt (la fiche du cours ou de la matière donne la salle), « En cours » passe sous la matière. Le cours en
+  cours ne s'ouvrait pas : la salle et l'étiquette écrasaient la zone à toucher.
+- **Matières** : la page existe aussi sur le téléphone (lien « Matières » de la fiche d'une matière).
+
 **V2, étape 10 suite : l'appli du téléphone complète (27/11/2026, 2.6.0)**, après « elle ne sert à rien en l'état » :
 - **Choix de l'utilisateur** : tout (tâches, projets, focus, agenda et cours) ; Aujourd'hui **comme le PC** ; un
   **sélecteur Travail / Cours** ; l'argent **seulement en alertes** (« À surveiller », sans lien vers Finances).

@@ -15,6 +15,7 @@ import { Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateField } from '@/core/dates';
+import { isMobileApp } from '@/core/platform';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
 import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, usePlaceOneOff, useUnplaceBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
@@ -90,7 +91,10 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   const moveTasks = useMoveTasksToBlock();
   const [dragging, setDragging] = useState<DayDragData | null>(null);
   const [label, setLabel] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // Sur le téléphone, un appui long : glisser le doigt fait défiler la journée.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: isMobileApp() ? { delay: 400, tolerance: 8 } : { distance: 6 } }),
+  );
   // Où est le pointeur, et où on a saisi l'élément (distance au haut de l'élément).
   const pointerY = useRef(0);
   const grabOffset = useRef(0);

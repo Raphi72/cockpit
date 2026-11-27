@@ -178,20 +178,23 @@ la coche tout seul quand il est fait.
 ## 12. Sur ton téléphone
 
 L'appli Android reprend les pages du PC, mises sur une colonne. En haut, **Travail / Cours** (comme
-`Ctrl M` sur le PC), puis trois boutons : le **focus**, les **habitudes** et les **réglages**. En bas, les
-onglets suivent le mode :
+`Ctrl M` sur le PC), puis quatre boutons : les **pages**, le **focus**, les **habitudes** et les
+**réglages**. En bas, les onglets suivent le mode ; **glisse le doigt** de droite à gauche (ou l'inverse)
+pour passer à l'onglet suivant (ou précédent) :
 
 - **Travail** : **Aujourd'hui** (le même tableau de bord que sur le PC : bloc en cours, tâches du jour,
-  deadlines, à surveiller, prochains jours, projets en cours), **Tâches**, **Projets**, **Agenda**, **Pages**.
+  deadlines, à surveiller, prochains jours, projets en cours), **Tâches**, **Projets**, **Journée**, **Agenda**.
 - **Cours** : **Aujourd'hui** (cours du jour, devoirs, prochain examen), **Devoirs**, **Examens**,
-  **Agenda**, **Pages**.
+  **Journée**, **Agenda**.
 
 Tu y fais comme sur le PC : cocher, ajouter une tâche ou un devoir, toucher une tâche pour ouvrir sa fiche
-(dates, projet, notes, sous-tâches), créer un projet ou un événement. L'**Agenda** montre la semaine en
-haut, puis le jour choisi : échéances, blocs (à marquer faits), cours, rendez-vous et événements Google.
-Dans un projet, un **appui long** sur une tâche la déplace (glisser le doigt fait défiler). Pendant un
-**focus**, l'écran reste allumé. L'**argent** reste sur le PC : le téléphone montre seulement les paiements
-en retard, dans « À surveiller ».
+(dates, projet, notes, sous-tâches), créer un projet ou un événement. La **Journée** est celle du PC, en vue
+jour : **touche une heure** pour y poser un module (ou un bloc libre), touche un bloc pour le changer,
+« Remplir les trous » propose des blocs ; tes modules et « À caser » sont dessous. L'**Agenda** montre la
+semaine en haut, puis le jour choisi : échéances, cours, rendez-vous et événements Google. Sur Aujourd'hui
+en mode Cours, **touche un cours** pour voir sa salle. Dans un projet ou la Journée, un **appui long** sur
+une tâche ou un bloc le déplace (glisser le doigt fait défiler). Pendant un **focus**, l'écran reste allumé.
+L'**argent** reste sur le PC : le téléphone montre seulement les paiements en retard, dans « À surveiller ».
 
 Elle partage tes données avec le PC par la **synchronisation**, qui passe par un dossier caché et chiffré de
 ton Google Drive.

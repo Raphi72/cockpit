@@ -83,9 +83,53 @@ function googleLine(course: CourseOnDay): CourseLine {
   };
 }
 
+/**
+ * Sur le téléphone : toute la ligne s'ouvre au doigt (la fiche du cours dit la salle), la matière prend
+ * la place, et « En cours » ou « Ensuite » passe dessous.
+ */
+function PhoneClassRow({ line, state }: { line: CourseLine; state: 'past' | 'now' | 'next' | 'later' }) {
+  const openGoogle = useGoogleEventSheet((s) => s.open);
+  const navigate = useNavigate();
+  const { googleItemId, subjectId } = line;
+  const open = googleItemId
+    ? () => openGoogle(googleItemId)
+    : subjectId
+      ? () => void navigate({ to: '/subjects/$subjectId', params: { subjectId } })
+      : undefined;
+  const hint = state === 'now' ? 'En cours' : state === 'next' ? 'Ensuite' : null;
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={open}
+        disabled={!open}
+        className={`grid min-h-13 w-full grid-cols-[88px_minmax(0,1fr)] items-center gap-3 py-1.5 text-left ${state === 'past' ? 'text-ink-3' : ''}`}
+      >
+        <span className={`tnum text-meta ${state === 'past' ? '' : 'text-ink-2'}`}>
+          {line.start} – {line.end}
+        </span>
+        <span className="min-w-0">
+          <span className="flex min-w-0 items-center gap-2.5">
+            <ColorDot color={line.subjectColor} />
+            <span className={`truncate ${state === 'now' ? 'font-medium' : ''}`}>{line.subjectName}</span>
+          </span>
+          {(hint || line.label) && (
+            <span className="block truncate pl-[18px] text-meta text-ink-3">
+              {hint && <span className={state === 'now' ? 'font-medium text-accent' : 'text-ink-2'}>{hint}</span>}
+              {hint && line.label && ' · '}
+              {line.label}
+            </span>
+          )}
+        </span>
+      </button>
+    </li>
+  );
+}
+
 /** Un cours de la journée ; aujourd'hui, celui en cours est mis en avant et ceux passés s'effacent. */
 function ClassRow({ line, state }: { line: CourseLine; state: 'past' | 'now' | 'next' | 'later' }) {
   const openGoogle = useGoogleEventSheet((s) => s.open);
+  if (isMobileApp()) return <PhoneClassRow line={line} state={state} />;
   const name = (
     <>
       <ColorDot color={line.subjectColor} />

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { useUiStore } from '@/app/ui-store';
 import { addDaysISO, formatLongDate } from '@/core/dates';
+import { isMobileApp } from '@/core/platform';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { useWeekStartsOn } from '@/core/week-start';
 import { useAgenda } from '@/domains/agenda';
@@ -45,7 +46,10 @@ const HOUR_HEIGHT = { day: 52, week: 40 };
 
 /** Sous la date : le bloc en cours et le suivant, ou de quoi commencer. */
 function daySubtitle(blocks: DayBlock[], isToday: boolean, now: number): string {
-  if (blocks.length === 0) return 'Aucun bloc : glisse un module sur la journée, ou clique sur une heure.';
+  if (blocks.length === 0)
+    return isMobileApp()
+      ? 'Aucun bloc : touche une heure pour y poser un module.'
+      : 'Aucun bloc : glisse un module sur la journée, ou clique sur une heure.';
   const total = blocks.reduce((sum, b) => sum + toMinutes(b.endsAt) - toMinutes(b.startsAt), 0);
   const summary = `${blocks.length} bloc${blocks.length > 1 ? 's' : ''} · ${formatMinutes(total)}`;
   if (!isToday) return summary;
@@ -68,7 +72,9 @@ export function DayPage() {
   const search = useSearch({ from: '/day' });
   const navigate = useNavigate({ from: '/day' });
   const day = search.day ?? today;
-  const view: DayView = search.view ?? 'day';
+  // Sur le téléphone, la vue jour seulement : sept colonnes n'y tiennent pas.
+  const phone = isMobileApp();
+  const view: DayView = phone ? 'day' : (search.view ?? 'day');
   const mode = useUiStore((state) => state.mode);
   const weekStartsOn = useWeekStartsOn();
   const now = useMinutesOfDay();
@@ -192,14 +198,16 @@ export function DayPage() {
             </Button>
           )}
           <WeekTemplatesMenu weekDays={week} weekBlocks={weekBlocks} />
-          <SegmentedTabs
-            tabs={[
-              { value: 'day', label: 'Jour', title: 'Jour · J' },
-              { value: 'week', label: 'Semaine', title: 'Semaine · S' },
-            ]}
-            value={view}
-            onChange={(next) => go({ view: next })}
-          />
+          {!phone && (
+            <SegmentedTabs
+              tabs={[
+                { value: 'day', label: 'Jour', title: 'Jour · J' },
+                { value: 'week', label: 'Semaine', title: 'Semaine · S' },
+              ]}
+              value={view}
+              onChange={(next) => go({ view: next })}
+            />
+          )}
           {day !== today && (
             <Button variant="secondary" shortcut="T" onClick={() => go({ day: today })}>
               Aujourd’hui
@@ -221,7 +229,8 @@ export function DayPage() {
       )}
 
       <DayDnd today={today}>
-        <div className="grid grid-cols-[minmax(0,1fr)_240px] items-start gap-x-12">
+        {/* Sur le téléphone, les modules et « À caser » sous la journée. */}
+        <div className="grid grid-cols-[minmax(0,1fr)_240px] items-start gap-x-12 phone:grid-cols-1 phone:gap-y-10">
           <div className="min-w-0">
             {view === 'week' && (
               <div className="grid" style={{ gridTemplateColumns: `44px repeat(7, minmax(0, 1fr))` }}>

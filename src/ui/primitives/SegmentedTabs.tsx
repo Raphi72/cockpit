@@ -8,8 +8,8 @@ type SegmentedTabsProps<T extends string> = {
 
 export function SegmentedTabs<T extends string>({ tabs, value, onChange }: SegmentedTabsProps<T>) {
   return (
-    // Sur le téléphone, les onglets qui ne tiennent pas défilent de côté (sans barre).
-    <div role="tablist" className="flex gap-1 phone:-mx-5 phone:overflow-x-auto phone:px-5 phone:[scrollbar-width:none]">
+    // Sur le téléphone, les onglets qui ne tiennent pas passent à la ligne : rien ne défile de côté.
+    <div role="tablist" className="flex gap-1 phone:flex-wrap">
       {tabs.map((tab) => {
         const selected = tab.value === value;
         return (

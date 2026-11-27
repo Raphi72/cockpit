@@ -8,7 +8,7 @@ import type { Transition } from 'motion/react';
 /** La courbe de `--ease-soft` (tokens.css). */
 export const EASE_SOFT = [0.2, 0.8, 0.2, 1] as const;
 
-export type MotionKind = 'page' | 'row' | 'toast' | 'screen' | 'spark';
+export type MotionKind = 'page' | 'row' | 'toast' | 'screen' | 'spark' | 'slide';
 
 export const TRANSITIONS: Record<MotionKind, Transition> = {
   /** Une page qui apparaît : un simple fondu, sans déplacement (rien ne bouge sous le pointeur). */
@@ -21,6 +21,8 @@ export const TRANSITIONS: Record<MotionKind, Transition> = {
   screen: { duration: 0.3, ease: EASE_SOFT },
   /** L'étincelle d'une petite célébration : elle éclot avec un léger rebond, juste après son message. */
   spark: { type: 'spring', stiffness: 420, damping: 14, delay: 0.08 },
+  /** Un onglet du téléphone qui arrive du côté où l'on a glissé le doigt : court, sans rebond. */
+  slide: { duration: 0.2, ease: EASE_SOFT },
 };
 
 export const INSTANT: Transition = { duration: 0 };

@@ -7,6 +7,20 @@
  */
 @custom-variant phone (&:where(.phone, .phone *));
 
+/* Le téléphone : pas de barres de défilement (le doigt suffit), et un long mot passe à la ligne plutôt que d'élargir l'écran. */
+@layer base {
+  .phone,
+  .phone * {
+    scrollbar-width: none;
+  }
+  .phone *::-webkit-scrollbar {
+    display: none;
+  }
+  .phone body {
+    overflow-wrap: anywhere;
+  }
+}
+
 @layer base {
   html,
   body,
