@@ -1,5 +1,6 @@
 import type { Db, Statement } from '@/core/db';
 import { getSetting } from '@/domains/settings/repository';
+import { applyEditStatements, deleteDoneEditsStatement, listEdits } from './edits/repository';
 import { isTimetableName, looksLikeTimetable, parseCourseTitle, SCHOOL_MANUAL_SETTING, syncWindow, toLocalEvent, type RemoteCalendar, type RemoteEvent } from './model';
 import {
   autoSubjectStatements,
@@ -43,7 +44,15 @@ export async function syncGoogle(db: Db, source: GoogleSource, today: string, ti
       return { ...event, course: parts.name, courseKind: parts.kind, teacher: parts.teacher };
     });
     const statements: Statement[] = detected ? [setCalendarSchoolStatement(calendar.id, true, now)] : [];
-    await db.batch([...statements, ...replaceEventsStatements(calendar.id, events, now)]);
+    // Les modifications faites dans Cockpit : celles déjà envoyées sont dans la copie neuve, les autres
+    // (en attente, ou retouches d'un agenda en lecture seule) s'y appliquent à nouveau.
+    const edits = await listEdits(db, { statuses: ['pending', 'local'], calendarId: calendar.id });
+    await db.batch([
+      ...statements,
+      ...replaceEventsStatements(calendar.id, events, now),
+      deleteDoneEditsStatement(calendar.id),
+      ...edits.flatMap(applyEditStatements),
+    ]);
     count += events.length;
   }
   const subjects = await autoSubjectStatements(db, now);

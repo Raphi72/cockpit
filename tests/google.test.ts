@@ -63,6 +63,10 @@ describe('Google Agenda : règles', () => {
       endsAt: '2026-11-27T11:00',
       allDay: false,
       htmlLink: null,
+      notes: null,
+      seriesId: null,
+      projectId: null,
+      subjectId: null,
     });
     // Google exclut le dernier jour ; Cockpit le compte.
     expect(toLocalEvent(remoteEvent({ allDay: true, start: '2026-11-28', end: '2026-11-29' }))).toMatchObject({ startsAt: '2026-11-28', endsAt: null, allDay: true });
@@ -144,7 +148,8 @@ describe('Google Agenda : relecture', () => {
       ['Dentiste', '2026-11-27T10:00', '2026-11-27T11:00', false, 'green', 'Lyon'],
       ['Vacances', '2026-11-28', '2026-11-29', true, 'green', null],
     ]);
-    expect(isMovable(agenda[0]!)).toBe(false);
+    // Depuis la 2.8.0, un événement Google se déplace (chez Google, ou en retouche dans Cockpit).
+    expect(isMovable(agenda[0]!)).toBe(true);
     // Le même identifiant d'événement dans deux agendas : deux éléments distincts.
     expect(new Set(agenda.map((i) => i.key)).size).toBe(3);
 

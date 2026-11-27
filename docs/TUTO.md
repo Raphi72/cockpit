@@ -122,8 +122,21 @@ l'arrêter. **Coche** au fur et à mesure : la tâche est vraiment terminée dan
 
 Paramètres › **Google Agenda**. Le pas-à-pas est dans [google-cloud.md](google-cloud.md). Ton emploi du
 temps de l'intranet, abonné dans Google par un lien iCal, est **reconnu tout seul** comme agenda des cours
-(sinon : bouton « Agenda des cours » à côté de son nom). Cockpit relit Google toutes les 15 minutes, en
-lecture seule : il ne modifie jamais ton agenda.
+(sinon : bouton « Agenda des cours » à côté de son nom). Cockpit relit Google toutes les 15 minutes.
+
+### Modifier tes événements Google
+
+Depuis la 2.8.0, un événement Google se change dans Cockpit comme les autres : touche-le (ou clique-le)
+pour modifier son titre, sa date, ses heures, son lieu et ses notes, le rattacher à un **projet** ou une
+**matière**, ou le **supprimer** (avec « Annuler »). Dans le calendrier, glisse-le pour le déplacer. Pour un
+événement qui se répète, Cockpit demande : cet événement, ou toute la série. **Nouvel événement** a un champ
+**Agenda** : Cockpit, ou un de tes agendas Google (le dernier choisi est proposé).
+
+- **Hors connexion**, ça marche aussi : le changement se voit tout de suite et part chez Google au retour du
+  réseau (du PC, ou du téléphone).
+- **La première fois**, Paramètres › Google Agenda demande d'**autoriser la modification** (reconnexion).
+- **L'agenda de l'intranet** ne se modifie pas chez Google : tes changements (une salle, une heure, un cours
+  annulé) restent dans Cockpit et sur ton téléphone. **Rétablir**, dans la fiche du cours, les retire.
 
 L'appli est en mode « Test » chez Google : environ une fois par semaine, Cockpit te demandera de te
 reconnecter. Un clic sur « Se connecter à Google » suffit.

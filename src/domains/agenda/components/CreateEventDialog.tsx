@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useCreateStore, type CreateDefaults } from '@/app/create-store';
+import { useUiStore } from '@/app/ui-store';
 import { isISODate, todayISO } from '@/core/dates';
+import { useCreateGoogleEvent } from '@/domains/google/edits/hooks';
+import { useGoogleCalendars } from '@/domains/google/hooks';
 import { ProjectMenu } from '@/domains/projects/components/ProjectMenu';
 import { FormRow } from '@/ui/layout/FormRow';
 import { Dialog, DialogFooter } from '@/ui/overlays/Dialog';
@@ -24,13 +27,27 @@ import {
   type EventKind,
   type EventTiming,
   type NewEventInput,
+  timingColumns,
 } from '../model';
-import { moveRecurrenceStart, type Recurrence } from '../recurrence';
+import { formatRecurrence, moveRecurrenceStart, type Recurrence } from '../recurrence';
 import { RecurrenceField } from './RecurrenceField';
+
+/** « Cockpit » : l'événement reste dans Cockpit (et sur le téléphone). */
+const COCKPIT = 'cockpit';
 
 function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDone: () => void }) {
   const createEvent = useCreateEvent();
+  const createGoogle = useCreateGoogleEvent();
   const today = todayISO();
+  // Les agendas Google où l'on peut écrire (et affichés) ; par défaut, le dernier choisi.
+  const { data: calendars = [] } = useGoogleCalendars();
+  const writable = calendars.filter((c) => c.writable && c.shown);
+  const lastCalendar = useUiStore((state) => state.lastEventCalendar);
+  const setLastCalendar = useUiStore((state) => state.setLastEventCalendar);
+  // Né d'une ligne de page : il reste dans Cockpit (la page sait le retirer, ou le défaire).
+  const canChoose = writable.length > 0 && !defaults.fromLine;
+  const [calendar, setCalendar] = useState<string>(() => (lastCalendar && writable.some((c) => c.id === lastCalendar) ? lastCalendar : COCKPIT));
+  const google = canChoose && calendar !== COCKPIT ? writable.find((c) => c.id === calendar) ?? null : null;
 
   const [title, setTitle] = useState(defaults.fromLine?.text ?? '');
   const [kind, setKind] = useState<EventKind>('appointment');
@@ -58,6 +75,23 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
     event?.preventDefault();
     setSubmitted(true);
     if (Object.keys(errors).length > 0) return;
+    if (canChoose) setLastCalendar(google ? google.id : null);
+    if (google) {
+      createGoogle.mutate(
+        {
+          calendarId: google.id,
+          content: { title: title.trim(), location: location || null, notes: notes || null, ...timingColumns(timing), projectId, subjectId: null },
+          recurrence: recurrence ? formatRecurrence(recurrence) : null,
+        },
+        {
+          onSuccess: () => {
+            toast(`Événement ajouté à ${google.name}.`);
+            onDone();
+          },
+        },
+      );
+      return;
+    }
     createEvent.mutate(input, {
       onSuccess: (eventId) => {
         // Né d'une ligne de page : la page la retire et l'annonce, avec « Annuler ».
@@ -90,14 +124,27 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
       {submitted && errors.title && <p className="mt-1.5 text-meta text-danger">{errors.title}</p>}
 
       <div className="mt-5 grid grid-cols-[92px_minmax(0,1fr)] gap-x-4 gap-y-3">
-        <FormRow label="Type">
-          <ChoiceChips
-            label="Type"
-            options={EVENT_KINDS.map((k) => ({ value: k, label: EVENT_KIND_LABELS[k] }))}
-            value={kind}
-            onChange={chooseKind}
-          />
-        </FormRow>
+        {canChoose && (
+          <FormRow label="Agenda">
+            <ChoiceChips
+              label="Agenda"
+              options={[{ value: COCKPIT, label: 'Cockpit' }, ...writable.map((c) => ({ value: c.id, label: c.name }))]}
+              value={calendar}
+              onChange={setCalendar}
+            />
+          </FormRow>
+        )}
+        {/* Un événement Google n'a pas de type (rendez-vous, réunion…) : c'est une notion de Cockpit. */}
+        {!google && (
+          <FormRow label="Type">
+            <ChoiceChips
+              label="Type"
+              options={EVENT_KINDS.map((k) => ({ value: k, label: EVENT_KIND_LABELS[k] }))}
+              value={kind}
+              onChange={chooseKind}
+            />
+          </FormRow>
+        )}
 
         <FormRow label="Date">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -175,7 +222,7 @@ function CreateEventForm({ defaults, onDone }: { defaults: CreateDefaults; onDon
         <Button variant="ghost" onClick={onDone}>
           Annuler
         </Button>
-        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createEvent.isPending}>
+        <Button type="submit" variant="primary" shortcut="Ctrl ↵" disabled={createEvent.isPending || createGoogle.isPending}>
           Ajouter l’événement
         </Button>
       </DialogFooter>

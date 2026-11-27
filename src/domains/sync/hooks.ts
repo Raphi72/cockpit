@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { db } from '@/core/db';
 import { nowTimestamp } from '@/core/dates';
 import { queryKeys } from '@/core/query-keys';
+import { reapplyEdits } from '@/domains/google/edits/service';
 import { googleError, useGoogleStatus } from '@/domains/google/hooks';
 import { toast } from '@/ui/overlays/toast';
 import { SYNC_INTERVAL_MS } from './model';
@@ -30,6 +31,8 @@ function runSync(): Promise<{ pulled: number; pushed: number }> {
     const now = nowTimestamp();
     const result = await syncOnce(db, nativeTransport, now);
     await db.batch([setSyncStateStatement('last_sync', now)]);
+    // Des modifications d'événements Google reçues de l'autre appareil : la copie locale les montre tout de suite.
+    if (result.pulled > 0) await reapplyEdits(db);
     return result;
   })().finally(() => {
     running = null;

@@ -117,7 +117,7 @@ export function GoogleSettings() {
 
   if (!status.configured || changing) {
     return (
-      <Section title="Google Agenda" meta="lecture seule">
+      <Section title="Google Agenda">
         <p className="mb-4 max-w-xl text-ink-2">
           Pour voir tes agendas Google dans le calendrier, la Journée et Aujourd’hui, crée une fois un projet Google Cloud (guide :
           docs/google-cloud.md dans le dépôt), puis colle ici l’ID et le code secret de son client « Application de bureau ».
@@ -129,10 +129,10 @@ export function GoogleSettings() {
 
   if (!status.connected) {
     return (
-      <Section title="Google Agenda" meta="lecture seule">
+      <Section title="Google Agenda">
         <p className="mb-4 text-ink-2">
           Identifiants enregistrés <span className="text-ink-3">(client {status.clientHint}…)</span>. Connecte ton compte : ton navigateur s’ouvre sur la page de
-          Google, qui demande la lecture de tes agendas et le dossier caché de Cockpit sur ton Drive (synchronisation).
+          Google, qui demande tes agendas (les lire et modifier leurs événements) et le dossier caché de Cockpit sur ton Drive (synchronisation).
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="primary" disabled={connect.isPending} onClick={() => connect.mutate(undefined)}>
@@ -152,6 +152,19 @@ export function GoogleSettings() {
 
   return (
     <Section title="Google Agenda" meta={status.account ? `connecté : ${status.account}` : 'connecté'}>
+      {/* Connecté avant la 2.8.0 : le droit de modifier les événements reste à donner. */}
+      {!status.writeAllowed && (
+        <div className="mb-5 max-w-xl rounded-lg bg-accent-soft/50 px-4 py-3">
+          <p className="text-ink-2">
+            Cockpit peut maintenant modifier, créer et supprimer tes événements Google. Reconnecte-toi pour l’autoriser : en attendant, tes
+            modifications restent dans Cockpit et partiront ensuite.
+          </p>
+          <Button variant="secondary" className="mt-3" disabled={connect.isPending} onClick={() => connect.mutate(undefined)}>
+            {connect.isPending ? 'En attente du navigateur…' : 'Autoriser la modification'}
+          </Button>
+          {connect.error && <p className="mt-2 text-meta text-danger">{googleError(connect.error)}</p>}
+        </div>
+      )}
       <CalendarList />
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button variant="secondary" disabled={sync.isPending} onClick={() => sync.mutate()}>

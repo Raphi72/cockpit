@@ -7,6 +7,28 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**Google Agenda en écriture (27/11/2026, 2.8.0)**, à confirmer à l'usage (choix de l'utilisateur : tout modifier, comme les événements de Cockpit) :
+- **Droit** : `calendar.events` en plus de `calendar.readonly` ; un compte connecté avant voit « Autoriser la
+  modification » (Paramètres › Google Agenda). Les commandes Rust (`google_event_insert/patch/delete`,
+  `google_series_retime`) disent leur refus par un genre : `offline`, `denied` ou `error`.
+- **Hors connexion** (demande de l'utilisateur) : une modification est notée dans `google_edits` (migration
+  0020, synchronisée entre les appareils) et appliquée tout de suite à la copie locale ; elle part à la relecture
+  suivante, du PC ou du téléphone (celui qui a le droit et du réseau). Hors ligne ou sans droit, l'envoi s'arrête
+  et reprendra ; un refus de Google garde la modification en retouche locale, avec la raison. Après la relecture,
+  ce qui est parti ne sert plus ; le reste est ré-appliqué.
+- **Sans double** : une création porte un identifiant choisi par Cockpit (`cockpit` + l'identifiant de la
+  modification) ; un second envoi reçoit 409 et vaut un succès. Une suppression déjà faite (404, 410) aussi.
+- **Où** (choix) : « Nouvel événement » a un champ Agenda (Cockpit ou un agenda Google modifiable), le dernier
+  choisi proposé. Un événement Google n'a pas de type ; il garde la répétition (RRULE).
+- **Agenda de l'intranet** (choix : « retouches locales ») : `accessRole` lecteur, donc les modifications
+  restent dans Cockpit (`local`), ré-appliquées après chaque relecture ; « Rétablir » les retire.
+- **Rattacher** (choix) : projet ou matière, dans les champs privés de l'événement Google
+  (`cockpitProjectId`, `cockpitSubjectId`), lus à la relecture.
+- **Série** : « cet événement » ou « toute la série » ; pour la série, titre, lieu, notes, rattachement et
+  heures (chaque occurrence garde son jour : la série reçoit les nouvelles heures sur son premier événement).
+- **Calendrier** : un événement Google se glisse (cette occurrence), avec « Annuler ». « Annuler » une
+  suppression : encore en attente, elle disparaît ; déjà envoyée, l'événement est recréé.
+
 **Après l'étape 10 : calendrier unique, mises à jour automatiques (27/11/2026, 2.7.0)**, à confirmer à l'usage :
 - **Calendrier unique** (choix de l'utilisateur) : la page Emploi du temps disparaît ; le Calendrier a un mode
   « Emploi du temps » (bouton, en mode Cours ou tant qu'il est affiché ; `?timetable` dans l'adresse) : la

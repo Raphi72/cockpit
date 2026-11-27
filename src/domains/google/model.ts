@@ -2,26 +2,40 @@ import { addDaysISO } from '@/core/dates';
 import type { AppColor, PaletteKey } from '@/ui/data/ColorDot';
 
 /**
- * Google Agenda en lecture seule (V2, étape 8). La connexion, les jetons et les appels réseau sont côté
- * Rust (src-tauri/src/google.rs) ; ici, ce que l'interface fait de ce qu'il renvoie.
+ * Google Agenda (V2, étape 8 ; en écriture après la 2.7.0, voir edits/). La connexion, les jetons et les
+ * appels réseau sont côté Rust (src-tauri/src/google.rs) ; ici, ce que l'interface fait de ce qu'il renvoie.
  */
 
 /** Où en est la connexion : identifiants du client enregistrés, compte connecté. */
 /** `syncAllowed` : le droit sur le dossier caché de Drive (synchronisation, étape 9) a été donné. */
-export type GoogleStatus = { configured: boolean; connected: boolean; account: string | null; clientHint: string | null; syncAllowed: boolean };
+/** `writeAllowed` : le droit de modifier les événements (après la 2.7.0) a été donné. */
+export type GoogleStatus = {
+  configured: boolean;
+  connected: boolean;
+  account: string | null;
+  clientHint: string | null;
+  syncAllowed: boolean;
+  writeAllowed: boolean;
+};
 
-/** Un agenda tel que Google le décrit. */
-export type RemoteCalendar = { id: string; name: string; color: string | null; primary: boolean; selected: boolean };
+/** Un agenda tel que Google le décrit ; `writable` : on peut y écrire (sinon, retouches locales). */
+export type RemoteCalendar = { id: string; name: string; color: string | null; primary: boolean; selected: boolean; writable?: boolean };
 
 /** Un événement tel que Google le renvoie : un jour ('YYYY-MM-DD', fin exclue) ou une heure avec son décalage. */
 export type RemoteEvent = {
   id: string;
   title: string;
   location: string | null;
+  notes?: string | null;
   start: string;
   end: string;
   allDay: boolean;
   htmlLink: string | null;
+  /** L'événement répété dont celui-ci est une occurrence. */
+  seriesId?: string | null;
+  /** Le rattachement fait dans Cockpit (champs privés de l'événement). */
+  projectId?: string | null;
+  subjectId?: string | null;
 };
 
 /** Un agenda gardé en local, avec les choix faits dans Paramètres (affiché, couleur). */
@@ -34,6 +48,8 @@ export type GoogleCalendar = {
   shown: boolean;
   /** L'agenda des cours (l'emploi du temps de l'intranet, relié par iCal) : ses événements sont des cours. */
   isSchool: boolean;
+  /** On peut y écrire chez Google ; sinon, ses modifications restent des retouches dans Cockpit. */
+  writable: boolean;
   syncedAt: string | null;
 };
 
@@ -42,10 +58,14 @@ export type LocalEvent = {
   id: string;
   title: string;
   location: string | null;
+  notes?: string | null;
   startsAt: string;
   endsAt: string | null;
   allDay: boolean;
   htmlLink: string | null;
+  seriesId?: string | null;
+  projectId?: string | null;
+  subjectId?: string | null;
   /** Pour un agenda des cours : l'intitulé ramené au cours (voir parseCourseTitle), son type et ses profs. */
   course?: string | null;
   courseKind?: string | null;
@@ -73,7 +93,17 @@ export function syncWindow(today: string): { from: string; to: string; timeMin: 
  * demandé, il suffit de couper le décalage), ou des journées avec le dernier jour compris.
  */
 export function toLocalEvent(remote: RemoteEvent): LocalEvent {
-  const base = { id: remote.id, title: remote.title, location: remote.location, htmlLink: remote.htmlLink, allDay: remote.allDay };
+  const base = {
+    id: remote.id,
+    title: remote.title,
+    location: remote.location,
+    notes: remote.notes ?? null,
+    htmlLink: remote.htmlLink,
+    allDay: remote.allDay,
+    seriesId: remote.seriesId ?? null,
+    projectId: remote.projectId ?? null,
+    subjectId: remote.subjectId ?? null,
+  };
   if (remote.allDay) {
     const last = addDaysISO(remote.end, -1);
     return { ...base, startsAt: remote.start, endsAt: last > remote.start ? last : null };

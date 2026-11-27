@@ -32,6 +32,9 @@ type UiState = {
   /** Dernier compte choisi pour une transaction, proposé par défaut la fois suivante. */
   lastAccountId: string | null;
   setLastAccountId: (id: string) => void;
+  /** Dernier agenda choisi pour un nouvel événement : `null` pour Cockpit, sinon un agenda Google. */
+  lastEventCalendar: string | null;
+  setLastEventCalendar: (id: string | null) => void;
   /** Vue du calendrier, retrouvée à la visite suivante. */
   calendarView: CalendarView;
   setCalendarView: (view: CalendarView) => void;
@@ -74,6 +77,8 @@ export const useUiStore = create<UiState>()(
       setProjectTasksMode: (mode) => set({ projectTasksMode: mode }),
       lastAccountId: null,
       setLastAccountId: (id) => set({ lastAccountId: id }),
+      lastEventCalendar: null,
+      setLastEventCalendar: (id) => set({ lastEventCalendar: id }),
       calendarView: 'month',
       setCalendarView: (view) => set({ calendarView: view }),
       calendarHidden: [],
@@ -103,6 +108,7 @@ export const useUiStore = create<UiState>()(
         lastProjectTypeId: state.lastProjectTypeId,
         projectTasksMode: state.projectTasksMode,
         lastAccountId: state.lastAccountId,
+        lastEventCalendar: state.lastEventCalendar,
         calendarView: state.calendarView,
         calendarHidden: state.calendarHidden,
         calendarPlainTasks: state.calendarPlainTasks,

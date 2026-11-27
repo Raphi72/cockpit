@@ -12,9 +12,13 @@ import {
 import { useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { daysBetween, formatDateField } from '@/core/dates';
+import { useMoveGoogleEvent } from '@/domains/google/edits/hooks';
+import type { EventContent } from '@/domains/google/edits/model';
+import { useGoogleCalendars } from '@/domains/google/hooks';
+import { splitGoogleItemId } from '@/domains/google/model';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
 import { useMoveAgendaItem } from '../hooks';
-import { isRetimed, snapTime, type AgendaItem, type CalendarDrop } from '../model';
+import { isRetimed, movedAgendaItem, snapTime, type AgendaItem, type CalendarDrop } from '../model';
 import { AgendaMarker } from './AgendaChip';
 import type { DropData } from './drag';
 
@@ -48,6 +52,8 @@ type Dragging = { item: AgendaItem; grabDay: string };
  */
 export function CalendarDnd({ children, today }: { children: ReactNode; today: string }) {
   const move = useMoveAgendaItem();
+  const moveGoogle = useMoveGoogleEvent();
+  const { data: googleCalendars = [] } = useGoogleCalendars();
   const [dragging, setDragging] = useState<Dragging | null>(null);
   const [drop, setDrop] = useState<CalendarDrop | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
@@ -74,7 +80,27 @@ export function CalendarDnd({ children, today }: { children: ReactNode; today: s
     const final = dropOf(event);
     reset();
     if (!current || !final) return;
-    move.mutate({ item: current.item, days: daysBetween(current.grabDay, final.day), time: final.time, dropDay: final.day });
+    const days = daysBetween(current.grabDay, final.day);
+    if (current.item.source === 'google') {
+      // Un événement Google : son moment seulement (chez Google, ou en retouche pour un agenda en lecture seule).
+      const { item } = current;
+      const moved = movedAgendaItem(item, days, isRetimed(item, final) ? final.time : null);
+      const { calendarId, eventId } = splitGoogleItemId(item.id);
+      const content = (startsAt: string, endsAt: string | null): EventContent => ({
+        title: item.title,
+        location: item.detail,
+        notes: null,
+        startsAt,
+        endsAt,
+        allDay: item.allDay,
+        projectId: null,
+        subjectId: null,
+      });
+      const writable = googleCalendars.some((c) => c.id === calendarId && c.writable);
+      moveGoogle.mutate({ target: { calendarId, eventId, seriesId: null, writable }, before: content(item.start, item.end), after: content(moved.start, moved.end) });
+      return;
+    }
+    move.mutate({ item: current.item, days, time: final.time, dropDay: final.day });
   };
 
   const label =

@@ -26,9 +26,11 @@ const AUTH_URL: &str = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 const REVOKE_URL: &str = "https://oauth2.googleapis.com/revoke";
 const API: &str = "https://www.googleapis.com/calendar/v3";
-/// Lecture seule de tous les agendas (choix de l'étape 8), et le dossier caché de l'app sur Google Drive
-/// pour la synchronisation (étape 9) : Cockpit n'y voit que ses propres fichiers.
+/// Lire tous les agendas (étape 8), écrire leurs événements (après la 2.7.0 : modifier, créer et supprimer
+/// depuis Cockpit), et le dossier caché de l'app sur Google Drive pour la synchronisation (étape 9) :
+/// Cockpit n'y voit que ses propres fichiers.
 const CALENDAR_SCOPE: &str = "https://www.googleapis.com/auth/calendar.readonly";
+const EVENTS_SCOPE: &str = "https://www.googleapis.com/auth/calendar.events";
 pub(crate) const DRIVE_SCOPE: &str = "https://www.googleapis.com/auth/drive.appdata";
 
 /// Le coffre : un nom par application, l'app de développement à part (comme sa base).
@@ -179,7 +181,7 @@ fn decode(value: &str) -> String {
 }
 
 fn auth_url(client_id: &str, redirect_uri: &str, challenge: &str, state: &str) -> String {
-    let scope = format!("{CALENDAR_SCOPE} {DRIVE_SCOPE}");
+    let scope = format!("{CALENDAR_SCOPE} {EVENTS_SCOPE} {DRIVE_SCOPE}");
     let params = [
         ("client_id", client_id),
         ("redirect_uri", redirect_uri),
@@ -246,6 +248,13 @@ struct Attendee {
     response_status: Option<String>,
 }
 
+/// Les champs privés que Cockpit range dans un événement Google (son rattachement), invisibles ailleurs.
+#[derive(Deserialize, Default)]
+struct ExtendedProperties {
+    #[serde(default)]
+    private: std::collections::HashMap<String, String>,
+}
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RawEvent {
@@ -253,12 +262,20 @@ struct RawEvent {
     status: Option<String>,
     summary: Option<String>,
     location: Option<String>,
+    description: Option<String>,
     start: Option<EventTime>,
     end: Option<EventTime>,
     html_link: Option<String>,
+    recurring_event_id: Option<String>,
+    #[serde(default)]
+    extended_properties: Option<ExtendedProperties>,
     #[serde(default)]
     attendees: Vec<Attendee>,
 }
+
+/// Le projet ou la matière auxquels Cockpit a rattaché un événement Google.
+const PROJECT_PROPERTY: &str = "cockpitProjectId";
+const SUBJECT_PROPERTY: &str = "cockpitSubjectId";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -276,10 +293,15 @@ pub struct GoogleEvent {
     id: String,
     title: String,
     location: Option<String>,
+    notes: Option<String>,
     start: String,
     end: String,
     all_day: bool,
     html_link: Option<String>,
+    /// L'événement répété dont celui-ci est une occurrence.
+    series_id: Option<String>,
+    project_id: Option<String>,
+    subject_id: Option<String>,
 }
 
 /// Garde les événements à montrer : ni annulés, ni refusés, avec un début et une fin.
@@ -292,14 +314,20 @@ fn keep_events(raw: Vec<RawEvent>) -> Vec<GoogleEvent> {
             let all_day = start.date.is_some();
             let start = start.date.or(start.date_time)?;
             let end = end.date.or(end.date_time)?;
+            let private = e.extended_properties.unwrap_or_default().private;
+            let linked = |key: &str| private.get(key).filter(|v| !v.is_empty()).cloned();
             Some(GoogleEvent {
                 id: e.id,
                 title: e.summary.filter(|s| !s.trim().is_empty()).unwrap_or_else(|| "(Sans titre)".into()),
                 location: e.location.filter(|s| !s.trim().is_empty()),
+                notes: e.description.filter(|s| !s.trim().is_empty()),
                 start,
                 end,
                 all_day,
                 html_link: e.html_link,
+                series_id: e.recurring_event_id,
+                project_id: linked(PROJECT_PROPERTY),
+                subject_id: linked(SUBJECT_PROPERTY),
             })
         })
         .collect()
@@ -318,6 +346,8 @@ struct RawCalendar {
     selected: bool,
     #[serde(default)]
     hidden: bool,
+    /// « owner » ou « writer » : on peut y écrire ; « reader » : un agenda en lecture seule (iCal…).
+    access_role: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -337,6 +367,7 @@ pub struct GoogleCalendar {
     color: Option<String>,
     primary: bool,
     selected: bool,
+    writable: bool,
 }
 
 fn keep_calendars(raw: Vec<RawCalendar>) -> Vec<GoogleCalendar> {
@@ -348,6 +379,7 @@ fn keep_calendars(raw: Vec<RawCalendar>) -> Vec<GoogleCalendar> {
             color: c.background_color,
             primary: c.primary,
             selected: c.selected,
+            writable: matches!(c.access_role.as_deref(), Some("owner" | "writer")),
         })
         .collect()
 }
@@ -453,7 +485,7 @@ fn list_calendars(app: &AppHandle) -> Result<Vec<GoogleCalendar>, String> {
         let mut query = vec![
             ("minAccessRole", "reader"),
             ("maxResults", "250"),
-            ("fields", "items(id,summary,summaryOverride,backgroundColor,primary,selected,hidden),nextPageToken"),
+            ("fields", "items(id,summary,summaryOverride,backgroundColor,primary,selected,hidden,accessRole),nextPageToken"),
         ];
         if let Some(token) = page_token.as_deref() {
             query.push(("pageToken", token));
@@ -568,14 +600,18 @@ pub struct GoogleStatus {
     client_hint: Option<String>,
     /// Le droit sur le dossier caché de Drive (synchronisation) a été donné.
     sync_allowed: bool,
+    /// Le droit de modifier les événements a été donné (après la 2.7.0 ; sinon : se reconnecter).
+    write_allowed: bool,
 }
 
 fn status() -> Result<GoogleStatus, String> {
     let client: Option<Client> = vault_read(CLIENT_KEY)?;
     let token: Option<Token> = vault_read(TOKEN_KEY)?;
-    let sync_allowed = token.as_ref().and_then(|t| t.scopes.as_deref()).is_some_and(|s| s.split(' ').any(|scope| scope == DRIVE_SCOPE));
+    let granted = |wanted: &str| token.as_ref().and_then(|t| t.scopes.as_deref()).is_some_and(|s| s.split(' ').any(|scope| scope == wanted));
+    let (sync_allowed, write_allowed) = (granted(DRIVE_SCOPE), granted(EVENTS_SCOPE));
     Ok(GoogleStatus {
         sync_allowed,
+        write_allowed,
         configured: client.is_some(),
         connected: token.is_some(),
         account: token.and_then(|t| t.account),
@@ -673,7 +709,10 @@ pub async fn google_events(
                 ("timeMax", time_max.as_str()),
                 ("timeZone", time_zone.as_str()),
                 ("maxResults", "2500"),
-                ("fields", "items(id,status,summary,location,start,end,htmlLink,attendees(self,responseStatus)),nextPageToken"),
+                (
+                    "fields",
+                    "items(id,status,summary,location,description,start,end,htmlLink,recurringEventId,extendedProperties/private,attendees(self,responseStatus)),nextPageToken",
+                ),
             ];
             if let Some(token) = page_token.as_deref() {
                 query.push(("pageToken", token));
@@ -699,6 +738,105 @@ pub fn google_open_link(app: AppHandle, url: String) -> Result<(), String> {
     app.opener().open_url(url, None::<&str>).map_err(|e| e.to_string())
 }
 
+// ─── Écriture (après la 2.7.0) ──────────────────────────────────────────────
+
+/// Une écriture refusée se dit par son genre, avant « | » : `offline` (réessayer plus tard), `denied` (droit
+/// manquant : se reconnecter, ou agenda en lecture seule) ou `error` (Google refuse cette modification).
+fn write_error(kind: &str, message: impl Into<String>) -> String {
+    format!("{kind}|{}", message.into())
+}
+
+/// Un appel en écriture (POST, PATCH, DELETE). `gone` : les codes qui veulent dire « déjà fait » (un
+/// second envoi d'une création, d'une suppression) et valent un succès.
+fn api_write(app: &AppHandle, method: &str, path: &str, body: Option<&serde_json::Value>, gone: &[u16]) -> Result<Option<serde_json::Value>, String> {
+    let token = access_token(app).map_err(|message| {
+        let kind = if message.starts_with("Google injoignable") { "offline" } else { "denied" };
+        write_error(kind, message)
+    })?;
+    let url = format!("{API}{path}");
+    let auth = format!("Bearer {token}");
+    let result = match (method, body) {
+        ("POST", Some(body)) => agent().post(&url).header("Authorization", &auth).send_json(body),
+        ("PATCH", Some(body)) => agent().patch(&url).header("Authorization", &auth).send_json(body),
+        ("DELETE", _) => agent().delete(&url).header("Authorization", &auth).call(),
+        _ => return Err(write_error("error", "Écriture inconnue.")),
+    };
+    let mut response = result.map_err(|e| write_error("offline", network(e)))?;
+    let status = response.status().as_u16();
+    if gone.contains(&status) {
+        return Ok(None);
+    }
+    match status {
+        200 | 201 => Ok(response.body_mut().read_json::<serde_json::Value>().ok()),
+        204 => Ok(None),
+        401 => {
+            if let Ok(mut session) = app.state::<GoogleSession>().0.lock() {
+                *session = None;
+            }
+            Err(write_error("denied", RECONNECT))
+        }
+        403 => Err(write_error("denied", "Google refuse la modification : autorise-la dans Paramètres › Google Agenda, ou l'agenda est en lecture seule.")),
+        _ => {
+            let text = response.body_mut().read_to_string().unwrap_or_default();
+            Err(write_error("error", format!("Google Agenda a refusé la modification (HTTP {status}). {}", text.chars().take(200).collect::<String>())))
+        }
+    }
+}
+
+/// Crée un événement, avec l'identifiant choisi par Cockpit : un second envoi (l'autre appareil) ne le
+/// double pas (409 : il existe déjà).
+#[tauri::command]
+pub async fn google_event_insert(app: AppHandle, calendar_id: String, event: serde_json::Value) -> Result<(), String> {
+    blocking(move || api_write(&app, "POST", &format!("/calendars/{}/events", encode(&calendar_id)), Some(&event), &[409]).map(|_| ())).await
+}
+
+/// Change un événement (ou toute une série, par son identifiant) : seulement les champs envoyés.
+#[tauri::command]
+pub async fn google_event_patch(app: AppHandle, calendar_id: String, event_id: String, patch: serde_json::Value) -> Result<(), String> {
+    blocking(move || {
+        let path = format!("/calendars/{}/events/{}", encode(&calendar_id), encode(&event_id));
+        api_write(&app, "PATCH", &path, Some(&patch), &[]).map(|_| ())
+    })
+    .await
+}
+
+/// Supprime un événement (ou toute une série) ; déjà supprimé, c'est fait (404, 410).
+#[tauri::command]
+pub async fn google_event_delete(app: AppHandle, calendar_id: String, event_id: String) -> Result<(), String> {
+    blocking(move || {
+        let path = format!("/calendars/{}/events/{}", encode(&calendar_id), encode(&event_id));
+        api_write(&app, "DELETE", &path, None, &[404, 410]).map(|_| ())
+    })
+    .await
+}
+
+/// Change l'heure de toute une série : le premier événement de la série garde son jour, prend les nouvelles
+/// heures (`HH:MM`) ; Google les reporte sur chaque occurrence.
+#[tauri::command]
+pub async fn google_series_retime(
+    app: AppHandle,
+    calendar_id: String,
+    series_id: String,
+    start_time: String,
+    end_time: String,
+    time_zone: String,
+) -> Result<(), String> {
+    blocking(move || {
+        let path = format!("/calendars/{}/events/{}", encode(&calendar_id), encode(&series_id));
+        let master: serde_json::Value = api_get(&app, &path, &[("fields", "start,end")]).map_err(|message| {
+            let kind = if message.starts_with("Google injoignable") { "offline" } else { "error" };
+            write_error(kind, message)
+        })?;
+        let day = master["start"]["dateTime"].as_str().and_then(|s| s.get(..10)).ok_or_else(|| write_error("error", "Cette série n'a pas d'heure."))?;
+        let patch = serde_json::json!({
+            "start": { "dateTime": format!("{day}T{start_time}:00"), "timeZone": time_zone },
+            "end": { "dateTime": format!("{day}T{end_time}:00"), "timeZone": time_zone },
+        });
+        api_write(&app, "PATCH", &path, Some(&patch), &[]).map(|_| ())
+    })
+    .await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -717,7 +855,9 @@ mod tests {
         let url = auth_url("abc.apps.googleusercontent.com", "http://127.0.0.1:5000", "defi", "etat");
         assert!(url.starts_with("https://accounts.google.com/o/oauth2/v2/auth?client_id=abc.apps.googleusercontent.com&"));
         assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A5000"));
-        assert!(url.contains("scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.appdata"));
+        assert!(url.contains(
+            "scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar.events%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.appdata"
+        ));
         assert!(url.contains("include_granted_scopes=true"));
         assert!(url.contains("code_challenge_method=S256") && url.contains("access_type=offline"));
         assert_eq!(encode("fr.french#holiday@group.v.calendar.google.com"), "fr.french%23holiday%40group.v.calendar.google.com");
@@ -738,7 +878,7 @@ mod tests {
     fn garde_les_evenements_a_montrer() {
         let page: EventPage = serde_json::from_str(
             r#"{"items":[
-                {"id":"a","summary":"Dentiste","location":"Lyon","start":{"dateTime":"2026-11-27T10:00:00+01:00"},"end":{"dateTime":"2026-11-27T11:00:00+01:00"},"htmlLink":"https://www.google.com/calendar/event?eid=a"},
+                {"id":"a","summary":"Dentiste","location":"Lyon","description":"Apporter la carte","start":{"dateTime":"2026-11-27T10:00:00+01:00"},"end":{"dateTime":"2026-11-27T11:00:00+01:00"},"htmlLink":"https://www.google.com/calendar/event?eid=a","recurringEventId":"serie","extendedProperties":{"private":{"cockpitProjectId":"p1","cockpitSubjectId":""}}},
                 {"id":"b","start":{"date":"2026-11-28"},"end":{"date":"2026-11-29"}},
                 {"id":"c","status":"cancelled","summary":"Annulé","start":{"date":"2026-11-28"},"end":{"date":"2026-11-29"}},
                 {"id":"d","summary":"Refusé","start":{"date":"2026-11-28"},"end":{"date":"2026-11-29"},"attendees":[{"self":true,"responseStatus":"declined"}]},
@@ -751,10 +891,13 @@ mod tests {
         assert_eq!(events[0].start, "2026-11-27T10:00:00+01:00");
         assert!(!events[0].all_day && events[1].all_day);
         assert_eq!(events[1].title, "(Sans titre)");
+        assert_eq!(events[0].notes.as_deref(), Some("Apporter la carte"));
+        assert_eq!(events[0].series_id.as_deref(), Some("serie"));
+        assert_eq!((events[0].project_id.as_deref(), events[0].subject_id.as_deref()), (Some("p1"), None));
 
         let calendars: CalendarPage = serde_json::from_str(
             r##"{"items":[
-                {"id":"moi@gmail.com","summary":"moi@gmail.com","summaryOverride":"Perso","backgroundColor":"#9fe1e7","primary":true,"selected":true},
+                {"id":"moi@gmail.com","summary":"moi@gmail.com","summaryOverride":"Perso","backgroundColor":"#9fe1e7","primary":true,"selected":true,"accessRole":"owner"},
                 {"id":"x@group.calendar.google.com","summary":"Cours","selected":false},
                 {"id":"y","summary":"Caché","hidden":true}
             ]}"##,
@@ -764,5 +907,6 @@ mod tests {
         assert_eq!(calendars.len(), 2);
         assert_eq!(calendars[0].name, "Perso");
         assert!(calendars[0].primary && !calendars[1].selected);
+        assert!(calendars[0].writable && !calendars[1].writable);
     }
 }

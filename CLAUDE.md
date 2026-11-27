@@ -53,7 +53,7 @@ Rust et cargo sont dans `%USERPROFILE%\.cargo\bin` : dans PowerShell, ajouter `$
 - Écritures multi-tables via `db.batch([...])` (atomique). Mutations : invalider les clés concernées (`src/core/query-keys.ts`).
 - **Recherche** : l'index FTS5 `search_index` est tenu à jour par des triggers (migration 0002). Une nouvelle table cherchable doit y ajouter ses triggers, dans une nouvelle migration. En mode navigateur (sql.js, sans FTS5), la recherche passe par `LIKE`.
 - **Suppressions** : toujours avec « Annuler » dans le toast (`undo: true` sur l'action, déclenchée aussi par Ctrl+Z), jamais de confirmation définitive.
-- **Google** : réseau, OAuth et jetons côté Rust seulement ; identifiants et jetons dans le Gestionnaire d'identification de Windows, **jamais** dans la base, les exports ou le dépôt (public).
+- **Google** : réseau, OAuth et jetons côté Rust seulement ; les événements Google se modifient par la file `google_edits` (voir le mémo) ; identifiants et jetons dans le Gestionnaire d'identification de Windows, **jamais** dans la base, les exports ou le dépôt (public).
 - **Animations** : composants `m` de Motion seulement (jamais `motion` : `LazyMotion` est strict), durées via `transitionFor`.
 - **Base au démarrage** (`src-tauri/src/db/recovery.rs`) : `quick_check` ; une base abîmée est mise de côté (`backups/abimee_…`) et remplacée par la dernière sauvegarde intacte, l'interface le dit une fois (`db_recovery`) ; en quittant, le journal est versé dans la base.
 - **Règles propres à chaque domaine** : voir le mémo, avant de modifier un domaine.

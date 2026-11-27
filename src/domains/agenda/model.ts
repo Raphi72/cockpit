@@ -536,11 +536,11 @@ export function layoutRow(items: AgendaItem[], days: string[]): RowLayout {
  * L'élément se décale du nombre de jours entre le jour où on l'a pris et celui-ci.
  */
 /**
- * Ce qui se glisse dans le calendrier. Un cours non : il vient de la semaine type (page Emploi du temps).
+ * Ce qui se glisse dans le calendrier. Un cours de la semaine type non (il se change sur sa matière) ; un
+ * événement Google oui (après la 2.7.0 : chez Google, ou en retouche dans Cockpit pour l'intranet).
  */
 export function isMovable(item: Pick<AgendaItem, 'source'>): boolean {
-  // Un cours vient de la semaine type ; un événement Google se change dans Google Agenda.
-  return item.source !== 'class' && item.source !== 'google';
+  return item.source !== 'class';
 }
 
 /** La vue mois ne montre ni les cours ni les blocs de la journée : une routine qui cacherait le reste. */
@@ -553,7 +553,7 @@ export type CalendarDrop = { day: string; time: string | null };
 
 /** Un événement à heure fixe déposé sur un créneau change d'heure ; le reste change seulement de jour. */
 export function isRetimed(item: Pick<AgendaItem, 'source' | 'allDay'>, drop: CalendarDrop): boolean {
-  return item.source === 'event' && !item.allDay && drop.time !== null;
+  return (item.source === 'event' || item.source === 'google') && !item.allDay && drop.time !== null;
 }
 
 /** 'YYYY-MM-DD' ou 'YYYY-MM-DDTHH:MM' décalé de `days` jours, l'heure gardée. */
@@ -567,7 +567,7 @@ function shiftStamp(stamp: string, days: number): string {
  * fixe déposé sur un créneau prend cette heure et garde sa durée.
  */
 export function movedAgendaItem(item: AgendaItem, days: number, time: string | null = null): AgendaItem {
-  if (time !== null && item.source === 'event' && !item.allDay) {
+  if (time !== null && (item.source === 'event' || item.source === 'google') && !item.allDay) {
     const date = addDaysISO(item.start.slice(0, 10), days);
     const duration = item.end ? timeToMinutes(item.end.slice(11, 16)) - timeToMinutes(item.start.slice(11, 16)) : null;
     const endMinutes = duration === null ? null : timeToMinutes(time) + duration;

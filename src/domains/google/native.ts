@@ -1,4 +1,5 @@
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import type { GoogleWriter } from './edits/service';
 import type { GoogleStatus, RemoteCalendar, RemoteEvent } from './model';
 
 /**
@@ -7,7 +8,7 @@ import type { GoogleStatus, RemoteCalendar, RemoteEvent } from './model';
  */
 export const googleAvailable = (): boolean => isTauri();
 
-const OFFLINE: GoogleStatus = { configured: false, connected: false, account: null, clientHint: null, syncAllowed: false };
+const OFFLINE: GoogleStatus = { configured: false, connected: false, account: null, clientHint: null, syncAllowed: false, writeAllowed: false };
 
 export function readGoogleStatus(): Promise<GoogleStatus> {
   return googleAvailable() ? invoke<GoogleStatus>('google_status') : Promise.resolve(OFFLINE);
@@ -40,3 +41,12 @@ export function fetchEvents(calendarId: string, timeMin: string, timeMax: string
 export function openGoogleLink(url: string): Promise<void> {
   return invoke('google_open_link', { url });
 }
+
+/** L'écriture chez Google (edits/service.ts) ; une erreur se lit avec parseWriteError. */
+export const googleWriter: GoogleWriter = {
+  insert: (calendarId, event) => invoke('google_event_insert', { calendarId, event }),
+  patch: (calendarId, eventId, patch) => invoke('google_event_patch', { calendarId, eventId, patch }),
+  remove: (calendarId, eventId) => invoke('google_event_delete', { calendarId, eventId }),
+  retime: (calendarId, seriesId, startTime, endTime, timeZone) =>
+    invoke('google_series_retime', { calendarId, seriesId, startTime, endTime, timeZone }),
+};

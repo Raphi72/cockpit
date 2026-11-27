@@ -17,6 +17,7 @@ import {
   fetchEvents,
   forgetGoogle,
   googleAvailable,
+  googleWriter,
   readGoogleStatus,
   saveGoogleClient,
 } from './native';
@@ -38,6 +39,7 @@ import {
   setCalendarShownStatement,
   setCourseLinkStatement,
 } from './repository';
+import { pushEdits } from './edits/service';
 import { syncGoogle } from './service';
 
 /** Les erreurs de la connexion Google arrivent déjà rédigées (texte du natif) : telles quelles. */
@@ -46,7 +48,7 @@ export function googleError(error: unknown): string {
 }
 
 /** Après une relecture ou un réglage : les agendas, tout ce qui montre l'agenda, et les matières (créées par les cours). */
-function refresh(queryClient: QueryClient): void {
+export function refresh(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.google.all });
   void queryClient.invalidateQueries({ queryKey: queryKeys.agenda.all });
   void queryClient.invalidateQueries({ queryKey: queryKeys.school.all });
@@ -64,16 +66,26 @@ export function useGoogleCalendars() {
 let running: Promise<number> | null = null;
 
 function runSync(): Promise<number> {
-  running ??= syncGoogle(
-    db,
-    { calendars: fetchCalendars, events: fetchEvents },
-    todayISO(),
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-    nowTimestamp(),
-  ).finally(() => {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  running ??= (async () => {
+    // D'abord les modifications faites dans Cockpit (hors ligne ou sans le droit : elles attendent).
+    // Pas dans le navigateur de développement : Google n'y existe pas.
+    if (googleAvailable()) await pushEdits(db, googleWriter, timeZone, nowTimestamp()).catch(() => undefined);
+    return syncGoogle(db, { calendars: fetchCalendars, events: fetchEvents }, todayISO(), timeZone, nowTimestamp());
+  })().finally(() => {
     running = null;
   });
   return running;
+}
+
+/**
+ * Après une modification faite dans Cockpit : l'envoyer et relire, en arrière-plan, sans rien dire en cas
+ * d'échec (hors ligne, droit à donner) : elle attend, et la copie locale la montre déjà.
+ */
+export function syncGoogleInBackground(queryClient: QueryClient): void {
+  void runSync()
+    .catch(() => undefined)
+    .finally(() => refresh(queryClient));
 }
 
 /** Relire Google Agenda maintenant. Une erreur (réseau, connexion coupée) est dite, la copie d'avant reste. */

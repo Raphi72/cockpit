@@ -3,15 +3,26 @@ import type { Db, Statement } from '@/core/db';
 import { newId } from '@/core/ids';
 import { freeSubjectColor, nearestPaletteKey, planCalendars, sameName, type GoogleCalendar, type LocalEvent, type RemoteCalendar } from './model';
 
-type CalendarRow = Omit<GoogleCalendar, 'isPrimary' | 'shown' | 'isSchool'> & { isPrimary: number; shown: number; isSchool: number };
+type CalendarRow = Omit<GoogleCalendar, 'isPrimary' | 'shown' | 'isSchool' | 'writable'> & {
+  isPrimary: number;
+  shown: number;
+  isSchool: number;
+  writable: number;
+};
 
 /** Les agendas gardés en local : le principal d'abord, puis par ordre d'arrivée. */
 export async function listGoogleCalendars(db: Db): Promise<GoogleCalendar[]> {
   const rows = await db.query<CalendarRow>(
-    `SELECT id, name, google_color, color, is_primary, shown, is_school, synced_at FROM google_calendars
+    `SELECT id, name, google_color, color, is_primary, shown, is_school, writable, synced_at FROM google_calendars
      ORDER BY is_primary DESC, sort_order`,
   );
-  return rows.map((row) => ({ ...row, isPrimary: row.isPrimary === 1, shown: row.shown === 1, isSchool: row.isSchool === 1 }));
+  return rows.map((row) => ({
+    ...row,
+    isPrimary: row.isPrimary === 1,
+    shown: row.shown === 1,
+    isSchool: row.isSchool === 1,
+    writable: row.writable === 1,
+  }));
 }
 
 /**
@@ -24,15 +35,15 @@ export function syncCalendarsStatements(remote: RemoteCalendar[], local: Pick<Go
   return [
     ...plan.added.map(
       (c): Statement => ({
-        sql: `INSERT INTO google_calendars (id, name, google_color, color, is_primary, shown, sort_order, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, COALESCE((SELECT MAX(sort_order) FROM google_calendars), 0) + 1, ?, ?)`,
-        params: [c.id, c.name, c.color, nearestPaletteKey(c.color), c.primary ? 1 : 0, c.selected || c.primary ? 1 : 0, now, now],
+        sql: `INSERT INTO google_calendars (id, name, google_color, color, is_primary, shown, writable, sort_order, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE((SELECT MAX(sort_order) FROM google_calendars), 0) + 1, ?, ?)`,
+        params: [c.id, c.name, c.color, nearestPaletteKey(c.color), c.primary ? 1 : 0, c.selected || c.primary ? 1 : 0, c.writable ? 1 : 0, now, now],
       }),
     ),
     ...plan.kept.map(
       (c): Statement => ({
-        sql: 'UPDATE google_calendars SET name = ?, google_color = ?, is_primary = ?, updated_at = ? WHERE id = ?',
-        params: [c.name, c.color, c.primary ? 1 : 0, now, c.id],
+        sql: 'UPDATE google_calendars SET name = ?, google_color = ?, is_primary = ?, writable = ?, updated_at = ? WHERE id = ?',
+        params: [c.name, c.color, c.primary ? 1 : 0, c.writable ? 1 : 0, now, c.id],
       }),
     ),
     ...plan.removed.map((id): Statement => ({ sql: 'DELETE FROM google_calendars WHERE id = ?', params: [id] })),
@@ -46,13 +57,15 @@ export function replaceEventsStatements(calendarId: string, events: LocalEvent[]
     ...events.map(
       (e): Statement => ({
         sql: `INSERT OR REPLACE INTO google_events
-                (calendar_id, id, title, location, starts_at, ends_at, all_day, html_link, course, course_kind, teacher)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                (calendar_id, id, title, location, notes, starts_at, ends_at, all_day, html_link, course, course_kind, teacher,
+                 series_id, project_id, subject_id)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: [
           calendarId,
           e.id,
           e.title,
           e.location,
+          e.notes ?? null,
           e.startsAt,
           e.endsAt,
           e.allDay ? 1 : 0,
@@ -60,6 +73,9 @@ export function replaceEventsStatements(calendarId: string, events: LocalEvent[]
           e.course ?? null,
           e.courseKind ?? null,
           e.teacher ?? null,
+          e.seriesId ?? null,
+          e.projectId ?? null,
+          e.subjectId ?? null,
         ],
       }),
     ),
@@ -242,16 +258,38 @@ export type GoogleEventDetail = LocalEvent & {
   subjectName: string | null;
   /** Vrai si l'intitulé a été marqué « pas un cours ». */
   ignored: boolean;
+  calendarId: string;
+  /** L'agenda accepte les modifications chez Google ; sinon, elles restent dans Cockpit. */
+  writable: boolean;
+  /** Retouché dans Cockpit (pas encore chez Google, ou agenda en lecture seule). */
+  edited: boolean;
+  /** Le rattachement fait dans Cockpit (un projet ou une matière). */
+  linkedProjectId: string | null;
+  linkedSubjectId: string | null;
+  /** Des modifications attendent d'être envoyées ; la dernière raison d'un refus de Google. */
+  pendingEdits: number;
+  editError: string | null;
 };
 
 /** Un événement copié, son agenda et, pour un cours, sa matière (fenêtre de détail). */
 export function getGoogleEvent(db: Db, calendarId: string, eventId: string): Promise<GoogleEventDetail | undefined> {
-  type Row = Omit<GoogleEventDetail, 'allDay' | 'isSchool' | 'ignored'> & { allDay: number; isSchool: number; linked: number };
+  type Row = Omit<GoogleEventDetail, 'allDay' | 'isSchool' | 'ignored' | 'writable' | 'edited'> & {
+    allDay: number;
+    isSchool: number;
+    linked: number;
+    writable: number;
+    edited: number;
+  };
   return db
     .queryOne<Row>(
-      `SELECT g.id, g.title, g.location, g.starts_at, g.ends_at, g.all_day, g.html_link, g.course, g.course_kind, g.teacher,
-              c.name AS calendar_name, COALESCE(s.color, c.color) AS color, c.is_school,
-              cl.subject_id, s.name AS subject_name, cl.course IS NOT NULL AS linked
+      `SELECT g.id, g.title, g.location, g.notes, g.starts_at, g.ends_at, g.all_day, g.html_link, g.course, g.course_kind, g.teacher,
+              g.series_id, g.calendar_id, g.edited, g.project_id AS linked_project_id, g.subject_id AS linked_subject_id,
+              c.name AS calendar_name, COALESCE(s.color, c.color) AS color, c.is_school, c.writable,
+              cl.subject_id, s.name AS subject_name, cl.course IS NOT NULL AS linked,
+              (SELECT COUNT(*) FROM google_edits e WHERE e.calendar_id = g.calendar_id AND e.status = 'pending'
+                 AND (e.event_id = g.id OR (e.scope = 'all' AND e.series_id = g.series_id))) AS pending_edits,
+              (SELECT e.error FROM google_edits e WHERE e.calendar_id = g.calendar_id AND e.error IS NOT NULL
+                 AND (e.event_id = g.id OR (e.scope = 'all' AND e.series_id = g.series_id)) ORDER BY e.updated_at DESC LIMIT 1) AS edit_error
        FROM google_events g
        JOIN google_calendars c ON c.id = g.calendar_id
        LEFT JOIN course_links cl ON c.is_school = 1 AND cl.course = g.course
@@ -266,6 +304,8 @@ export function getGoogleEvent(db: Db, calendarId: string, eventId: string): Pro
           allDay: row.allDay === 1,
           isSchool: row.isSchool === 1,
           ignored: row.isSchool === 1 && row.linked === 1 && row.subjectId === null,
+          writable: row.writable === 1,
+          edited: row.edited === 1,
         },
     );
 }

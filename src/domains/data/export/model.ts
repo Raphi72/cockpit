@@ -63,6 +63,8 @@ export const EXPORT_TABLES = [
   { table: 'exercises', key: 'exercises' },
   { table: 'workouts', key: 'workouts' },
   { table: 'workout_sets', key: 'workoutSets' },
+  // Les modifications d'événements Google faites dans Cockpit (la copie de Google, elle, se relit).
+  { table: 'google_edits', key: 'googleEdits' },
 ] as const;
 
 export type ExportTableKey = (typeof EXPORT_TABLES)[number]['key'];
