@@ -7,8 +7,16 @@ Locale, hors ligne, sans compte. Conception complète : [docs/CONCEPTION.md](doc
 
 ## Télécharger
 
-L'installeur Windows est joint à chaque [version publiée](https://github.com/Raphi72/cockpit/releases/latest) : `Cockpit_<version>_x64-setup.exe`.
-Il s'installe pour l'utilisateur courant (pas besoin de droits administrateur). L'installeur n'est pas signé : Windows SmartScreen peut afficher un avertissement, choisir « Informations complémentaires » puis « Exécuter quand même ».
+L'installeur Windows est joint à chaque [version publiée](https://github.com/Raphi72/cockpit/releases/latest) : `Cockpit_<version>_x64-setup.exe`, et l'appli Android : `Cockpit_<version>_android.apk`.
+Il s'installe pour l'utilisateur courant (pas besoin de droits administrateur). L'installeur n'est pas signé par Microsoft : Windows SmartScreen peut afficher un avertissement, choisir « Informations complémentaires » puis « Exécuter quand même ».
+Depuis la 2.7.0, Cockpit se met à jour tout seul depuis ces versions (le PC propose « Redémarrer », le téléphone « Installer »).
+
+## Connecter ton compte Google
+
+Google Agenda et la synchronisation entre le PC et le téléphone demandent un projet Google Cloud à toi,
+gratuit (une dizaine de minutes, une fois) : le pas-à-pas est dans [docs/google-cloud.md](docs/google-cloud.md).
+L'identifiant, le code secret et les jetons restent sur tes appareils (Gestionnaire d'identification de
+Windows, dossier privé de l'appli sur Android), jamais dans le dépôt.
 
 ## Ce qu'elle fait
 
@@ -22,7 +30,8 @@ Il s'installe pour l'utilisateur courant (pas besoin de droits administrateur). 
 - **Modes Travail et Cours** (`Ctrl M`) : devoirs reliés à un cours précis, vraie semaine de cours lue dans Google Agenda, examens et notes.
 - **Journée** : des blocs glissés sur la journée, une liste « À caser », et un mode focus plein écran avec minuteur et liste à cocher.
 - **Pages** : des notes comme dans Notion ; une ligne devient tâche, devoir, événement ou projet.
-- **Google** : Google Agenda (en lecture seule) et synchronisation chiffrée par un dossier caché de Google Drive (appli Android en cours).
+- **Google** : Google Agenda, en lecture et en écriture (aussi hors connexion : les changements partent au retour du réseau), et synchronisation chiffrée par un dossier caché de Google Drive. Mise en place : [docs/google-cloud.md](docs/google-cloud.md).
+- **Appli Android** : les pages du PC sur une colonne, reliée au PC par un code QR.
 
 Pour commencer : le [tuto](docs/TUTO.md).
 

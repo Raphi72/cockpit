@@ -120,7 +120,8 @@ l'arrêter. **Coche** au fur et à mesure : la tâche est vraiment terminée dan
 
 ### Relier Google Agenda (une fois)
 
-Paramètres › **Google Agenda**. Le pas-à-pas est dans [google-cloud.md](google-cloud.md). Ton emploi du
+Paramètres › **Google Agenda**. Le pas-à-pas complet (projet Google Cloud, connexion, téléphone, et que faire
+en cas de souci) est dans [google-cloud.md](google-cloud.md). Ton emploi du
 temps de l'intranet, abonné dans Google par un lien iCal, est **reconnu tout seul** comme agenda des cours
 (sinon : bouton « Agenda des cours » à côté de son nom). Cockpit relit Google toutes les 15 minutes.
 
