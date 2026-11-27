@@ -5,6 +5,7 @@ import { accepts } from '@/domains/day/components/drag';
 import type { TaskItem } from '@/domains/tasks/model';
 import {
   blockFromModule,
+  blockFromTask,
   blockLoad,
   blocksFromWeekTemplate,
   blocksToReview,
@@ -138,10 +139,27 @@ describe('journée : heures et blocs', () => {
     expect(accepts('module', 'trash')).toBe(true);
     expect(accepts('task', 'trash')).toBe(false);
     expect(accepts('task', 'block')).toBe(true);
+    // Sur une heure libre, une tâche devient un bloc à elle.
+    expect(accepts('task', 'column')).toBe(true);
     expect(accepts('block', 'column')).toBe(true);
     // Un bloc revient « à caser » ; un module de la bibliothèque, non.
     expect(accepts('block', 'to-place')).toBe(true);
     expect(accepts('module', 'to-place')).toBe(false);
+  });
+
+  it('une tâche posée sur la journée devient un bloc à elle, de la durée de son estimation', () => {
+    const task = { title: 'Rédiger le compte rendu', estimateMin: 90, projectColor: 'orange' as const, subjectColor: null, subjectId: null };
+    expect(blockFromTask(task, TODAY, 14 * 60 + 7)).toMatchObject({
+      templateId: null,
+      startsAt: '14:00',
+      endsAt: '15:30',
+      title: 'Rédiger le compte rendu',
+      color: 'orange',
+      mode: 'work',
+    });
+    // Sans estimation : une heure ; un devoir prend la couleur de sa matière et le mode Cours.
+    const homework = { ...task, estimateMin: null, projectColor: null, subjectColor: 'blue' as const, subjectId: 's1' };
+    expect(blockFromTask(homework, TODAY, 23 * 60 + 30)).toMatchObject({ startsAt: '23:30', endsAt: '24:00', color: 'blue', mode: 'school' });
   });
 
   it('un bloc remis à caser redevient un module pour une fois, de même durée', () => {

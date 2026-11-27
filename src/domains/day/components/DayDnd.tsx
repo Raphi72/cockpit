@@ -14,22 +14,28 @@ import { createPortal } from 'react-dom';
 import { formatDateField } from '@/core/dates';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
 import { eventClientY, useDragSensors } from '@/ui/data/drag-sensors';
-import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, usePlaceOneOff, useUnplaceBlock, useUpdateBlock } from '../hooks';
+import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, usePlaceOneOff, usePlaceTask, useUnplaceBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
-import { blockFromModule, movedBlock } from '../model';
+import { blockFromModule, blockFromTask, movedBlock } from '../model';
 import { accepts, type DayDragData, type DayDropData } from './drag';
 import { colorVar } from '@/ui/data/ColorDot';
 
 /** Ne garde que les cibles qui acceptent ce qu'on tient (une tâche ne se pose pas dans une colonne). */
 const collision: CollisionDetection = (args) => {
   const type = (args.active.data.current as DayDragData | undefined)?.type;
-  return pointerWithin({
+  const hits = pointerWithin({
     ...args,
     droppableContainers: args.droppableContainers.filter((container) => {
       const kind = (container.data.current as DayDropData | undefined)?.kind;
       return type !== undefined && kind !== undefined && accepts(type, kind);
     }),
   });
+  // Une tâche lâchée sur un bloc va dedans, plutôt que de devenir un bloc à elle sur la colonne dessous.
+  if (type !== 'task') return hits;
+  const kindOf = (hit: (typeof hits)[number]) =>
+    (hit.data?.droppableContainer?.data.current as DayDropData | undefined)?.kind;
+  const inBlock = hits.filter((hit) => kindOf(hit) === 'block');
+  return inBlock.length > 0 ? inBlock : hits;
 };
 
 /**
@@ -86,6 +92,7 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   const placeOneOff = usePlaceOneOff();
   const unplaceBlock = useUnplaceBlock();
   const moveTasks = useMoveTasksToBlock();
+  const placeTask = usePlaceTask();
   const [dragging, setDragging] = useState<DayDragData | null>(null);
   const [label, setLabel] = useState<string | null>(null);
   // Souris : un petit seuil. Téléphone : un appui long (glisser tout de suite fait défiler la journée).
@@ -131,11 +138,13 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
     if (overKind === 'trash') return setLabel('Supprimer');
     if (overKind === 'to-place' && dragging?.type === 'block') return setLabel('À caser');
     const at = minutesOf(event, pointerY.current, grabOffset.current);
-    if (!at || !dragging || dragging.type === 'task') return setLabel(null);
+    if (!at || !dragging) return setLabel(null);
     const time =
-      dragging.type === 'module'
-        ? blockFromModule(dragging.module, at.day, at.minutes).startsAt
-        : movedBlock(dragging.block, at.day, at.minutes).startsAt;
+      dragging.type === 'task'
+        ? blockFromTask(dragging.task, at.day, at.minutes).startsAt
+        : dragging.type === 'module'
+          ? blockFromModule(dragging.module, at.day, at.minutes).startsAt
+          : movedBlock(dragging.block, at.day, at.minutes).startsAt;
     const next = at.day === today ? time : `${formatDateField(at.day, today)} · ${time}`;
     if (next !== label) setLabel(next);
   };
@@ -150,6 +159,10 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
         moveTasks.mutate({ taskIds: [current.task.id], blockId: drop.block.id, message: `Dans « ${drop.block.title} ».` });
       } else if (drop?.kind === 'to-place' && current.task.blockId !== null) {
         moveTasks.mutate({ taskIds: [current.task.id], blockId: null, message: 'Sortie du bloc.' });
+      } else if (drop?.kind === 'column') {
+        // Sur une heure libre : la tâche y devient un bloc à elle.
+        const at = minutesOf(event, pointerY.current, grabOffset.current);
+        if (at) placeTask.mutate({ task: current.task, input: blockFromTask(current.task, at.day, at.minutes) });
       }
       return;
     }

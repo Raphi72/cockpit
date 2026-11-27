@@ -148,6 +148,29 @@ export function usePlaceOneOff() {
 }
 
 /**
+ * Une tâche lâchée sur une heure libre : un bloc à elle, et elle dedans, dans le même lot. « Annuler »
+ * la ressort et retire le bloc.
+ */
+export function usePlaceTask() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ task, input }: { task: { id: string; title: string; blockId: string | null }; input: BlockInput }) => {
+      const id = newId();
+      const now = nowTimestamp();
+      await db.batch([insertBlockStatement(id, input, now), setTasksBlockStatement([task.id], id, now)]);
+      return id;
+    },
+    onSuccess: (id, { task, input }) => {
+      invalidateDay(queryClient);
+      announce(queryClient, `« ${shorten(task.title)} » posée à ${input.startsAt}.`, [
+        setTasksBlockStatement([task.id], task.blockId, nowTimestamp()),
+        deleteBlockStatement(id),
+      ]);
+    },
+  });
+}
+
+/**
  * Remet un bloc dans « À caser » : il redevient un module « pour une fois » et ses tâches en sortent,
  * dans le même lot. « Annuler » repose le bloc, avec ses tâches.
  */

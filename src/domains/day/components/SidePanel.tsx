@@ -46,7 +46,7 @@ function ToPlaceRow({ task, due }: { task: TaskItem; due?: string }) {
       {...drag.listeners}
       {...drag.attributes}
       onClick={() => openTask(task.id)}
-      title="Glisser dans un bloc"
+      title="Glisser sur la journée (elle y devient un bloc) ou dans un bloc"
       className={`-mx-2 flex min-h-9 cursor-grab items-center gap-2 rounded-md px-2 text-left transition-colors duration-[120ms] ease-soft hover:bg-hover active:cursor-grabbing ${drag.isDragging ? 'opacity-40' : ''}`}
     >
       {color ? <ColorDot color={color} /> : <span className="size-2 shrink-0 rounded-full border border-line-strong" />}
@@ -162,7 +162,10 @@ export function SidePanel({
               </ul>
             </>
           )}
-          <p className="mt-2 text-meta text-ink-3">Glisse une tâche dans un bloc ; dépose-la ici pour l’en sortir. Un bloc lâché ici revient à caser.</p>
+          <p className="mt-2 text-meta text-ink-3">
+            Glisse une tâche sur la journée (elle y devient un bloc) ou dans un bloc ; dépose-la ici pour l’en sortir. Un bloc lâché ici
+            revient à caser.
+          </p>
         </section>
       )}
 

@@ -135,6 +135,28 @@ export function validateBlock(input: Pick<BlockInput, 'title' | 'date' | 'starts
 }
 
 /** Un module posé un jour à une heure : il garde sa durée, sans dépasser minuit. */
+/**
+ * Une tâche (ou un devoir) lâchée sur une heure libre de la journée : un bloc à elle, à son nom, de la
+ * durée de son estimation (1 h sans estimation), à la couleur de son projet ou de sa matière.
+ */
+export function blockFromTask(
+  task: { title: string; estimateMin: number | null; projectColor: AppColor | null; subjectColor: AppColor | null; subjectId: string | null },
+  date: string,
+  startMin: number,
+): BlockInput {
+  const start = Math.min(Math.max(snap(startMin), 0), DAY_MINUTES - MIN_BLOCK_MIN);
+  return {
+    templateId: null,
+    date,
+    startsAt: fromMinutes(start),
+    endsAt: fromMinutes(Math.min(start + taskMinutes(task), DAY_MINUTES)),
+    title: task.title,
+    icon: task.subjectId ? 'notebook' : 'briefcase',
+    color: task.projectColor ?? task.subjectColor ?? 'slate',
+    mode: task.subjectId ? 'school' : 'work',
+  };
+}
+
 export function blockFromModule(module: Module, date: string, startMin: number): BlockInput {
   const start = Math.min(Math.max(snap(startMin), 0), DAY_MINUTES - MIN_BLOCK_MIN);
   return {
