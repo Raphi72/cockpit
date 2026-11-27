@@ -70,7 +70,7 @@ export function ProjectDetailPage() {
         </Menu>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-16">
+      <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-16 phone:grid-cols-1 phone:gap-12">
         <div className="min-w-0">
           <InlineText
             value={project.name}
@@ -107,14 +107,15 @@ export function ProjectDetailPage() {
           </section>
         </div>
 
-        <aside className="border-l border-line pl-8">
+        {/* Sur le téléphone : sous le contenu, et sans l'argent (seulement dans « À surveiller », choix de l'étape 10). */}
+        <aside className="border-l border-line pl-8 phone:border-l-0 phone:pl-0">
           <SideHeading>Propriétés</SideHeading>
           <ProjectProperties project={project} today={today} />
           <div className="mt-8">
             <SideHeading>Prochains événements</SideHeading>
             <ProjectEvents projectId={project.id} today={today} />
           </div>
-          <div className="mt-8">
+          <div className="mt-8 phone:hidden">
             <SideHeading>Finances</SideHeading>
             <ProjectFinance project={project} today={today} />
           </div>

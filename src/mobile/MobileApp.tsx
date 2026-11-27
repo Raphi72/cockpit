@@ -7,9 +7,8 @@ import { mobileRouter } from './router';
 const queryClient = createQueryClient();
 
 /**
- * L'appli du téléphone (V2, étape 10) : les mêmes domaines que sur le PC, des écrans à part (src/mobile).
- * Aujourd'hui à l'ouverture, tâches et devoirs ensemble ; on y coche, marque un bloc fait et
- * retouche une page. Le reste se gère sur le PC.
+ * L'appli du téléphone (V2, étape 10) : les pages du PC sur une colonne (variante `phone:`), avec ses
+ * propres onglets, son Agenda, ses Pages et ses Réglages (src/mobile). L'argent reste sur le PC.
  */
 export function MobileApp() {
   return (

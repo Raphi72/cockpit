@@ -4,8 +4,10 @@ import { useMemo, useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { addDaysISO, timeToMinutes } from '@/core/dates';
+import { isMobileApp } from '@/core/platform';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, useAgenda } from '@/domains/agenda';
+import { NowCard } from '@/domains/companion/components/NowCard';
 import { useExamEditor } from '@/domains/school/exams/components/ExamDialog';
 import { countdownTone } from '@/domains/school/exams/components/ExamRow';
 import { useExams } from '@/domains/school/exams/hooks';
@@ -330,10 +332,12 @@ export function SchoolDashboard() {
       {day === today && (
         <>
           <ReviewBanner today={today} className="mb-10" />
+          {/* Le téléphone n'a pas la mini-fenêtre « En ce moment » : le bloc en cours est ici. */}
+          {isMobileApp() && <NowCard className="mb-9" />}
           <TodayHabits today={today} className="mb-12" />
         </>
       )}
-      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
+      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18 phone:grid-cols-1 phone:gap-y-12">
         <div className="min-w-0">
           <ClassesSection day={day} today={today} lines={lines} holidayName={holiday?.name ?? null} hasSlots={slots.length > 0} />
           <div className="mt-14">

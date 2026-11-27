@@ -55,7 +55,9 @@ export const ProjectRow = memo(function ProjectRow({
       params={{ projectId: project.id }}
       className={
         '-mx-2.5 grid min-h-11 items-center gap-4 rounded-md px-2.5 transition-colors duration-[120ms] ease-soft hover:bg-hover ' +
-        (compact ? 'grid-cols-[8px_minmax(0,1fr)_80px_84px]' : 'grid-cols-[8px_minmax(0,1fr)_104px_120px]')
+        (compact ? 'grid-cols-[8px_minmax(0,1fr)_80px_84px]' : 'grid-cols-[8px_minmax(0,1fr)_104px_120px]') +
+        // Le téléphone : le nom en entier sur la première ligne, la progression dessous.
+        ' phone:grid-cols-[8px_minmax(0,1fr)_auto] phone:gap-x-3 phone:gap-y-1 phone:py-2.5'
       }
     >
       <ColorDot color={project.typeColor} />
@@ -63,8 +65,10 @@ export const ProjectRow = memo(function ProjectRow({
         {project.name}
         {!compact && project.clientName && <span className="ml-2.5 text-meta text-ink-3">{project.clientName}</span>}
       </span>
-      <span>{progress !== null && <ProgressBar percent={progress} />}</span>
-      <span className="text-right">
+      <span className="phone:col-start-2 phone:row-start-2 phone:w-28 phone:empty:hidden">
+        {progress !== null && <ProgressBar percent={progress} />}
+      </span>
+      <span className="text-right phone:col-start-3 phone:row-start-1">
         <DeadlineLabel project={project} today={today} />
       </span>
     </Link>

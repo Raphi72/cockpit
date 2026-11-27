@@ -18,6 +18,14 @@ export function toggleNowWindow(): void {
   window.open('/now.html', 'cockpit-now', 'popup,width=320,height=140');
 }
 
+/** Le pont de l'appli Android (MainActivity.kt) : absent sur le PC et dans le navigateur. */
+type AndroidBridge = { keepScreenOn: (on: boolean) => void };
+
+/** Garder l'écran du téléphone allumé (séance de focus). Sans effet ailleurs. */
+export function keepScreenOn(on: boolean): void {
+  (window as { CockpitAndroid?: AndroidBridge }).CockpitAndroid?.keepScreenOn(on);
+}
+
 /** Plein écran natif pour le mode focus (dans l'app seulement). */
 export async function setFullscreen(on: boolean): Promise<void> {
   if (!isTauri()) return;

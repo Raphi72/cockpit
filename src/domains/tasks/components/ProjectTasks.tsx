@@ -49,7 +49,8 @@ export function ProjectTasks({ projectId, today }: { projectId: string; today: s
             {progress.done} / {progress.total}
           </span>
         )}
-        <span className="ml-auto">
+        {/* Le kanban ne tient pas sur un téléphone : la liste seulement. */}
+        <span className="ml-auto phone:hidden">
           <ModeToggle />
         </span>
       </div>

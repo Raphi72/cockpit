@@ -77,7 +77,7 @@ export function SubjectDetailPage() {
 /** Le contenu de la fiche : ses devoirs, ses cours, ses examens et ses notes. */
 function SubjectSections({ subjectId }: { subjectId: string }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)] items-start gap-x-16">
+    <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(260px,1fr)] items-start gap-x-16 phone:grid-cols-1 phone:gap-y-12">
       <div className="min-w-0">
         <SubjectHomework subjectId={subjectId} />
         <div className="mt-14">

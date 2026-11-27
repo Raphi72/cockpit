@@ -7,6 +7,26 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**V2, étape 10 suite : l'appli du téléphone complète (27/11/2026, 2.6.0)**, après « elle ne sert à rien en l'état » :
+- **Choix de l'utilisateur** : tout (tâches, projets, focus, agenda et cours) ; Aujourd'hui **comme le PC** ; un
+  **sélecteur Travail / Cours** ; l'argent **seulement en alertes** (« À surveiller », sans lien vers Finances).
+- **Les pages du PC, reprises** : le téléphone affiche les vraies pages Aujourd'hui, Tâches, Projets (et une fiche
+  projet), Devoirs, Examens et une matière, aux mêmes chemins. La variante CSS `phone:` (classe `phone` posée sur
+  `<html>` seulement dans l'appli mobile) les met sur une colonne et resserre les marges : le PC ne change pas.
+  Aujourd'hui garde son ordre sur le PC ; sur le téléphone : tâches du jour, deadlines, à surveiller, prochains
+  jours, projets en cours, et le bloc en cours en haut (`NowCard`, le PC a sa mini-fenêtre).
+- **Onglets selon le mode** : Aujourd'hui, Tâches, Projets, Agenda, Pages (Travail) ; Aujourd'hui, Devoirs,
+  Examens, Agenda, Pages (Cours). Barre du haut : mode, focus, habitudes, réglages.
+- **Agenda du téléphone** (`src/mobile/screens/AgendaScreen.tsx`) : remplace Journée, et sert pour `/calendar`,
+  `/day` et `/timetable`. La semaine en bandeau, puis le jour : toute la journée, puis heure par heure. Ni l'argent,
+  ni les simples débuts de tâche ; une deadline le jour où elle tombe.
+- **Fenêtres** (`src/mobile/MobileOverlays.tsx`) : celles du PC pour créer, les fiches, le focus ; pas l'argent, ni
+  la recherche, les raccourcis, la sélection multiple ou l'écran du matin.
+- **Au doigt** : les actions au survol sont retirées (la fiche fait tout) ; le kanban d'un projet aussi ; glisser
+  une tâche demande un appui long (sinon le doigt fait défiler).
+- **Focus** : mis en page pour le téléphone ; l'écran reste allumé pendant la séance (pont `window.CockpitAndroid`
+  ajouté dans `MainActivity.kt`).
+
 **V2, étape 10 : l'appli sur le téléphone (27/11/2026)**, à confirmer à l'usage :
 - **Un seul code QR relie le téléphone** : sur le PC, Paramètres › Synchronisation › « Relier le téléphone ». Il porte l'accès Google du PC (ID et code secret du client, jeton de renouvellement) et la clé de synchronisation ; le téléphone le lit avec sa caméra (`tauri-plugin-barcode-scanner`) et n'a rien à coller ni de connexion Google à refaire. Le code ne passe par aucun réseau ; il est montré à la demande, avec un avertissement (ne le montrer à personne). La clé est vérifiée sur Drive avant d'être gardée ; si ça échoue, le téléphone revient à son état d'avant.
 - **Le jeton Google est partagé** : « Délier ce téléphone » oublie l'accès sur le téléphone sans le révoquer (le PC continue) ; se déconnecter de Google sur le PC le révoque pour les deux.
@@ -14,6 +34,8 @@ design system, plan, V2) ; ce journal garde l'histoire.
 - **Agendas Google** : leur choix (montrés, couleur, agenda des cours) reste propre à chaque appareil ; le téléphone a donc sa liste dans ses Réglages.
 - **L'appli est signée avec la clé de débogage de ce PC** (`~/.android/debug.keystore`, hors dépôt) et installée par câble (`adb install -r`) : les mises à jour doivent venir de ce PC. Pas de Play Store.
 - **Ce qui n'existe que sur le PC** (Rust `#[cfg(desktop)]`) : zone de notification, mini-fenêtre, démarrage avec Windows, instance unique, mémoire de la fenêtre, exports, sauvegardes au choix, restauration, import Notion, connexion Google elle-même.
+- **Essayé le 27/11/2026** : le téléphone relié par le code QR, synchronisation vérifiée par l'utilisateur dans les deux sens (une tâche créée sur le PC arrive sur le téléphone, cochée sur le téléphone elle l'est sur le PC). Deux corrections en route : le scan plantait (optimisation R8 du build Android, coupée) et l'adb de SuperDisplay gênait celui du SDK (voir le mémo).
+- **Retour d'usage (27/11/2026)** : l'appli du téléphone « ne sert à rien en l'état ». Aujourd'hui est vide s'il n'y a ni bloc ni tâche du jour ; ni projets, ni liste des tâches, ni focus, rien à créer. À revoir (étape 10 suite).
 
 **Coulisses (26/11/2026, après la 2.4.0)** :
 - **Démarrage** : les pages se chargeaient déjà à l'ouverture ; les ~25 fenêtres globales (nouvelle tâche, examen, focus, paiements, recherche…) sont maintenant dans leur propre morceau (`app/shell/Overlays.tsx`), chargé juste après le premier affichage. Le code exécuté avant d'afficher l'app passe de 231 à 75 Ko ; l'éditeur de pages (438 Ko) n'est chargé qu'en ouvrant une page.

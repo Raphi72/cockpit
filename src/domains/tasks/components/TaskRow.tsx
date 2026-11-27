@@ -53,7 +53,8 @@ function HoverAction({ icon: Icon, label, onClick }: { icon: LucideIcon; label: 
       onPointerDown={(event) => event.stopPropagation()}
       title={label}
       aria-label={label}
-      className="grid size-7 place-items-center rounded-md text-ink-3 opacity-0 transition-opacity duration-[120ms] ease-soft group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-active hover:text-ink"
+      // Au survol seulement : pas sur le téléphone, où la fiche de la tâche fait tout.
+      className="grid size-7 place-items-center rounded-md text-ink-3 opacity-0 transition-opacity duration-[120ms] ease-soft group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-active hover:text-ink phone:hidden"
     >
       <Icon className="size-4" strokeWidth={1.75} />
     </button>

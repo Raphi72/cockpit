@@ -22,7 +22,7 @@ import {
   startClock,
   type FocusItem,
 } from '../model';
-import { setFullscreen } from '../native';
+import { keepScreenOn, setFullscreen } from '../native';
 import { playChime } from '../sounds';
 import { useCompanion } from '../store';
 import { FOCUS_COLORS, FocusBurst, FocusList, FocusRing } from './FocusParts';
@@ -69,6 +69,12 @@ function FocusSession({ start, onClose }: { start: FocusStart; onClose: () => vo
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(timer);
+  }, []);
+
+  // Sur le téléphone, l'écran reste allumé pendant la séance.
+  useEffect(() => {
+    keepScreenOn(true);
+    return () => keepScreenOn(false);
   }, []);
 
   const elapsed = clockElapsed(clock, now);
@@ -150,18 +156,18 @@ function FocusSession({ start, onClose }: { start: FocusStart; onClose: () => vo
         transition: 'background 600ms ease',
       }}
     >
-      <p className="absolute top-8 left-10 flex items-center gap-2 text-sm text-white/45">
+      <p className="absolute top-8 left-10 flex items-center gap-2 text-sm text-white/45 phone:top-[calc(env(safe-area-inset-top)+20px)] phone:left-5">
         <span className="size-2 rounded-full" style={{ background: color, boxShadow: `0 0 10px ${color}` }} />
         {start.label}
       </p>
 
-      <div className="flex h-full items-center justify-center pb-10">
+      <div className="flex h-full items-center justify-center pb-10 phone:items-start phone:pt-[calc(env(safe-area-inset-top)+76px)] phone:pb-0">
         <div className="relative">
           {ending === 'done' && <FocusBurst color={color} />}
           <FocusRing progress={progress} color={color} running={!paused && !ending}>
             {ending === 'done' ? (
               <m.div initial={reduced ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={transitionFor('screen', reduced)}>
-                <p className="text-5xl font-extralight tracking-tight text-white/95">Tout est fait</p>
+                <p className="text-5xl font-extralight tracking-tight text-white/95 phone:text-4xl">Tout est fait</p>
                 <p className="mt-4 text-white/55">
                   {doneCount} {doneCount > 1 ? 'choses faites' : 'chose faite'} en {formatFocusDuration(elapsed)}
                   {remaining >= 60_000 && ` · ${formatFocusDuration(remaining)} d’avance`}
@@ -169,14 +175,14 @@ function FocusSession({ start, onClose }: { start: FocusStart; onClose: () => vo
               </m.div>
             ) : ending === 'timeup' ? (
               <>
-                <p className="text-5xl font-extralight tracking-tight text-white/90">Temps écoulé</p>
+                <p className="text-5xl font-extralight tracking-tight text-white/90 phone:text-4xl">Temps écoulé</p>
                 <p className="mt-4 text-white/55">
                   {start.items.length > 0 ? `${doneCount} sur ${start.items.length} faites` : formatFocusDuration(clock.totalMs) + ' de concentration'}
                 </p>
               </>
             ) : (
               <>
-                <p className="tnum text-[clamp(64px,13vh,116px)] leading-none font-extralight tracking-tight text-white/95">{formatCountdown(shown)}</p>
+                <p className="tnum text-[clamp(64px,13vh,116px)] leading-none font-extralight tracking-tight text-white/95 phone:text-[60px]">{formatCountdown(shown)}</p>
                 <p className="mt-4 text-white/45">
                   {paused
                     ? 'En pause'
@@ -191,7 +197,7 @@ function FocusSession({ start, onClose }: { start: FocusStart; onClose: () => vo
       </div>
 
       {ending ? (
-        <div className="absolute bottom-10 left-1/2 flex -translate-x-1/2 items-center gap-3">
+        <div className="absolute bottom-10 left-1/2 flex -translate-x-1/2 items-center gap-3 phone:bottom-[calc(env(safe-area-inset-bottom)+24px)]">
           {ending === 'timeup' && (
             <NightButton
               onClick={() => {
@@ -205,7 +211,7 @@ function FocusSession({ start, onClose }: { start: FocusStart; onClose: () => vo
           <NightButton onClick={onClose}>Terminer</NightButton>
         </div>
       ) : (
-        <div className="absolute bottom-10 left-10 flex items-center gap-3">
+        <div className="absolute bottom-10 left-10 flex items-center gap-3 phone:bottom-[calc(env(safe-area-inset-bottom)+24px)] phone:left-1/2 phone:-translate-x-1/2">
           <NightButton round onClick={togglePause} title={paused ? 'Reprendre · Espace' : 'Pause · Espace'}>
             {paused ? <Play className="size-[18px]" strokeWidth={1.75} /> : <Pause className="size-[18px]" strokeWidth={1.75} />}
           </NightButton>
@@ -215,7 +221,7 @@ function FocusSession({ start, onClose }: { start: FocusStart; onClose: () => vo
         </div>
       )}
 
-      <div className="absolute right-10 bottom-10">
+      <div className="absolute right-10 bottom-10 phone:right-5 phone:bottom-[calc(env(safe-area-inset-bottom)+92px)] phone:left-5">
         <FocusList items={start.items} checked={checked} color={color} onToggle={toggleItem} />
       </div>
     </div>

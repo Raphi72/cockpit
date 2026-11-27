@@ -55,7 +55,7 @@ export function Button({
       {Icon && <Icon className={`shrink-0 ${size === 'lg' ? 'size-5' : 'size-4'}`} strokeWidth={1.75} />}
       {children}
       {shortcut && (
-        <kbd className={`ml-0.5 rounded-sm border px-[5px] py-[2px] font-sans text-[11px] leading-none font-medium ${kbdVariants[variant]}`}>
+        <kbd className={`ml-0.5 rounded-sm border px-[5px] py-[2px] font-sans text-[11px] leading-none font-medium phone:hidden ${kbdVariants[variant]}`}>
           {shortcut}
         </kbd>
       )}

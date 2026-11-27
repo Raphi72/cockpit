@@ -20,21 +20,25 @@ export const FILL_BOTTOM_GAP = 24;
  */
 export const CONTENT_WIDTH = 'max-w-[1120px] min-[1700px]:max-w-[1440px] min-[2100px]:max-w-[1760px]';
 
-/** Contenu centré (voir CONTENT_WIDTH) avec des marges généreuses. */
+/** Contenu centré (voir CONTENT_WIDTH) avec des marges généreuses ; plus serrées sur le téléphone. */
 export function PageContainer({ children, fill = false }: { children: ReactNode; fill?: boolean }) {
-  return <div className={`mx-auto ${CONTENT_WIDTH} px-12 pt-12 ${fill ? 'pb-6' : 'pb-24'}`}>{children}</div>;
+  return (
+    <div className={`mx-auto ${CONTENT_WIDTH} px-12 pt-12 phone:px-5 phone:pt-5 ${fill ? 'pb-6' : 'pb-24 phone:pb-10'}`}>
+      {children}
+    </div>
+  );
 }
 
-/** Gabarit commun : titre sobre, sous-titre, actions. */
+/** Gabarit commun : titre sobre, sous-titre, actions (sous le titre sur le téléphone). */
 export function Page({ title, subtitle, actions, fill, children }: PageProps) {
   return (
     <PageContainer fill={fill}>
-      <header className="mb-10 flex items-start justify-between gap-6">
+      <header className="mb-10 flex items-start justify-between gap-6 phone:mb-7 phone:flex-col phone:gap-3">
         <div className="min-w-0">
-          <h1 className="text-title font-semibold tracking-tight">{title}</h1>
+          <h1 className="text-title font-semibold tracking-tight phone:text-[24px]">{title}</h1>
           {subtitle && <p className="mt-1.5 text-ink-2">{subtitle}</p>}
         </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </header>
       {children}
     </PageContainer>

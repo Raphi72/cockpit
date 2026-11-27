@@ -177,9 +177,24 @@ la coche tout seul quand il est fait.
 
 ## 12. Sur ton téléphone
 
-L'appli Android a cinq onglets : **Aujourd'hui** (tâches et devoirs à cocher), **Journée**, **Habitudes**,
-**Pages** et **Réglages**. Le reste se gère sur le PC. Elle partage tes données avec le PC par la
-**synchronisation**, qui passe par un dossier caché et chiffré de ton Google Drive.
+L'appli Android reprend les pages du PC, mises sur une colonne. En haut, **Travail / Cours** (comme
+`Ctrl M` sur le PC), puis trois boutons : le **focus**, les **habitudes** et les **réglages**. En bas, les
+onglets suivent le mode :
+
+- **Travail** : **Aujourd'hui** (le même tableau de bord que sur le PC : bloc en cours, tâches du jour,
+  deadlines, à surveiller, prochains jours, projets en cours), **Tâches**, **Projets**, **Agenda**, **Pages**.
+- **Cours** : **Aujourd'hui** (cours du jour, devoirs, prochain examen), **Devoirs**, **Examens**,
+  **Agenda**, **Pages**.
+
+Tu y fais comme sur le PC : cocher, ajouter une tâche ou un devoir, toucher une tâche pour ouvrir sa fiche
+(dates, projet, notes, sous-tâches), créer un projet ou un événement. L'**Agenda** montre la semaine en
+haut, puis le jour choisi : échéances, blocs (à marquer faits), cours, rendez-vous et événements Google.
+Dans un projet, un **appui long** sur une tâche la déplace (glisser le doigt fait défiler). Pendant un
+**focus**, l'écran reste allumé. L'**argent** reste sur le PC : le téléphone montre seulement les paiements
+en retard, dans « À surveiller ».
+
+Elle partage tes données avec le PC par la **synchronisation**, qui passe par un dossier caché et chiffré de
+ton Google Drive.
 
 1. **Installer l'appli** (avec Claude) : le téléphone branché en USB, débogage USB activé
    ([android.md](android.md)). Elle n'est pas sur le Play Store : les mises à jour viennent de ton PC.

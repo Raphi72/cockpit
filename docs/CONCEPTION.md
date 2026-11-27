@@ -1045,7 +1045,7 @@ Chaque appareil garde sa base SQLite complète et marche hors ligne. Ils s'écha
 - **Notifications**, en plus de celles du §2.8 (chacune désactivable) : début et fin de bloc, devoir à rendre demain, révisions du jour, examen à J-3, habitude pas encore faite (heure réglable), bilan du soir, cartes à revoir. *(Début et fin de bloc faits à l'étape 3, rappel d'habitude à l'étape 6, les autres à l'étape 7 ; les révisions du jour sont des blocs Révision.)*
 
 #### Mobile (Android)
-- **Application Android** construite avec Tauri 2, avec le même code React et des écrans adaptés au téléphone : Journée, Tâches et devoirs du jour, Habitudes, Pages (lecture et petite édition). (La capture rapide du téléphone a été retirée le 26/11/2026.)
+- **Application Android** construite avec Tauri 2, avec le même code React. D'abord des écrans propres au téléphone (Journée, tâches et devoirs du jour, Habitudes, Pages) ; jugée trop pauvre à l'usage, elle reprend depuis la 2.6.0 (27/11/2026) les pages du PC sur une colonne : Aujourd'hui, Tâches, Projets, Devoirs, Examens, un Agenda de la semaine, Pages, Habitudes, focus, avec le sélecteur Travail / Cours. L'argent n'y est qu'en alertes. (La capture rapide du téléphone a été retirée le 26/11/2026.)
 - **Hors ligne** : le téléphone a sa propre base, synchronisée (P22).
 - **Notifications** sur le téléphone, calculées sur place à partir des données synchronisées.
 - **Widget** sur l'écran d'accueil : le bloc en cours et le suivant, et un bouton de capture.

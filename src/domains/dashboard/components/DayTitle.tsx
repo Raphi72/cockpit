@@ -22,7 +22,7 @@ export function DayTitle(props: {
     'grid size-8 shrink-0 place-items-center rounded-md text-ink-3 transition-colors duration-[120ms] ease-soft hover:bg-hover hover:text-ink ' +
     'data-[state=open]:bg-hover data-[state=open]:text-ink';
   return (
-    <span className="-ml-10 flex items-center gap-2">
+    <span className="-ml-10 flex items-center gap-2 phone:-ml-2 phone:gap-0.5">
       <button
         type="button"
         onClick={() => onGo(addDaysISO(day, -1))}
@@ -32,7 +32,7 @@ export function DayTitle(props: {
       >
         <ChevronLeft className="size-[18px]" strokeWidth={1.75} />
       </button>
-      <span className="min-w-[232px]">{dashboardTitle(day, today)}</span>
+      <span className="min-w-[232px] phone:min-w-0 phone:flex-1 phone:truncate">{dashboardTitle(day, today)}</span>
       <button type="button" onClick={() => onGo(addDaysISO(day, 1))} aria-label="Jour suivant" title="Jour suivant · →" className={button}>
         <ChevronRight className="size-[18px]" strokeWidth={1.75} />
       </button>

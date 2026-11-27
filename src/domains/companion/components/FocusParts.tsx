@@ -23,7 +23,7 @@ export function FocusRing({ progress, color, running, children }: { progress: nu
   const reduced = useReducedMotion();
   const clamped = Math.min(1, Math.max(0, progress));
   return (
-    <div className="relative grid size-[min(64vh,420px)] place-items-center">
+    <div className="relative grid size-[min(64vh,420px)] place-items-center phone:size-[min(78vw,320px)]">
       {/* Un dégradé suffit pour le halo : un flou (filter) se ferait couper en carré. */}
       <m.div
         aria-hidden
@@ -104,7 +104,7 @@ export function FocusList({
   const rows = (copy: string) =>
     items.map((item) => <FocusRow key={`${copy}${item.key}`} item={item} checked={checked.has(item.key)} color={color} onToggle={onToggle} />);
   return (
-    <section aria-label="Tâches de la séance" className="w-[340px] max-w-[42vw]">
+    <section aria-label="Tâches de la séance" className="w-[340px] max-w-[42vw] phone:w-full phone:max-w-none">
       <p className="mb-2 flex items-baseline justify-between px-2 text-xs tracking-wide text-white/40">
         <span>À faire</span>
         <span className="tnum">

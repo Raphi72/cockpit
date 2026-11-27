@@ -370,7 +370,7 @@ export function EventSheet() {
           <RadixDialog.Overlay className="fixed inset-0 z-40 animate-fade bg-backdrop" />
           <RadixDialog.Content
             onKeyDown={(keyEvent) => handlePanelDeleteKey(keyEvent, remove)}
-            className="fixed inset-y-0 right-0 z-50 w-[min(460px,100vw)] overflow-y-auto border-l border-line bg-elevated px-7 py-5 shadow-overlay animate-slide-in focus:outline-none"
+            className="fixed inset-y-0 right-0 z-50 w-[min(460px,100vw)] overflow-y-auto border-l border-line bg-elevated px-7 py-5 phone:px-5 phone:pt-[calc(env(safe-area-inset-top)+1rem)] phone:pb-[calc(env(safe-area-inset-bottom)+1.5rem)] shadow-overlay animate-slide-in focus:outline-none"
           >
             <WindowErrorBoundary onClose={close}>
               {event ? (

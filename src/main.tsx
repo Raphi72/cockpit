@@ -10,6 +10,8 @@ const root = document.getElementById('root');
 if (!root) throw new Error('Élément #root introuvable');
 
 // Le PC ou le téléphone : chacun son appli (le téléphone dans un morceau à part, jamais chargé sur le PC).
+// Sur le téléphone, la classe `phone` adapte les pages reprises du PC (variante `phone:`, global.css).
+if (isMobileApp()) document.documentElement.classList.add('phone');
 const loadApp = () =>
   isMobileApp() ? import('./mobile/MobileApp').then((m) => m.MobileApp) : import('./app/App').then((m) => m.App);
 

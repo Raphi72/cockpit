@@ -11,6 +11,7 @@ import {
 } from '@dnd-kit/core';
 import { Circle, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
+import { isMobileApp } from '@/core/platform';
 import { useIdeaToTask, useTaskToIdea } from '@/domains/ideas/hooks';
 import { ProjectIdeas } from '@/domains/ideas/components/ProjectIdeas';
 import { canBecomeIdea } from '@/domains/ideas/service';
@@ -73,7 +74,10 @@ export function ProjectPlan({ projectId, today }: { projectId: string; today: st
   const [dragging, setDragging] = useState<PlanDragItem | null>(null);
   const [target, setTarget] = useState<PlanTarget | null>(null);
   // Souris uniquement, avec un petit seuil : un clic reste un clic. Au clavier : Alt + flèches (TaskTree).
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  // Sur le téléphone, un appui long : glisser le doigt fait défiler la liste.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: isMobileApp() ? { delay: 400, tolerance: 8 } : { distance: 6 } }),
+  );
 
   const reset = () => {
     setDragging(null);

@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+/*
+ * L'appli du téléphone (V2, étape 10) reprend les pages du PC : `phone:` les adapte (une colonne, marges
+ * réduites). La classe `phone` n'est posée sur <html> que dans l'appli mobile (main.tsx) : le PC ne change pas.
+ */
+@custom-variant phone (&:where(.phone, .phone *));
+
 @layer base {
   html,
   body,

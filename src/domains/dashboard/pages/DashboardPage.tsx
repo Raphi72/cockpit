@@ -15,9 +15,11 @@ import { useUiStore } from '@/app/ui-store';
 import { usePageShortcuts } from '@/app/shortcuts';
 import { addDaysISO, daysBetween } from '@/core/dates';
 import { useDeadlineHorizon } from '@/core/deadline-horizon';
+import { isMobileApp } from '@/core/platform';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { UPCOMING_AGENDA_DAYS, useAgenda, type AgendaItem } from '@/domains/agenda';
 import { isSchoolItem } from '@/domains/agenda/model';
+import { NowCard } from '@/domains/companion/components/NowCard';
 import { FinanceFigures } from '@/domains/finance/components/FinanceFigures';
 import { ReviewBanner, TodayHabits } from '@/domains/habits/components/TodayHabits';
 import { useSetting } from '@/domains/settings/hooks';
@@ -94,7 +96,10 @@ function AlertActionButton({ action }: { action: AlertAction }) {
   );
 }
 
-/** Le titre ouvre le projet (ou, pour un encaissement sans projet, Finances › En retard) ; son lien couvre toute la ligne. */
+/**
+ * Le titre ouvre le projet (ou, pour un encaissement sans projet, Finances › En retard) ; son lien couvre toute la ligne.
+ * Sur le téléphone, l'argent n'est qu'en lecture : pas de page Finances.
+ */
 function AlertTitle({ alert }: { alert: Alert }) {
   const className =
     'block truncate font-medium outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:ring-2 focus-visible:after:ring-accent-soft';
@@ -105,7 +110,7 @@ function AlertTitle({ alert }: { alert: Alert }) {
       </Link>
     );
   }
-  if (alert.kind === 'payment') {
+  if (alert.kind === 'payment' && !isMobileApp()) {
     return (
       <Link to="/finances" search={{ view: 'late' }} className={className}>
         {alert.title}
@@ -126,7 +131,7 @@ function AlertRow({ alert }: { alert: Alert }) {
           {alert.reason}
         </span>
       </span>
-      {alert.action && <AlertActionButton action={alert.action} />}
+      {alert.action && !isMobileApp() && <AlertActionButton action={alert.action} />}
     </div>
   );
 }
@@ -192,13 +197,14 @@ function DayTasksSection(props: { day: string; today: string; openTasks: TaskIte
             type="button"
             onClick={openPlan}
             title="Composer le programme d’aujourd’hui · P"
-            className="ml-auto flex items-center gap-1.5 text-meta text-ink-2 transition-colors hover:text-ink"
+            className="ml-auto flex items-center gap-1.5 text-meta whitespace-nowrap text-ink-2 transition-colors hover:text-ink"
           >
             <Timer className="size-3.5" strokeWidth={1.75} />
             Je veux travailler…
           </button>
         )}
-        <Link to="/tasks" className={`${diff === 0 ? 'ml-4' : 'ml-auto'} text-meta text-ink-3 hover:text-ink`}>
+        {/* Sur le téléphone, l'onglet Tâches est en bas. */}
+        <Link to="/tasks" className={`${diff === 0 ? 'ml-4' : 'ml-auto'} text-meta text-ink-3 hover:text-ink phone:hidden`}>
           Toutes les tâches →
         </Link>
       </div>
@@ -310,6 +316,37 @@ function WorkDashboard() {
       otherDaySummary({ day, today, planned: selectPlannedOn(openTasks, day, today).length, done: doneThatDay.length })
     );
 
+  const tasksSection = <DayTasksSection day={day} today={today} openTasks={openTasks} doneToday={doneToday} />;
+  const projectsSection = (
+    <section>
+      <div className="mb-3.5 flex items-baseline gap-2.5">
+        <h2 className="font-semibold">Projets en cours</h2>
+        {day !== today && <span className="text-meta text-ink-3">{dayTasksHeading(day, today).toLowerCase()}</span>}
+        <Link to="/projects" className="ml-auto text-meta text-ink-3 hover:text-ink">
+          Tous →
+        </Link>
+      </div>
+      {active.length === 0 ? (
+        <p className="text-ink-3">Aucun projet en cours.</p>
+      ) : (
+        active.map((project) => <ProjectRow key={project.id} project={project} today={today} compact />)
+      )}
+      {upcoming.length > 0 && (
+        <>
+          <h3 className="pt-5 pb-1.5 text-meta font-medium text-ink-3">À venir</h3>
+          {upcoming.map((project) => (
+            <ProjectRow key={project.id} project={project} today={today} compact />
+          ))}
+        </>
+      )}
+    </section>
+  );
+  const deadlinesSection = <Deadlines entries={deadlines} day={day} today={today} days={deadlineDays} />;
+  const attentionSection = <Attention alerts={alerts} />;
+  const upcomingSection = (
+    <UpcomingDays days={upcomingWithTasks(agenda, openTasks, today, day)} today={today} showAmounts={showAmounts} onShowDay={goTo} />
+  );
+
   return (
     <Page
       title={title}
@@ -324,59 +361,40 @@ function WorkDashboard() {
     >
       {/* Montants masquables (réglage) : le dashboard peut rester à l'écran sans dévoiler l'argent. */}
       {day === today && <ReviewBanner today={today} className="mb-10" />}
-      {showAmounts && <FinanceFigures summary={finance} today={today} className="mb-12" />}
+      {/* Sur le téléphone, l'argent n'apparaît que dans « À surveiller » (choix de l'étape 10). */}
+      {showAmounts && !isMobileApp() && <FinanceFigures summary={finance} today={today} className="mb-12" />}
+      {/* Le téléphone n'a pas la mini-fenêtre « En ce moment » : le bloc en cours est ici. */}
+      {day === today && isMobileApp() && <NowCard className="mb-9" />}
       {/* Les habitudes du jour, cochables d'un clic (étape 6). */}
       {day === today && <TodayHabits today={today} className="mb-12" />}
 
-      {/*
-        Deux colonnes indépendantes. À droite, les Deadlines d'abord (4 au plus d'emblée), puis
-        « À surveiller » (3 points au plus) et « Prochains jours » : rien ne dépend du nombre de tâches du jour.
-      */}
-      <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
-        <div className="min-w-0">
-          <DayTasksSection day={day} today={today} openTasks={openTasks} doneToday={doneToday} />
-
-          <section className="mt-14">
-            <div className="mb-3.5 flex items-baseline gap-2.5">
-              <h2 className="font-semibold">Projets en cours</h2>
-              {day !== today && <span className="text-meta text-ink-3">{dayTasksHeading(day, today).toLowerCase()}</span>}
-              <Link to="/projects" className="ml-auto text-meta text-ink-3 hover:text-ink">
-                Tous →
-              </Link>
-            </div>
-            {active.length === 0 ? (
-              <p className="text-ink-3">Aucun projet en cours.</p>
-            ) : (
-              active.map((project) => <ProjectRow key={project.id} project={project} today={today} compact />)
-            )}
-            {upcoming.length > 0 && (
-              <>
-                <h3 className="pt-5 pb-1.5 text-meta font-medium text-ink-3">À venir</h3>
-                {upcoming.map((project) => (
-                  <ProjectRow key={project.id} project={project} today={today} compact />
-                ))}
-              </>
-            )}
-          </section>
+      {isMobileApp() ? (
+        // Le téléphone : une colonne, ce qui presse d'abord, les projets à la fin.
+        <div className="flex flex-col gap-12">
+          {tasksSection}
+          {deadlinesSection}
+          {attentionSection}
+          {upcomingSection}
+          {projectsSection}
         </div>
-
-        <div className="min-w-0">
-          <Deadlines entries={deadlines} day={day} today={today} days={deadlineDays} />
-
-          <div className="mt-12">
-            <Attention alerts={alerts} />
+      ) : (
+        /*
+          Deux colonnes indépendantes. À droite, les Deadlines d'abord (4 au plus d'emblée), puis
+          « À surveiller » (3 points au plus) et « Prochains jours » : rien ne dépend du nombre de tâches du jour.
+        */
+        <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18">
+          <div className="min-w-0">
+            {tasksSection}
+            <div className="mt-14">{projectsSection}</div>
           </div>
 
-          <div className="mt-12">
-            <UpcomingDays
-              days={upcomingWithTasks(agenda, openTasks, today, day)}
-              today={today}
-              showAmounts={showAmounts}
-              onShowDay={goTo}
-            />
+          <div className="min-w-0">
+            {deadlinesSection}
+            <div className="mt-12">{attentionSection}</div>
+            <div className="mt-12">{upcomingSection}</div>
           </div>
         </div>
-      </div>
+      )}
     </Page>
   );
 }

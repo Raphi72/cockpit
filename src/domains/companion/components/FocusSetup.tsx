@@ -182,7 +182,7 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
 
   return (
     <div
-      className="flex h-full justify-center overflow-y-auto px-8 py-16"
+      className="flex h-full justify-center overflow-y-auto px-8 py-16 phone:px-5 phone:pt-[calc(env(safe-area-inset-top)+20px)] phone:pb-10"
       onKeyDown={(event) => {
         if (event.key === 'Enter' && event.ctrlKey) {
           event.preventDefault();
@@ -280,7 +280,7 @@ export function FocusSetup({ onStart, onClose }: { onStart: (start: FocusStart) 
             </ul>
           )}
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3 phone:grid-cols-1">
             <Button
               variant="secondary"
               icon={ListChecks}
