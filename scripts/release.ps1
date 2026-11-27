@@ -28,7 +28,7 @@ Push-Location $root
 cmd /c "npx tauri build --config src-tauri\tauri.updater.conf.json 2>&1" | Select-Object -Last 4 | ForEach-Object { Write-Host $_ }
 $code = $LASTEXITCODE
 Pop-Location
-Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY, Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+Remove-Item Env:TAURI_SIGNING_PRIVATE_KEY, Env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD -ErrorAction SilentlyContinue
 if ($code -ne 0) { throw "La construction du PC a échoué." }
 $bundle = "$root\src-tauri\target\release\bundle"
 $exe = "$bundle\nsis\Cockpit_${version}_x64-setup.exe"
