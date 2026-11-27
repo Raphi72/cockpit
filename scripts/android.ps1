@@ -39,7 +39,13 @@ $apk = "$android\app\build\outputs\apk\arm64\release\app-arm64-release.apk"
 Write-Host "APK : $apk"
 
 # 3. Sur le téléphone branché (débogage USB) : remplace l'appli en gardant ses données.
+#    Le service SuperDisplay fait tourner son propre adb (une autre version) et le relance sans cesse :
+#    celui du SDK se bat avec lui et ne voit plus le téléphone. On passe alors par le sien.
 if (-not $NoInstall) {
-  & "$sdk\platform-tools\adb.exe" install -r $apk
+  $adb = "$sdk\platform-tools\adb.exe"
+  $superDisplay = 'C:\Program Files\SuperDisplay\adb\adb.exe'
+  $service = Get-Service SuperDisplay -ErrorAction SilentlyContinue
+  if ($service -and $service.Status -eq 'Running' -and (Test-Path $superDisplay)) { $adb = $superDisplay }
+  & $adb install -r $apk
   if ($LASTEXITCODE -ne 0) { throw "Installation impossible : le téléphone est-il branché, débogage USB autorisé ?" }
 }

@@ -61,6 +61,8 @@ Ce que fait le script (les variables d'Android ne valent que pour lui : rien n'e
    `app/src/main/assets/tauri.conf.json`, puis lance `gradlew assembleArm64Release -x rustBuildArm64Release`
    (Gradle sans relancer Rust).
 3. `adb install -r` de `app/build/outputs/apk/arm64/release/app-arm64-release.apk` sur le téléphone branché.
+   Si le service SuperDisplay tourne, le script passe par son adb à lui : l'adb du SDK se battrait avec le
+   sien et ne verrait plus le téléphone.
 
 - L'appli est la version optimisée (`release`), signée avec la clé de débogage de ce PC
   (`~/.android/debug.keystore`, créée par Android Studio, jamais dans le dépôt). `install -r` remplace
