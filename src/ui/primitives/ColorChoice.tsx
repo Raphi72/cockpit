@@ -32,7 +32,7 @@ export function ColorChoice({ value, onChange, label }: { value: AppColor; onCha
     <div
       role="radiogroup"
       aria-label={label}
-      className="flex h-9 flex-wrap items-center gap-1"
+      className="flex h-9 flex-wrap items-center gap-1 phone:h-auto phone:min-h-9 phone:py-1"
       onKeyDown={(e) => {
         if (e.target instanceof HTMLInputElement) return;
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {

@@ -7,6 +7,19 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**V2, étape 10 suite : seconds retours (27/11/2026, 2.6.2)** :
+- **Habitudes** : retirées du téléphone (bouton du haut, habitudes du jour et bilan sur Aujourd'hui) ; elles
+  restent sur le PC. La barre du haut, moins chargée, ne coupe plus « Travail » et « Cours ».
+- **Glisser au doigt** (Journée, tâches d'un projet) : les événements de pointeur s'arrêtaient dès que le
+  doigt bougeait (Android reprend la main pour faire défiler). Le téléphone passe par le capteur tactile de
+  dnd-kit (`useDragSensors`, `src/ui/data/drag-sensors.ts`) : appui long de 350 ms, puis la page ne défile
+  plus sous le doigt. Vérifié par des touchers simulés : un module posé, un bloc déplacé.
+- **Étirer un bloc** : la poignée du bas est visible et plus haute sur le téléphone, et ne laisse pas la
+  page défiler (`touch-action: none`).
+- **Durées** : 3 h et 4 h pour un bloc libre ; la fiche d'un bloc a aussi ses durées en un geste.
+- **Palette de couleurs** : sur deux lignes au téléphone, elle recouvrait le champ suivant (« Mode » d'un
+  module) ; sa hauteur suit maintenant son contenu.
+
 **V2, étape 10 suite : retours sur l'appli du téléphone (27/11/2026, 2.6.1)** :
 - **Icône** : celle du PC (fond sombre, anneau, point bleu) au lieu de celle de Tauri, en icône adaptative
   Android, dessinée par `scripts/android_icons.py` d'après `src-tauri/icons/icon.png`.

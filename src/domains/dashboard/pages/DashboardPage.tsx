@@ -293,7 +293,7 @@ function WorkDashboard() {
   if (nothingYet) {
     return (
       <Page title={title} subtitle="Rien de prévu pour l’instant.">
-        <TodayHabits today={today} className="mb-10" />
+        {!isMobileApp() && <TodayHabits today={today} className="mb-10" />}
         <EmptyState icon={FolderClosed} title="Tout commence par tes projets et tes tâches">
           <p>Cette page te montrera ensuite ce que tu as à faire aujourd’hui et ce qui mérite ton attention.</p>
           <div className="mt-4 flex gap-2">
@@ -360,13 +360,14 @@ function WorkDashboard() {
       }
     >
       {/* Montants masquables (réglage) : le dashboard peut rester à l'écran sans dévoiler l'argent. */}
-      {day === today && <ReviewBanner today={today} className="mb-10" />}
+      {/* Les habitudes restent sur le PC (retour d'usage, 27/11/2026). */}
+      {day === today && !isMobileApp() && <ReviewBanner today={today} className="mb-10" />}
       {/* Sur le téléphone, l'argent n'apparaît que dans « À surveiller » (choix de l'étape 10). */}
       {showAmounts && !isMobileApp() && <FinanceFigures summary={finance} today={today} className="mb-12" />}
       {/* Le téléphone n'a pas la mini-fenêtre « En ce moment » : le bloc en cours est ici. */}
       {day === today && isMobileApp() && <NowCard className="mb-9" />}
       {/* Les habitudes du jour, cochables d'un clic (étape 6). */}
-      {day === today && <TodayHabits today={today} className="mb-12" />}
+      {day === today && !isMobileApp() && <TodayHabits today={today} className="mb-12" />}
 
       {isMobileApp() ? (
         // Le téléphone : une colonne, ce qui presse d'abord, les projets à la fin.

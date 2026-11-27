@@ -3,13 +3,11 @@ import { ErrorScreen } from '@/app/shell/ErrorScreen';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
 import { validateDashboardSearch } from '@/domains/dashboard/search';
 import { validateDaySearch } from '@/domains/day/search';
-import { validateHabitsSearch } from '@/domains/habits/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateHomeworkSearch } from '@/domains/school/homework/model';
 import { validateTasksSearch } from '@/domains/tasks/search';
 import { MobileShell } from './MobileShell';
 import { AgendaScreen } from './screens/AgendaScreen';
-import { HabitsScreen } from './screens/HabitsScreen';
 import { PageScreen } from './screens/PageScreen';
 import { PagesScreen } from './screens/PagesScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -37,7 +35,6 @@ export const mobileRouter = createRouter({
     route('/day', lazyRouteComponent(() => import('@/domains/day/pages/DayPage'), 'DayPage'), validateDaySearch),
     route('/calendar', AgendaScreen, validateDaySearch),
     route('/timetable', AgendaScreen, validateDaySearch),
-    route('/habits', HabitsScreen, validateHabitsSearch),
     route('/pages', PagesScreen),
     route('/pages/$pageId', PageScreen),
     route('/settings', SettingsScreen),

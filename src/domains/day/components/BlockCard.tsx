@@ -158,13 +158,16 @@ export const BlockCard = memo(function BlockCard(props: BlockCardProps) {
       )}
       {/* Poignée du bas : étirer le bloc. */}
       <div
+        // Au doigt, la poignée ne fait pas défiler la page : elle étire le bloc.
         onPointerDown={onStretchStart}
         onPointerMove={onStretchMove}
         onPointerUp={onStretchEnd}
         onPointerCancel={onStretchEnd}
+        // Le doigt sur la poignée étire le bloc ; il ne lance pas le glisser du bloc entier.
+        onTouchStart={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100"
+        className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 phone:h-4 phone:touch-none phone:opacity-100"
       >
         <span className="mx-auto mt-[3px] block h-[3px] w-6 rounded-full bg-ink-3/50" />
       </div>

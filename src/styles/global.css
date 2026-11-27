@@ -19,6 +19,12 @@
   .phone body {
     overflow-wrap: anywhere;
   }
+  /* Ce qui se glisse (module, tâche, bloc) : l'appui long lance le glisser, pas la sélection du texte. */
+  .phone [aria-roledescription] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 @layer base {

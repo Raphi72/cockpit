@@ -1,11 +1,8 @@
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
   pointerWithin,
   useDroppable,
-  useSensor,
-  useSensors,
   type CollisionDetection,
   type DragEndEvent,
   type DragMoveEvent,
@@ -15,8 +12,8 @@ import { Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateField } from '@/core/dates';
-import { isMobileApp } from '@/core/platform';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
+import { eventClientY, useDragSensors } from '@/ui/data/drag-sensors';
 import { useCreateBlock, useDeleteBlock, useDeleteModule, useMoveTasksToBlock, usePlaceOneOff, useUnplaceBlock, useUpdateBlock } from '../hooks';
 import { moduleIcon } from '../icons';
 import { blockFromModule, movedBlock } from '../model';
@@ -91,10 +88,8 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   const moveTasks = useMoveTasksToBlock();
   const [dragging, setDragging] = useState<DayDragData | null>(null);
   const [label, setLabel] = useState<string | null>(null);
-  // Sur le téléphone, un appui long : glisser le doigt fait défiler la journée.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: isMobileApp() ? { delay: 400, tolerance: 8 } : { distance: 6 } }),
-  );
+  // Souris : un petit seuil. Téléphone : un appui long (glisser tout de suite fait défiler la journée).
+  const sensors = useDragSensors();
   // Où est le pointeur, et où on a saisi l'élément (distance au haut de l'élément).
   const pointerY = useRef(0);
   const grabOffset = useRef(0);
@@ -104,8 +99,17 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
     const track = (event: PointerEvent) => {
       pointerY.current = event.clientY;
     };
+    // Au doigt, la position vient des événements tactiles.
+    const trackTouch = (event: TouchEvent) => {
+      const point = event.touches[0];
+      if (point) pointerY.current = point.clientY;
+    };
     window.addEventListener('pointermove', track);
-    return () => window.removeEventListener('pointermove', track);
+    window.addEventListener('touchmove', trackTouch, { passive: true });
+    return () => {
+      window.removeEventListener('pointermove', track);
+      window.removeEventListener('touchmove', trackTouch);
+    };
   }, [dragging]);
 
   const reset = () => {
@@ -114,7 +118,7 @@ export function DayDnd({ children, today }: { children: ReactNode; today: string
   };
 
   const onDragStart = ({ active, activatorEvent }: DragStartEvent) => {
-    const y = activatorEvent instanceof PointerEvent ? activatorEvent.clientY : 0;
+    const y = eventClientY(activatorEvent) ?? 0;
     pointerY.current = y;
     // Un module de la bibliothèque se pose par le haut du bloc : on le tient près de son haut.
     const grabbed = activatorEvent.target instanceof Element ? activatorEvent.target.closest('[data-block-id]') : null;

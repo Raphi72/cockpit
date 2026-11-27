@@ -1,17 +1,13 @@
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
   pointerWithin,
-  useSensor,
-  useSensors,
   type DragEndEvent,
   type DragMoveEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { Circle, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
-import { isMobileApp } from '@/core/platform';
 import { useIdeaToTask, useTaskToIdea } from '@/domains/ideas/hooks';
 import { ProjectIdeas } from '@/domains/ideas/components/ProjectIdeas';
 import { canBecomeIdea } from '@/domains/ideas/service';
@@ -29,6 +25,7 @@ import {
   type PlanTarget,
 } from '@/domains/tasks/tree-dnd';
 import { DND_ACCESSIBILITY } from '@/ui/data/dnd-accessibility';
+import { eventClientY, useDragSensors } from '@/ui/data/drag-sensors';
 import { toast } from '@/ui/overlays/toast';
 
 /** Où irait l'élément si on le lâchait maintenant (voir dropOnRow pour une ligne de tâche). */
@@ -42,8 +39,9 @@ function targetOf(event: DragMoveEvent, nodes: TaskNode[]): PlanTarget | null {
     return placeInTree(nodes, movedOf(item), drop) ? { kind: 'tree', drop } : null;
   }
   const targetId = (over.data.current as { task?: { id: string } } | undefined)?.task?.id;
-  if (!targetId || !(activatorEvent instanceof PointerEvent)) return null;
-  const ratio = (activatorEvent.clientY + delta.y - over.rect.top) / over.rect.height;
+  const startY = eventClientY(activatorEvent);
+  if (!targetId || startY === null) return null;
+  const ratio = (startY + delta.y - over.rect.top) / over.rect.height;
   const drop = dropOnRow(nodes, item, targetId, ratio);
   return drop ? { kind: 'tree', drop } : null;
 }
@@ -73,11 +71,8 @@ export function ProjectPlan({ projectId, today }: { projectId: string; today: st
   const taskToIdea = useTaskToIdea();
   const [dragging, setDragging] = useState<PlanDragItem | null>(null);
   const [target, setTarget] = useState<PlanTarget | null>(null);
-  // Souris uniquement, avec un petit seuil : un clic reste un clic. Au clavier : Alt + flèches (TaskTree).
-  // Sur le téléphone, un appui long : glisser le doigt fait défiler la liste.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: isMobileApp() ? { delay: 400, tolerance: 8 } : { distance: 6 } }),
-  );
+  // Souris : un petit seuil, un clic reste un clic. Téléphone : un appui long. Au clavier : Alt + flèches (TaskTree).
+  const sensors = useDragSensors();
 
   const reset = () => {
     setDragging(null);

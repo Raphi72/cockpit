@@ -348,7 +348,7 @@ export function SchoolDashboard() {
   if (subjects.length === 0) {
     return (
       <Page title={title} subtitle="Rien de prévu pour l’instant.">
-        <TodayHabits today={today} className="mb-10" />
+        {!isMobileApp() && <TodayHabits today={today} className="mb-10" />}
         <EmptyState icon={GraduationCap} title="Ton espace Cours commence par tes matières">
           <p>Ensuite, ton emploi du temps, tes devoirs et tes examens : cette page te montrera ta journée de cours.</p>
           <div className="mt-4 flex gap-2">
@@ -375,10 +375,15 @@ export function SchoolDashboard() {
     >
       {day === today && (
         <>
-          <ReviewBanner today={today} className="mb-10" />
-          {/* Le téléphone n'a pas la mini-fenêtre « En ce moment » : le bloc en cours est ici. */}
-          {isMobileApp() && <NowCard className="mb-9" />}
-          <TodayHabits today={today} className="mb-12" />
+          {/* Le téléphone : le bloc en cours (pas de mini-fenêtre), et pas les habitudes, restées sur le PC. */}
+          {isMobileApp() ? (
+            <NowCard className="mb-9" />
+          ) : (
+            <>
+              <ReviewBanner today={today} className="mb-10" />
+              <TodayHabits today={today} className="mb-12" />
+            </>
+          )}
         </>
       )}
       <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)] items-start gap-x-18 phone:grid-cols-1 phone:gap-y-12">

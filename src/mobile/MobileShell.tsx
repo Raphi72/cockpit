@@ -7,7 +7,6 @@ import {
   GraduationCap,
   LayoutDashboard,
   ListChecks,
-  Repeat,
   Settings2,
   Sunrise,
   Timer,
@@ -58,7 +57,7 @@ function tabIndex(tabs: Tab[], pathname: string): number {
   return tabs.findIndex(({ to }) => (to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(`${to}/`)));
 }
 
-/** En haut : Travail ou Cours, puis les pages, le focus, les habitudes et les réglages. */
+/** En haut : Travail ou Cours, puis les pages, le focus et les réglages. Les habitudes restent sur le PC. */
 function TopBar() {
   const mode = useUiStore((state) => state.mode);
   const switchMode = useSwitchMode();
@@ -67,7 +66,7 @@ function TopBar() {
   const active = { className: 'text-ink' };
   return (
     <div className="flex shrink-0 items-center gap-0.5 border-b border-line/60 bg-canvas px-3 pt-[env(safe-area-inset-top)]">
-      <div role="tablist" aria-label="Mode" className="my-2 flex rounded-lg bg-hover p-0.5">
+      <div role="tablist" aria-label="Mode" className="my-2 flex shrink-0 rounded-lg bg-hover p-0.5">
         {APP_MODES.map((value) => {
           const Icon = MODE_ICONS[value];
           const selected = value === mode;
@@ -78,7 +77,7 @@ function TopBar() {
               role="tab"
               aria-selected={selected}
               onClick={() => switchMode(value)}
-              className={`flex h-8 items-center gap-1.5 rounded-md px-3 text-meta ${selected ? 'bg-elevated font-medium text-ink shadow-sm' : 'text-ink-3'}`}
+              className={`flex h-8 shrink-0 items-center gap-1.5 rounded-md px-3 text-meta whitespace-nowrap ${selected ? 'bg-elevated font-medium text-ink shadow-sm' : 'text-ink-3'}`}
             >
               <Icon className="size-4" strokeWidth={1.75} />
               {MODE_LABELS[value]}
@@ -93,9 +92,6 @@ function TopBar() {
       <button type="button" onClick={() => openFocus(true)} aria-label="Focus" className={icon}>
         <Timer className="size-[21px]" strokeWidth={1.75} />
       </button>
-      <Link to="/habits" aria-label="Habitudes" className={icon} activeProps={active}>
-        <Repeat className="size-[21px]" strokeWidth={1.75} />
-      </Link>
       <Link to="/settings" aria-label="Réglages" className={icon} activeProps={active}>
         <Settings2 className="size-[21px]" strokeWidth={1.75} />
       </Link>

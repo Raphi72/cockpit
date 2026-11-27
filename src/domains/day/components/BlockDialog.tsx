@@ -38,7 +38,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-const FREE_DURATIONS = [30, 60, 90, 120];
+/** Durées en un geste : d'une demi-heure à une demi-journée. */
+const FREE_DURATIONS = [30, 60, 90, 120, 180, 240];
 
 /** Nouveau bloc à l'heure cliquée : un module en un clic, ou un bloc libre (titre, durée, couleur). */
 function CreateBlockForm(props: { day: string; minutes: number; modules: Module[]; mode: AppMode; onDone: () => void }) {
@@ -186,6 +187,15 @@ function EditBlockForm({ block, tasks, onDone, onChain }: { block: DayBlock; tas
             <TimeField value={endsAt} onChange={setEndsAt} aria-label="Fin" />
             {duration > 0 && <span className="tnum text-meta text-ink-3">{formatMinutes(duration)}</span>}
           </div>
+        </Row>
+        {/* La fin en un geste, à partir du début (plus simple au doigt que l'heure de fin). */}
+        <Row label="Durée">
+          <ChoiceChips
+            label="Durée"
+            options={FREE_DURATIONS.map((m) => ({ value: String(m), label: formatMinutes(m) }))}
+            value={FREE_DURATIONS.includes(duration) ? String(duration) : null}
+            onChange={(v) => startsAt && setEndsAt(fromMinutes(Math.min(toMinutes(startsAt) + Number(v), 24 * 60)))}
+          />
         </Row>
         <Row label="Statut">
           <ChoiceChips
