@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Téléphone : lire avec la caméra le code QR qui relie au PC.",
+  "platforms": ["android", "iOS"],
+  "windows": ["main"],
+  "permissions": ["barcode-scanner:allow-scan", "barcode-scanner:allow-cancel", "barcode-scanner:allow-check-permissions", "barcode-scanner:allow-request-permissions"]
+}

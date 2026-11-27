@@ -82,13 +82,10 @@ export function normalizeKeyCode(input: string): string {
   return compact.length === 52 ? compact : '';
 }
 
-/** Le contenu du code QR de la clé (affiché sur le PC, scanné par le téléphone). */
-export function syncQrPayload(code: string): string {
-  return `cockpit-sync:${code}`;
-}
-
-/** Le code lu dans un code QR scanné, ou `null` si ce n'est pas un code QR de Cockpit. */
-export function parseSyncQr(text: string): string | null {
-  const match = /^cockpit-sync:([A-Z2-7-]+)$/i.exec(text.trim());
-  return match && normalizeKeyCode(match[1]!) ? match[1]! : null;
+/**
+ * Le code QR qui relie le téléphone au PC (src-tauri/src/link.rs) : il porte l'accès Google du PC et la clé.
+ * Son contenu n'est lu que par le natif ; ici, seulement reconnaître qu'il vient bien de Cockpit.
+ */
+export function isPhoneLinkQr(text: string): boolean {
+  return text.trim().startsWith('cockpit-link:{');
 }

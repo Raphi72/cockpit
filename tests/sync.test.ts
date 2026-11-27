@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sql } from '@/core/db/client';
 import type { Db } from '@/core/db/types';
-import { MAX_FILE_BYTES, SYNC_TABLES, UNIQUE_RULES, changeFileName, filesToRead, isNewer, normalizeKeyCode, parseChangeFileName, parseSyncQr, syncQrPayload } from '@/domains/sync/model';
+import { MAX_FILE_BYTES, SYNC_TABLES, UNIQUE_RULES, changeFileName, filesToRead, isNewer, isPhoneLinkQr, normalizeKeyCode, parseChangeFileName } from '@/domains/sync/model';
 import { ensureDeviceId, getSyncState } from '@/domains/sync/repository';
 import { pullChanges, pushChanges, resetDeviceStatements, syncOnce, type SyncTransport } from '@/domains/sync/service';
 import { createTestDb } from './support/test-db';
@@ -51,10 +51,9 @@ describe('synchronisation : règles', () => {
     expect(isNewer({ at: '2026-11-26T10:00:00Z', device: 'a' }, { at: '2026-11-26T10:00:00Z', device: 'z' })).toBe(false);
     expect(normalizeKeyCode('abcd-efgh ijkl-mnop-qrst-uvwx-yz23-4567-abcd-efgh-ijkl-mnop-qrst')).toHaveLength(52);
     expect(normalizeKeyCode('abcd')).toBe('');
-    const code = 'ABCD-EFGH-IJKL-MNOP-QRST-UVWX-YZ23-4567-ABCD-EFGH-IJKL-MNOP-QRST';
-    expect(parseSyncQr(syncQrPayload(code))).toBe(code);
-    expect(parseSyncQr('https://exemple.fr')).toBeNull();
-    expect(parseSyncQr('cockpit-sync:ABCD')).toBeNull();
+    expect(isPhoneLinkQr(' cockpit-link:{"v":1} ')).toBe(true);
+    expect(isPhoneLinkQr('https://exemple.fr')).toBe(false);
+    expect(isPhoneLinkQr('cockpit-sync:ABCD')).toBe(false);
   });
 
   it('note chaque changement des tables de données, et seulement eux', async () => {

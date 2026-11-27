@@ -1,13 +1,13 @@
 [package]
 name = "cockpit"
-version = "2.4.1"
+version = "2.5.0"
 description = "Cockpit — centre de pilotage personnel"
 edition = "2021"
 
-# Application desktop uniquement : pas besoin des bibliothèques staticlib/cdylib destinées au mobile.
+# `cdylib` : la bibliothèque que charge l'appli Android (V2, étape 10).
 [lib]
 name = "cockpit_lib"
-crate-type = ["rlib"]
+crate-type = ["cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -20,17 +20,24 @@ rusqlite = { version = "0.40.2", features = ["bundled", "backup"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
-tauri-plugin-window-state = "2"
-tauri-plugin-autostart = "2"
-tauri-plugin-single-instance = "2"
-# Connexion Google (V2, étape 8) : HTTP, coffre d'identifiants de Windows, PKCE.
+# Connexion Google (V2, étape 8) : HTTP, PKCE.
 ureq = { version = "3", features = ["json"] }
-keyring = { version = "3", features = ["windows-native"] }
 sha2 = "0.10"
 base64 = "0.22"
 getrandom = "0.3"
 # Synchronisation (V2, étape 9) : fichiers chiffrés avant de partir sur Google Drive.
 chacha20poly1305 = "0.10"
+
+# PC seulement : mémoire de la fenêtre, lancement avec Windows, instance unique, coffre d'identifiants de Windows.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-window-state = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+keyring = { version = "3", features = ["windows-native"] }
+
+# Téléphone seulement : lire le code QR affiché par le PC.
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+tauri-plugin-barcode-scanner = "2"
 
 [profile.release]
 codegen-units = 1

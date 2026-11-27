@@ -1,7 +1,8 @@
 node_modules/
 dist/
 src-tauri/target/
-src-tauri/gen/
+# Le projet Android (gen/android) est versionné ; les schémas, eux, sont régénérés à chaque build.
+src-tauri/gen/schemas/
 *.log
 .DS_Store
 

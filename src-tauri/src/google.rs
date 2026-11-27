@@ -6,8 +6,10 @@
 //! (`http://127.0.0.1:<port>`), avec PKCE. Seule la lecture des agendas est demandée.
 //!
 //! L'identifiant du client (créé par l'utilisateur dans son projet Google Cloud, voir
-//! docs/google-cloud.md) et le jeton de renouvellement sont gardés dans le Gestionnaire d'identification
-//! de Windows : jamais dans la base, les exports ni le dépôt. Le jeton d'accès, lui, ne vit qu'en mémoire.
+//! docs/google-cloud.md) et le jeton de renouvellement sont gardés dans le coffre de l'appareil (`vault` :
+//! Gestionnaire d'identification de Windows sur le PC) : jamais dans la base, les exports ni le dépôt. Le
+//! jeton d'accès, lui, ne vit qu'en mémoire. Le téléphone ne se connecte pas lui-même : il reçoit le client
+//! et le jeton du PC par le code QR qui le relie (`link`).
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use serde::de::DeserializeOwned;
@@ -29,7 +31,7 @@ const API: &str = "https://www.googleapis.com/calendar/v3";
 const CALENDAR_SCOPE: &str = "https://www.googleapis.com/auth/calendar.readonly";
 pub(crate) const DRIVE_SCOPE: &str = "https://www.googleapis.com/auth/drive.appdata";
 
-/// Le coffre de Windows : un nom par application, l'app de développement à part (comme sa base).
+/// Le coffre : un nom par application, l'app de développement à part (comme sa base).
 const SERVICE: &str = if cfg!(debug_assertions) { "Cockpit (développement) · Google" } else { "Cockpit · Google" };
 const CLIENT_KEY: &str = "client";
 const TOKEN_KEY: &str = "token";
@@ -66,28 +68,56 @@ pub struct GoogleSession(Mutex<Option<(String, Instant)>>);
 
 // ─── Coffre d'identifiants ──────────────────────────────────────────────────
 
-fn entry(key: &str) -> Result<keyring::Entry, String> {
-    keyring::Entry::new(SERVICE, key).map_err(|e| format!("Coffre d'identifiants indisponible : {e}"))
-}
-
 fn vault_read<T: DeserializeOwned>(key: &str) -> Result<Option<T>, String> {
-    match entry(key)?.get_password() {
-        Ok(text) => Ok(serde_json::from_str(&text).ok()),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(format!("Lecture du coffre d'identifiants impossible : {e}")),
-    }
+    Ok(crate::vault::read(SERVICE, key)?.and_then(|text| serde_json::from_str(&text).ok()))
 }
 
 fn vault_write<T: Serialize>(key: &str, value: &T) -> Result<(), String> {
     let text = serde_json::to_string(value).map_err(|e| e.to_string())?;
-    entry(key)?.set_password(&text).map_err(|e| format!("Écriture dans le coffre d'identifiants impossible : {e}"))
+    crate::vault::write(SERVICE, key, &text)
 }
 
 fn vault_remove(key: &str) -> Result<(), String> {
-    match entry(key)?.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(format!("Suppression dans le coffre d'identifiants impossible : {e}")),
-    }
+    crate::vault::remove(SERVICE, key)
+}
+
+/// L'accès Google du PC, tel que le téléphone le reçoit (`link`).
+pub(crate) struct Linked {
+    pub client_id: String,
+    pub client_secret: String,
+    pub refresh_token: String,
+    pub account: Option<String>,
+    pub scopes: Option<String>,
+}
+
+/// L'accès Google de cet appareil, s'il est connecté.
+pub(crate) fn linked() -> Result<Option<Linked>, String> {
+    let (Some(client), Some(token)) = (vault_read::<Client>(CLIENT_KEY)?, vault_read::<Token>(TOKEN_KEY)?) else { return Ok(None) };
+    Ok(Some(Linked {
+        client_id: client.client_id,
+        client_secret: client.client_secret,
+        refresh_token: token.refresh_token,
+        account: token.account,
+        scopes: token.scopes,
+    }))
+}
+
+/// Le téléphone prend l'accès Google reçu du PC.
+#[cfg_attr(desktop, allow(dead_code))]
+pub(crate) fn adopt(app: &AppHandle, linked: Linked) -> Result<(), String> {
+    vault_write(CLIENT_KEY, &Client { client_id: linked.client_id, client_secret: linked.client_secret })?;
+    vault_write(TOKEN_KEY, &Token { refresh_token: linked.refresh_token, account: linked.account, scopes: linked.scopes })?;
+    *app.state::<GoogleSession>().0.lock().map_err(|e| e.to_string())? = None;
+    Ok(())
+}
+
+/// Oublie l'accès Google de cet appareil sans le révoquer (le PC s'en sert encore).
+#[cfg_attr(desktop, allow(dead_code))]
+pub(crate) fn forget_here(app: &AppHandle) -> Result<(), String> {
+    vault_remove(TOKEN_KEY)?;
+    vault_remove(CLIENT_KEY)?;
+    *app.state::<GoogleSession>().0.lock().map_err(|e| e.to_string())? = None;
+    Ok(())
 }
 
 // ─── Règles pures (testées) ─────────────────────────────────────────────────
@@ -590,11 +620,14 @@ pub async fn google_connect(app: AppHandle) -> Result<GoogleStatus, String> {
 }
 
 /// Se déconnecter : le jeton est révoqué chez Google et retiré du coffre. L'ID du client reste.
+/// Sur le téléphone, le jeton est celui du PC : il est seulement oublié, sans être révoqué.
 #[tauri::command]
 pub async fn google_disconnect(app: AppHandle) -> Result<GoogleStatus, String> {
     blocking(move || {
-        if let Some(token) = vault_read::<Token>(TOKEN_KEY)? {
-            let _ = agent().post(REVOKE_URL).send_form([("token", token.refresh_token.as_str())]);
+        if cfg!(desktop) {
+            if let Some(token) = vault_read::<Token>(TOKEN_KEY)? {
+                let _ = agent().post(REVOKE_URL).send_form([("token", token.refresh_token.as_str())]);
+            }
         }
         vault_remove(TOKEN_KEY)?;
         *app.state::<GoogleSession>().0.lock().map_err(|e| e.to_string())? = None;

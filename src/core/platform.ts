@@ -6,7 +6,8 @@ import { invoke, isTauri } from '@tauri-apps/api/core';
  * Windows, Cockpit reste caché dans la zone de notification.
  */
 export function revealWindow(): void {
-  if (!isTauri()) return;
+  // Le téléphone n'a qu'un écran, affiché par Android.
+  if (!isTauri() || isMobileApp()) return;
   requestAnimationFrame(() => {
     void invoke('window_ready');
   });

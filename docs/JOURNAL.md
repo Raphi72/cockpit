@@ -7,6 +7,14 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**V2, étape 10 : l'appli sur le téléphone (27/11/2026)**, à confirmer à l'usage :
+- **Un seul code QR relie le téléphone** : sur le PC, Paramètres › Synchronisation › « Relier le téléphone ». Il porte l'accès Google du PC (ID et code secret du client, jeton de renouvellement) et la clé de synchronisation ; le téléphone le lit avec sa caméra (`tauri-plugin-barcode-scanner`) et n'a rien à coller ni de connexion Google à refaire. Le code ne passe par aucun réseau ; il est montré à la demande, avec un avertissement (ne le montrer à personne). La clé est vérifiée sur Drive avant d'être gardée ; si ça échoue, le téléphone revient à son état d'avant.
+- **Le jeton Google est partagé** : « Délier ce téléphone » oublie l'accès sur le téléphone sans le révoquer (le PC continue) ; se déconnecter de Google sur le PC le révoque pour les deux.
+- **Coffre des secrets** (`src-tauri/src/vault.rs`) : Gestionnaire d'identification de Windows sur le PC, un fichier par secret dans le dossier privé de l'appli sur le téléphone (que seule l'appli lit). Sauvegarde Android coupée (`allowBackup="false"`) : la base et les secrets ne partent pas dans la sauvegarde de Google ; les données reviennent par la synchronisation.
+- **Agendas Google** : leur choix (montrés, couleur, agenda des cours) reste propre à chaque appareil ; le téléphone a donc sa liste dans ses Réglages.
+- **L'appli est signée avec la clé de débogage de ce PC** (`~/.android/debug.keystore`, hors dépôt) et installée par câble (`adb install -r`) : les mises à jour doivent venir de ce PC. Pas de Play Store.
+- **Ce qui n'existe que sur le PC** (Rust `#[cfg(desktop)]`) : zone de notification, mini-fenêtre, démarrage avec Windows, instance unique, mémoire de la fenêtre, exports, sauvegardes au choix, restauration, import Notion, connexion Google elle-même.
+
 **Coulisses (26/11/2026, après la 2.4.0)** :
 - **Démarrage** : les pages se chargeaient déjà à l'ouverture ; les ~25 fenêtres globales (nouvelle tâche, examen, focus, paiements, recherche…) sont maintenant dans leur propre morceau (`app/shell/Overlays.tsx`), chargé juste après le premier affichage. Le code exécuté avant d'afficher l'app passe de 231 à 75 Ko ; l'éditeur de pages (438 Ko) n'est chargé qu'en ouvrant une page.
 - **Code mort** : la fenêtre globale « Nouveau cours » (semaine type) et son type de création `class` ne s'ouvraient plus de nulle part ; retirés. La semaine type reste saisissable sur la fiche d'une matière, sans Google. Aucune dépendance npm ou Rust inutilisée (la capture rapide est partie avec les siennes).

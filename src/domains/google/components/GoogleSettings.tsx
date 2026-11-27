@@ -55,7 +55,8 @@ function ClientForm({ onDone }: { onDone?: () => void }) {
   );
 }
 
-function CalendarList() {
+/** Les agendas lus, à montrer ou non, avec leur couleur et l'agenda des cours (propres à chaque appareil). */
+export function CalendarList() {
   const today = useToday();
   const { data: calendars = [] } = useGoogleCalendars();
   const actions = useCalendarActions();

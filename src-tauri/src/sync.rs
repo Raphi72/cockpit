@@ -3,8 +3,8 @@
 //!
 //! L'interface prépare et applique les changements (src/domains/sync) ; ici, seulement la clé, le
 //! chiffrement (XChaCha20-Poly1305) et le réseau. Google ne voit que des fichiers illisibles. La clé est
-//! créée sur le premier appareil, gardée dans le Gestionnaire d'identification de Windows, et donnée aux
-//! autres par un code de 52 caractères (13 groupes de 4). Un fichier « key-check » chiffré permet de vérifier
+//! créée sur le premier appareil, gardée dans le coffre de l'appareil (`vault`), et donnée aux autres par un
+//! code de 52 caractères (13 groupes de 4), ou au téléphone par le code QR qui le relie au PC (`link`). Un fichier « key-check » chiffré permet de vérifier
 //! un code saisi. L'app de développement écrit des fichiers à part (préfixe `dev-`) : jamais mêlés aux vrais.
 
 use crate::google::{access_token, drive_allowed, network, RECONNECT};
@@ -103,23 +103,14 @@ fn open(key: &[u8; 32], data: &[u8]) -> Result<Vec<u8>, String> {
         .map_err(|_| "Ce fichier ne s'ouvre pas avec la clé de cet appareil.".to_string())
 }
 
-fn entry() -> Result<keyring::Entry, String> {
-    keyring::Entry::new(SERVICE, KEY_ENTRY).map_err(|e| format!("Coffre d'identifiants indisponible : {e}"))
-}
-
 fn read_key() -> Result<Option<[u8; 32]>, String> {
-    match entry()?.get_password() {
-        Ok(text) => {
-            let bytes = STANDARD.decode(text).map_err(|_| "Clé de synchronisation abîmée.".to_string())?;
-            Ok(Some(bytes.try_into().map_err(|_| "Clé de synchronisation abîmée.".to_string())?))
-        }
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(format!("Lecture du coffre d'identifiants impossible : {e}")),
-    }
+    let Some(text) = crate::vault::read(SERVICE, KEY_ENTRY)? else { return Ok(None) };
+    let bytes = STANDARD.decode(text).map_err(|_| "Clé de synchronisation abîmée.".to_string())?;
+    Ok(Some(bytes.try_into().map_err(|_| "Clé de synchronisation abîmée.".to_string())?))
 }
 
 fn write_key(key: &[u8; 32]) -> Result<(), String> {
-    entry()?.set_password(&STANDARD.encode(key)).map_err(|e| format!("Écriture dans le coffre d'identifiants impossible : {e}"))
+    crate::vault::write(SERVICE, KEY_ENTRY, &STANDARD.encode(key))
 }
 
 fn key() -> Result<[u8; 32], String> {
@@ -266,35 +257,42 @@ pub async fn sync_create_key(app: AppHandle) -> Result<String, String> {
 /// Autre appareil : vérifie le code avec le fichier « key-check », puis garde la clé.
 #[tauri::command]
 pub async fn sync_join(app: AppHandle, code: String) -> Result<(), String> {
-    blocking(move || {
-        let key = decode_code(&code)?;
-        let check_file = list_all(&app)?
-            .into_iter()
-            .find(|f| f.name == key_check_name())
-            .ok_or("Aucune synchronisation sur ce compte Google : active-la d'abord sur ton autre appareil.")?;
-        let plain = open(&key, &download(&app, &check_file.id)?).map_err(|_| "Ce code ne correspond pas : vérifie-le sur l'autre appareil.".to_string())?;
-        if plain != CHECK_TEXT {
-            return Err("Ce code ne correspond pas : vérifie-le sur l'autre appareil.".into());
-        }
-        write_key(&key)
-    })
-    .await
+    blocking(move || join(&app, &code)).await
+}
+
+pub(crate) fn join(app: &AppHandle, code: &str) -> Result<(), String> {
+    let key = decode_code(code)?;
+    let check_file = list_all(app)?
+        .into_iter()
+        .find(|f| f.name == key_check_name())
+        .ok_or("Aucune synchronisation sur ce compte Google : active-la d'abord sur ton autre appareil.")?;
+    let plain = open(&key, &download(app, &check_file.id)?).map_err(|_| "Ce code ne correspond pas : vérifie-le sur l'autre appareil.".to_string())?;
+    if plain != CHECK_TEXT {
+        return Err("Ce code ne correspond pas : vérifie-le sur l'autre appareil.".into());
+    }
+    write_key(&key)
+}
+
+/// Le code de la clé de cet appareil.
+pub(crate) fn current_code() -> Result<String, String> {
+    Ok(encode_code(&key()?))
 }
 
 /// Le code de la clé, pour l'écrire sur un autre appareil.
 #[tauri::command]
 pub async fn sync_show_code() -> Result<String, String> {
-    blocking(|| Ok(encode_code(&key()?))).await
+    blocking(current_code).await
+}
+
+/// Retire la clé de cet appareil.
+pub(crate) fn forget_key() -> Result<(), String> {
+    crate::vault::remove(SERVICE, KEY_ENTRY)
 }
 
 /// Arrêter sur cet appareil : la clé est retirée du coffre (rien n'est effacé sur Drive).
 #[tauri::command]
 pub async fn sync_forget_key() -> Result<(), String> {
-    blocking(|| match entry()?.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(e) => Err(format!("Suppression dans le coffre d'identifiants impossible : {e}")),
-    })
-    .await
+    blocking(forget_key).await
 }
 
 /// Les fichiers de changements déposés (noms sans le préfixe de développement).

@@ -7,17 +7,30 @@ import { Button } from '@/ui/primitives/Button';
 import { Input } from '@/ui/primitives/Input';
 import { useCreateSyncKey, useJoinSync, useStopSync, useSyncNow, useSyncStatus } from '../hooks';
 import { normalizeKeyCode } from '../model';
-import { showSyncCode } from '../native';
-import { KeyQrCode } from './KeyQrCode';
+import { phoneLinkCode, showSyncCode } from '../native';
+import { QrCode } from './QrCode';
 
-/** Le code de la clé : à scanner avec le téléphone, ou à recopier sur un autre PC (et à garder en lieu sûr). */
+/** Le code de la clé : à recopier sur un autre PC (et à garder en lieu sûr). */
 function CodeBox({ code }: { code: string }) {
   return (
-    <div className="flex flex-wrap items-center gap-6">
-      <KeyQrCode code={code} />
-      <p className="my-3 w-fit max-w-72 rounded-lg bg-hover px-4 py-3 font-mono text-[15px] tracking-wider select-all" aria-label="Code de synchronisation">
-        {code}
-      </p>
+    <p className="my-3 w-fit max-w-72 rounded-lg bg-hover px-4 py-3 font-mono text-[15px] tracking-wider select-all" aria-label="Code de synchronisation">
+      {code}
+    </p>
+  );
+}
+
+/** Le code QR qui relie le téléphone : il porte l'accès Google de ce PC, donc à ne montrer à personne d'autre. */
+function PhoneLinkBox({ text }: { text: string }) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-8">
+      <QrCode text={text} label="Code QR pour relier le téléphone" />
+      <div className="max-w-sm text-ink-2">
+        <p className="mb-2">Sur le téléphone, ouvre Cockpit › Réglages › Scanner le code du PC.</p>
+        <p className="text-meta text-ink-3">
+          Ce code donne au téléphone l’accès à ton compte Google et la clé de chiffrement : ne le montre à personne, et masque-le une fois le
+          téléphone relié.
+        </p>
+      </div>
     </div>
   );
 }
@@ -42,6 +55,8 @@ function JoinForm() {
   );
 }
 
+type Shown = { kind: 'code'; code: string } | { kind: 'phone'; text: string } | null;
+
 /** Paramètres › Synchronisation : entre tes appareils, par le dossier caché de Cockpit sur ton Google Drive. */
 export function SyncSettings() {
   const today = useToday();
@@ -51,7 +66,8 @@ export function SyncSettings() {
   const create = useCreateSyncKey();
   const sync = useSyncNow();
   const stop = useStopSync();
-  const [code, setCode] = useState<string | null>(null);
+  const [shown, setShown] = useState<Shown>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   if (!status) return null;
   const title = 'Synchronisation';
@@ -91,31 +107,35 @@ export function SyncSettings() {
           Chaque appareil garde toutes tes données et marche hors connexion ; leurs changements passent, chiffrés, par un dossier caché de ton Drive.
           Google ne peut pas les lire.
         </p>
-        {code ? (
-          <>
-            <p className="text-ink-2">Synchronisation activée. Scanne ce code QR avec le téléphone, ou recopie le code sur un autre PC ; note-le aussi en lieu sûr :</p>
-            <CodeBox code={code} />
-          </>
-        ) : (
-          <div className="grid max-w-2xl grid-cols-2 gap-10">
-            <div>
-              <h3 className="mb-1.5 font-medium">Premier appareil</h3>
-              <p className="mb-3 text-meta text-ink-3">Crée la clé de chiffrement et envoie tes données.</p>
-              <Button variant="primary" disabled={create.isPending} onClick={() => create.mutate(undefined, { onSuccess: setCode })}>
-                {create.isPending ? 'Envoi…' : 'Activer ici'}
-              </Button>
-              {create.error && <p className="mt-2 text-meta text-danger">{googleError(create.error)}</p>}
-            </div>
-            <div>
-              <h3 className="mb-1.5 font-medium">Autre appareil</h3>
-              <p className="mb-3 text-meta text-ink-3">Saisis le code affiché sur ton premier appareil.</p>
-              <JoinForm />
-            </div>
+        <div className="grid max-w-2xl grid-cols-2 gap-10">
+          <div>
+            <h3 className="mb-1.5 font-medium">Premier appareil</h3>
+            <p className="mb-3 text-meta text-ink-3">Crée la clé de chiffrement et envoie tes données.</p>
+            <Button
+              variant="primary"
+              disabled={create.isPending}
+              onClick={() => create.mutate(undefined, { onSuccess: (code) => setShown({ kind: 'code', code }) })}
+            >
+              {create.isPending ? 'Envoi…' : 'Activer ici'}
+            </Button>
+            {create.error && <p className="mt-2 text-meta text-danger">{googleError(create.error)}</p>}
           </div>
-        )}
+          <div>
+            <h3 className="mb-1.5 font-medium">Autre PC</h3>
+            <p className="mb-3 text-meta text-ink-3">Saisis le code affiché sur ton premier PC.</p>
+            <JoinForm />
+          </div>
+        </div>
       </Section>
     );
   }
+
+  const toggle = (kind: 'code' | 'phone') => {
+    setLinkError(null);
+    if (shown?.kind === kind) return setShown(null);
+    const reveal = kind === 'code' ? showSyncCode().then((code) => ({ kind, code })) : phoneLinkCode().then((text) => ({ kind, text }));
+    void reveal.then(setShown, (error: unknown) => setLinkError(googleError(error)));
+  };
 
   return (
     <Section title={title} meta={google.account ? `par le Drive de ${google.account}` : 'par Google Drive'}>
@@ -123,15 +143,25 @@ export function SyncSettings() {
         {status.lastSync ? `Synchronisé ${formatCompletedAt(status.lastSync, today)}` : 'Pas encore synchronisé'}, puis toutes les minutes tant que
         Cockpit tourne.
       </p>
-      {code && <CodeBox code={code} />}
+      {shown?.kind === 'code' && (
+        <>
+          <p className="mt-3 text-meta text-ink-3">À recopier sur un autre PC, et à noter en lieu sûr :</p>
+          <CodeBox code={shown.code} />
+        </>
+      )}
+      {shown?.kind === 'phone' && <PhoneLinkBox text={shown.text} />}
+      {linkError && <p className="mt-3 text-meta text-danger">{linkError}</p>}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button variant="secondary" disabled={sync.isPending} onClick={() => sync.mutate()}>
           {sync.isPending ? 'Synchronisation…' : 'Synchroniser maintenant'}
         </Button>
-        <Button variant="ghost" onClick={() => (code ? setCode(null) : void showSyncCode().then(setCode))}>
-          {code ? 'Masquer le code' : 'Afficher le code'}
+        <Button variant="ghost" onClick={() => toggle('phone')}>
+          {shown?.kind === 'phone' ? 'Masquer le code QR' : 'Relier le téléphone'}
         </Button>
-        <Button variant="ghost" className="!text-danger" onClick={() => stop.mutate(undefined, { onSuccess: () => setCode(null) })}>
+        <Button variant="ghost" onClick={() => toggle('code')}>
+          {shown?.kind === 'code' ? 'Masquer le code' : 'Afficher le code'}
+        </Button>
+        <Button variant="ghost" className="!text-danger" onClick={() => stop.mutate(undefined, { onSuccess: () => setShown(null) })}>
           Arrêter sur cet appareil
         </Button>
       </div>

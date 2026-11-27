@@ -175,20 +175,25 @@ la coche tout seul quand il est fait.
   (Excel).
 - Les identifiants Google sont rangés dans le Gestionnaire d'identification de Windows, jamais dans la base.
 
-## 12. Sur ton téléphone (en préparation)
+## 12. Sur ton téléphone
 
-L'appli Android est la dernière étape de la V2. Ses écrans sont faits : Aujourd'hui (tâches et devoirs à
-cocher), Journée, Pages, Habitudes et Réglages. Elle partage tes données avec le PC par la
+L'appli Android a cinq onglets : **Aujourd'hui** (tâches et devoirs à cocher), **Journée**, **Habitudes**,
+**Pages** et **Réglages**. Le reste se gère sur le PC. Elle partage tes données avec le PC par la
 **synchronisation**, qui passe par un dossier caché et chiffré de ton Google Drive.
 
-1. **Sur le PC, une fois** : Paramètres › **Synchronisation** › **Activer ici**. Cockpit affiche un **code** :
-   garde-le précieusement, c'est la clé de tes données chiffrées.
-2. **Préparer le PC pour construire l'appli** : suis [android.md](android.md). Il faut installer, depuis Android
-   Studio, le NDK et les outils en ligne de commande, régler trois variables, et ajouter les cibles Rust.
-   C'est la seule partie à faire toi-même.
-3. **Ensuite, avec Claude** : construire l'appli, l'installer sur ton téléphone par câble USB (mode
-   développeur activé), puis **scanner le code QR** de Paramètres › Synchronisation sur le PC pour relier les
-   deux.
+1. **Installer l'appli** (avec Claude) : le téléphone branché en USB, débogage USB activé
+   ([android.md](android.md)). Elle n'est pas sur le Play Store : les mises à jour viennent de ton PC.
+2. **Sur le PC, une fois** : Paramètres › **Synchronisation** › **Activer ici**. Cockpit affiche un **code** :
+   note-le en lieu sûr, c'est la clé de tes données chiffrées.
+3. **Relier le téléphone** : sur le PC, Paramètres › Synchronisation › **Relier le téléphone** ; un code QR
+   s'affiche. Sur le téléphone, **Réglages › Scanner le code du PC**, autorise la caméra et vise le code.
+   Le téléphone reçoit l'accès à ton compte Google et la clé, puis toutes tes données. Masque ensuite le code
+   QR : il ouvre ton compte Google, ne le montre à personne.
+4. **Ensuite** : chaque appareil se synchronise toutes les minutes tant que Cockpit est ouvert (et quand tu
+   quittes l'appli sur le téléphone). Dans les Réglages du téléphone, choisis les **agendas Google** à
+   montrer, comme sur le PC.
+
+« Délier ce téléphone » (Réglages du téléphone) l'arrête sur le téléphone sans toucher au PC.
 
 ## 13. Raccourcis
 

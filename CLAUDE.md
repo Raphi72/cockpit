@@ -6,7 +6,7 @@ Locale, hors ligne, sans compte. Dépôt **public** : https://github.com/Raphi72
 ## Par où commencer
 
 - **Référence complète** : [docs/CONCEPTION.md](docs/CONCEPTION.md). Le besoin, les décisions (§8), l'architecture, le schéma SQL et le design system y sont décrits.
-- **Où on en est** : MVP, V1.1 et V1.1.2 faits ; V2 faite jusqu'à l'étape 9, l'étape 10 (appli Android) en cours, l'app installée en est à la 2.3.x (§7 et §9 de la conception). Le détail étape par étape est dans le mémo.
+- **Où on en est** : MVP, V1.1 et V1.1.2 faits ; V2 faite jusqu'à l'étape 9, l'étape 10 (appli Android) en cours : l'appli est sur le téléphone, la vraie synchro reste à essayer ; l'app installée en est à la 2.5.x (§7 et §9 de la conception). Le détail étape par étape est dans le mémo.
 - **Journal** : [docs/JOURNAL.md](docs/JOURNAL.md). Retours d'usage, points à vérifier à la main et choix faits à chaque étape (l'ancien §7.3 de la conception). Y ajouter les retours et les choix des prochaines étapes.
 - **Mémo technique** : [docs/MEMO-DEV.md](docs/MEMO-DEV.md). Avancement détaillé de la V2, règles propres à chaque domaine (modes, Journée, Pages, couleurs, cours Google, fenêtres, événements récurrents…), pièges de cette machine (Python, `%APPDATA%` virtuel de Claude), détails pour tester. **À lire avant de toucher un domaine.**
 - **Tuto pour l'utilisateur** : [docs/TUTO.md](docs/TUTO.md) (lié depuis les deux README et les notes de version). Le tenir à jour quand une fonction visible change.

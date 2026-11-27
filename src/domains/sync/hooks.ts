@@ -6,7 +6,7 @@ import { queryKeys } from '@/core/query-keys';
 import { googleError, useGoogleStatus } from '@/domains/google/hooks';
 import { toast } from '@/ui/overlays/toast';
 import { SYNC_INTERVAL_MS } from './model';
-import { createSyncKey, forgetSyncKey, hasSyncKey, joinSync, nativeTransport, syncAvailable } from './native';
+import { applyPhoneLink, createSyncKey, forgetPhoneLink, forgetSyncKey, hasSyncKey, joinSync, nativeTransport, syncAvailable } from './native';
 import { getSyncState, setSyncStateStatement } from './repository';
 import { resetDeviceStatements, syncOnce } from './service';
 
@@ -107,6 +107,41 @@ export function useJoinSync() {
       afterSync(queryClient, pulled);
     },
     onSettled: () => void queryClient.invalidateQueries({ queryKey: queryKeys.sync.status }),
+  });
+}
+
+/**
+ * Téléphone : relier au PC avec le texte du code QR lu. Comme rejoindre : repart à neuf (nouvel identifiant),
+ * puis reçoit tout. Google Agenda se relit ensuite seul (le téléphone est connecté).
+ */
+export function useLinkPhone() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (text: string) => {
+      await applyPhoneLink(text);
+      await db.batch(resetDeviceStatements());
+      return runSync();
+    },
+    onSuccess: ({ pulled }) => {
+      toast('Téléphone relié au PC.');
+      afterSync(queryClient, pulled);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.google.status });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.sync.status });
+    },
+  });
+}
+
+/** Téléphone : délier. Les données restent sur le téléphone ; le PC n'est pas touché. */
+export function useUnlinkPhone() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: forgetPhoneLink,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.google.status });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.sync.status });
+    },
   });
 }
 
