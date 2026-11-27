@@ -15,6 +15,7 @@ import {
   isReviewTime,
   layoutIntervals,
   moduleFromBlock,
+  unplaceKeepsModule,
   movedBlock,
   nextBlock,
   overlapsOf,
@@ -160,6 +161,15 @@ describe('journée : heures et blocs', () => {
     // Sans estimation : une heure ; un devoir prend la couleur de sa matière et le mode Cours.
     const homework = { ...task, estimateMin: null, projectColor: null, subjectColor: 'blue' as const, subjectId: 's1' };
     expect(blockFromTask(homework, TODAY, 23 * 60 + 30)).toMatchObject({ startsAt: '23:30', endsAt: '24:00', color: 'blue', mode: 'school' });
+  });
+
+  it('un bloc né d’une tâche, remis à caser, ne redevient pas un module : la tâche revient seule', () => {
+    const fromTask = { title: 'Faire l’oral', templateId: null };
+    expect(unplaceKeepsModule(fromTask, ['Faire l’oral'])).toBe(false);
+    // Un bloc libre avec d'autres tâches, ou posé depuis un module, garde son module.
+    expect(unplaceKeepsModule({ title: 'Révisions', templateId: null }, ['Faire l’oral'])).toBe(true);
+    expect(unplaceKeepsModule({ title: 'Faire l’oral', templateId: 'module-1' }, ['Faire l’oral'])).toBe(true);
+    expect(unplaceKeepsModule({ title: 'Courses', templateId: null }, [])).toBe(true);
   });
 
   it('un bloc remis à caser redevient un module pour une fois, de même durée', () => {

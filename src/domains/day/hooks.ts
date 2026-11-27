@@ -9,6 +9,7 @@ import { toast } from '@/ui/overlays/toast';
 import {
   blocksFromWeekTemplate,
   moduleFromBlock,
+  unplaceKeepsModule,
   weekTemplateFromBlocks,
   type BlockInput,
   type BlockStatus,
@@ -27,6 +28,7 @@ import {
   insertWeekTemplateBlockStatement,
   insertWeekTemplateStatement,
   listBlockTaskIds,
+  listBlockTaskTitles,
   listBlocks,
   listModules,
   listWeekTemplateBlocks,
@@ -172,7 +174,8 @@ export function usePlaceTask() {
 
 /**
  * Remet un bloc dans « À caser » : il redevient un module « pour une fois » et ses tâches en sortent,
- * dans le même lot. « Annuler » repose le bloc, avec ses tâches.
+ * dans le même lot. Un bloc qui n'existait que pour une de ses tâches disparaît seulement : la tâche revient
+ * seule (unplaceKeepsModule). « Annuler » repose le bloc, avec ses tâches.
  */
 export function useUnplaceBlock() {
   const queryClient = useQueryClient();
@@ -180,15 +183,18 @@ export function useUnplaceBlock() {
     mutationFn: async (block: DayBlock) => {
       const row = await db.queryOne<Record<string, unknown>>('SELECT * FROM day_blocks WHERE id = ?', [block.id]);
       const taskIds = await listBlockTaskIds(db, block.id);
-      const moduleId = newId();
-      await db.batch([deleteBlockStatement(block.id), insertModuleStatement(moduleId, moduleFromBlock(block), nowTimestamp())]);
+      const moduleId = unplaceKeepsModule(block, await listBlockTaskTitles(db, block.id)) ? newId() : null;
+      await db.batch([
+        deleteBlockStatement(block.id),
+        ...(moduleId ? [insertModuleStatement(moduleId, moduleFromBlock(block), nowTimestamp())] : []),
+      ]);
       return { row, taskIds, moduleId };
     },
     onSuccess: ({ row, taskIds, moduleId }, block) => {
       invalidateDay(queryClient);
       if (!row) return;
       announce(queryClient, `« ${shorten(block.title)} » remis à caser.`, [
-        deleteModuleStatement(moduleId),
+        ...(moduleId ? [deleteModuleStatement(moduleId)] : []),
         reinsertRowStatement('day_blocks', row),
         ...(taskIds.length ? [setTasksBlockStatement(taskIds, block.id, nowTimestamp())] : []),
       ]);

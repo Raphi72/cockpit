@@ -176,6 +176,15 @@ export function blockFromModule(module: Module, date: string, startMin: number):
  * Un bloc remis dans « À caser » : il redevient un module « pour une fois », avec son nom, son aspect et
  * sa durée, qu'on reposera plus tard.
  */
+/**
+ * Un bloc remis à caser redevient un module « pour une fois », sauf s'il n'existe que pour une de ses tâches
+ * (posé depuis « À caser », voir blockFromTask : pas de module, et le nom d'une de ses tâches) : la tâche
+ * revient seule, sans double.
+ */
+export function unplaceKeepsModule(block: Pick<DayBlock, 'title' | 'templateId'>, taskTitles: string[]): boolean {
+  return block.templateId !== null || !taskTitles.includes(block.title);
+}
+
 export function moduleFromBlock(block: Pick<DayBlock, 'title' | 'icon' | 'color' | 'mode' | 'startsAt' | 'endsAt'>): ModuleInput {
   return { name: block.title, icon: block.icon, color: block.color, durationMin: blockDuration(block), mode: block.mode, oneOff: true };
 }

@@ -174,6 +174,12 @@ export function insertWeekTemplateBlockStatement(
 }
 
 /** Lignes brutes (pour « Annuler » une suppression). */
+/** Les titres des tâches rangées dans un bloc. */
+export async function listBlockTaskTitles(db: Db, blockId: string): Promise<string[]> {
+  const rows = await db.query<{ title: string }>('SELECT title FROM tasks WHERE block_id = ?', [blockId]);
+  return rows.map((row) => row.title);
+}
+
 export function rawRows(db: Db, table: 'week_templates' | 'week_template_blocks' | 'block_templates', column: string, id: string) {
   return db.query<Record<string, unknown>>(`SELECT * FROM ${table} WHERE ${column} = ? ORDER BY rowid`, [id]);
 }

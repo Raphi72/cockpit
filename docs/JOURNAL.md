@@ -7,6 +7,8 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**Correctif (27/11/2026, 2.8.1, premier essai de la mise à jour automatique)** : un bloc né d'une tâche « à caser », remis à caser, devenait un module « pour une fois » en plus de la tâche, qui revenait aussi : un double. Il disparaît maintenant seul et la tâche revient (`unplaceKeepsModule` : pas de module d'origine et le nom d'une de ses tâches).
+
 **Google Agenda en écriture (27/11/2026, 2.8.0)**, à confirmer à l'usage (choix de l'utilisateur : tout modifier, comme les événements de Cockpit) :
 - **Droit** : `calendar.events` en plus de `calendar.readonly` ; un compte connecté avant voit « Autoriser la
   modification » (Paramètres › Google Agenda). Les commandes Rust (`google_event_insert/patch/delete`,
