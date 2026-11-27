@@ -7,6 +7,26 @@ design system, plan, V2) ; ce journal garde l'histoire.
 
 ## Points à reprendre, retours d'usage et choix faits
 
+**Après l'étape 10 : calendrier unique, mises à jour automatiques (27/11/2026, 2.7.0)**, à confirmer à l'usage :
+- **Calendrier unique** (choix de l'utilisateur) : la page Emploi du temps disparaît ; le Calendrier a un mode
+  « Emploi du temps » (bouton, en mode Cours ou tant qu'il est affiché ; `?timetable` dans l'adresse) : la
+  semaine avec seulement les cours, et « Semestres et vacances ». `/timetable` y mène ; barre du mode Cours :
+  Calendrier en `Ctrl 3`, Examens 4, Notes 5. Même bouton dans l'Agenda du téléphone.
+- **Mises à jour par GitHub** (choix : « prête, je redémarre » sur le PC ; « un geste » sur le téléphone) :
+  `src-tauri/src/update.rs`. Le PC passe par le module officiel de Tauri (installateur signé, signature
+  vérifiée avec la clé publique de `tauri.conf.json`), vérifie 20 s après le lancement puis toutes les 6 h,
+  télécharge en arrière-plan et propose « Redémarrer » ; laissée de côté, la mise à jour s'installe à
+  l'ouverture suivante (témoin `mise-a-jour-prete`). Le téléphone lit la même fiche `latest.json`, télécharge
+  l'APK dans son cache et ouvre l'écran « Installer » d'Android (`installApk`, limité au cache). Hors ligne :
+  rien. Clé de signature : `~/.tauri/cockpit-updater.key`, hors du dépôt. Publier : `scripts/release.ps1`.
+- **Barres d'Android** : l'appli passait sous la barre de navigation au lancement. `MainActivity.kt` la tient
+  entre les barres du système (et au-dessus du clavier) ; derrière les barres, le fond de Cockpit (clair ou
+  sombre, selon le téléphone).
+- **« À caser »** : une tâche lâchée sur une heure libre de la Journée devient un bloc à elle (avant, seulement
+  dans un bloc existant, et rien ne se passait sinon).
+- **Hors connexion** (demande de l'utilisateur) : Cockpit doit continuer de marcher sans Internet ; la
+  mise à jour se tait, et Google en écriture (à venir) enverra les modifications au retour du réseau.
+
 **V2, étape 10 suite : seconds retours (27/11/2026, 2.6.2)** :
 - **Habitudes** : retirées du téléphone (bouton du haut, habitudes du jour et bilan sur Aujourd'hui) ; elles
   restent sur le PC. La barre du haut, moins chargée, ne coupe plus « Travail » et « Cours ».

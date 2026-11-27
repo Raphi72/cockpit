@@ -8,4 +8,5 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="cockpit_icon_background">#FF1C1C1F</color>
+    <color name="cockpit_window_background">#FFFAFAF9</color>
 </resources>

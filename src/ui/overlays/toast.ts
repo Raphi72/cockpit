@@ -26,11 +26,12 @@ export const useToastStore = create<ToastState>()((set) => ({
  * Message bref en bas de l'écran, qui disparaît seul.
  * Avec `action`, propose un bouton (ex. « Annuler » après une suppression).
  */
-export function toast(message: string, options: { tone?: Toast['tone']; action?: ToastAction } = {}): void {
+export function toast(message: string, options: { tone?: Toast['tone']; action?: ToastAction; duration?: number } = {}): void {
   const id = nextId++;
   const tone = options.tone ?? 'default';
   useToastStore.setState((state) => ({ toasts: [...state.toasts, { id, message, tone, action: options.action }] }));
-  const duration = options.action ? 6000 : tone === 'danger' ? 6000 : tone === 'celebrate' ? 4500 : 3500;
+  // `duration` : un message qui doit rester le temps d'être lu (une mise à jour prête).
+  const duration = options.duration ?? (options.action ? 6000 : tone === 'danger' ? 6000 : tone === 'celebrate' ? 4500 : 3500);
   setTimeout(() => useToastStore.getState().dismiss(id), duration);
 }
 

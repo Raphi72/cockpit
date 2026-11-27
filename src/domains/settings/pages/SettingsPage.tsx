@@ -29,6 +29,7 @@ import { Section } from '@/ui/layout/Section';
 import { ConfirmDialog } from '@/ui/overlays/ConfirmDialog';
 import { Button } from '@/ui/primitives/Button';
 import { Checkbox } from '@/ui/primitives/Checkbox';
+import { UpdateRow } from '@/domains/update/components/UpdateRow';
 import { ChoiceChips } from '@/ui/primitives/ChoiceChips';
 import { useSaveSetting, useSetting } from '../hooks';
 import {
@@ -132,6 +133,9 @@ function DataSection() {
             Ouvrir le dossier des données
           </Button>
         </span>
+      </InfoRow>
+      <InfoRow label="Version">
+        <UpdateRow />
       </InfoRow>
       <InfoRow label="Version du schéma">
         <span className="tnum">{info.schemaVersion}</span>

@@ -32,6 +32,21 @@ Ce que `CLAUDE.md` ne garde plus pour rester court : le détail, à lire avant d
 - **Cours venant de Google** : l'agenda des cours se **reconnaît seul** à la relecture (`looksLikeTimetable` : intitulés « Matière | Type | Prof », ou `isTimetableName` : un nom comme « Emploi du temps »), tant qu'aucun agenda n'en est un et que le réglage `google.schoolManual` (choix fait à la main dans Paramètres) n'existe pas. `parseCourseTitle()` lit la matière, le type (« Cours », « Examen »…) et les profs (`google_events.course`, `course_kind`, `teacher`) ; `course_links` relie chaque intitulé à une matière, **créée toute seule** à la relecture, ou l'ignore (`subject_id` NULL). Les matières se créent seules ; la page Matières (en fin de barre du mode Cours) sert à les gérer. Un cours s'affiche sous le nom de sa matière (`COALESCE(s.name, g.course)`), qui suit donc un renommage ; supprimer une matière fait de ses intitulés des « pas un cours » (`ON DELETE SET NULL`, ils ne reviennent pas à la relecture), et « Annuler » les lui rend (`SubjectSnapshot.courses`). Dans l'agenda, un cours est un élément `source 'google'`, `kind 'class'`, avec `subjectId`, titré par son nom propre ; il appartient au mode Cours (`isSchoolItem`) : absent du dashboard Travail, dans « Cours du jour » et « Prochains jours » du dashboard Cours (`schoolUpcomingItems`). Un devoir relié à un cours (`tasks.course_event`) garde son jour dans `due_date`, mis à jour par la relecture si le cours change de jour (`followCourseDatesStatement`). Le choix d'un cours passe par `CoursePicker` ; la page Emploi du temps montre la semaine Google (`CourseWeekGrid`), la semaine type saisie à la main n'est plus proposée.
 - **Animations** : composants `m` de Motion et réglages de `src/ui/motion` (jamais le composant `motion` complet, `LazyMotion` est strict). Durées dans `presets.ts`, toujours via `transitionFor`, qui respecte « Réduire les animations ».
 
+## Mises à jour et publication
+
+- **Publier une version** : monter la version partout (`package.json`, `src-tauri/Cargo.toml`,
+  `src-tauri/tauri.conf.json`, tête de `package-lock.json`), committer, écrire les notes (en anglais), puis
+  `powershell -ExecutionPolicy Bypass -File scripts\release.ps1 -Notes notes.md`. Le script construit
+  l'installateur signé (`--config src-tauri/tauri.updater.conf.json`, avec la clé de
+  `%USERPROFILE%\.tauri\cockpit-updater.key`), l'APK, la fiche `latest.json`, pousse `main` et crée la release
+  GitHub (installateur, `.sig`, APK, `latest.json`). Les applis lisent
+  `releases/latest/download/latest.json` : la release la plus récente doit être la bonne.
+- **La clé de signature** n'est jamais dans le dépôt. Perdue, les applis installées refusent les nouvelles
+  versions : il faudrait réinstaller à la main une version signée par une nouvelle clé. Un `npm run tauri
+  build` ordinaire (sans la configuration de mise à jour) n'a pas besoin de la clé.
+- **Le téléphone** ne peut s'installer qu'une APK signée par la même clé que celle installée : la clé de
+  débogage de ce PC (`~/.android/debug.keystore`, voir android.md).
+
 ## Tester : les détails
 
 - Dans le navigateur de test, `Ctrl+N` et `Ctrl+1…6` sont réservés par le navigateur ; dans l'app, `N` et `Ctrl+1…6` fonctionnent.

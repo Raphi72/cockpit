@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Cockpit",
-  "version": "2.6.2",
+  "version": "2.7.0",
   "identifier": "com.cockpit.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -30,7 +30,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "shortDescription": "Centre de pilotage personnel",
     "icon": [
       "icons/32x32.png",
@@ -42,7 +44,20 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["French"]
+        "languages": [
+          "French"
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMyQjI0NEE0NEU3MTM3QTAKUldTZ04zRk9wRVN5TW9TSEZFTXJ2S1dPbEIrdE1qdFVxMWdiVWxEWWVhNy83cGx6Y0RXdlRCR3AK",
+      "endpoints": [
+        "https://github.com/Raphi72/cockpit/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
       }
     }
   }

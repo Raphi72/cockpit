@@ -1,4 +1,4 @@
-# Construit l'appli Android (version optimisée, téléphones arm64) et l'installe sur le téléphone branché.
+﻿# Construit l'appli Android (version optimisée, téléphones arm64) et l'installe sur le téléphone branché.
 # Voir docs/android.md. Les variables ne valent que pour cette commande : rien n'est changé dans Windows.
 #
 #   powershell -ExecutionPolicy Bypass -File scripts\android.ps1            construire et installer

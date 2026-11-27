@@ -25,7 +25,7 @@ En haut de la barre latérale, deux icônes : la mallette (**Travail**) et le ch
 passe de l'un à l'autre.
 
 - **Travail** : projets, tâches, planning, finances, clients.
-- **Cours** : devoirs, emploi du temps, examens, notes, matières.
+- **Cours** : devoirs, calendrier (avec son emploi du temps), examens, notes, matières.
 - **Dans les deux** : Aujourd'hui, Journée, Pages, Habitudes, Calendrier, Paramètres.
 
 Chaque mode montre les siens : une tâche de projet n'apparaît pas en Cours, un devoir n'apparaît pas en
@@ -130,7 +130,9 @@ reconnecter. Un clic sur « Se connecter à Google » suffit.
 
 ### Ce que ça donne
 
-- **Emploi du temps** : ta vraie semaine de cours (semaine précédente / suivante).
+- **Emploi du temps** : dans le **Calendrier**, le bouton **Emploi du temps** montre la semaine avec
+  seulement tes cours (recliquer remet tout) ; **Semestres et vacances** y est aussi. Sur le téléphone,
+  le même bouton est dans l'Agenda.
 - **Matières** : créées toutes seules à partir des noms de cours. La page **Matières** permet de les
   renommer, de changer leur couleur ou de les supprimer. Un cours qui n'en est pas un (une réunion
   d'école…) : ouvre-le › **Ce n'est pas un cours**.
@@ -174,6 +176,16 @@ la coche tout seul quand il est fait.
   maintenant, restaurer, choisir le dossier des sauvegardes (OneDrive, clé USB…), exporter en JSON ou en CSV
   (Excel).
 - Les identifiants Google sont rangés dans le Gestionnaire d'identification de Windows, jamais dans la base.
+
+### Mises à jour
+
+Depuis la 2.7.0, plus rien à télécharger ni à lancer : quand une nouvelle version est publiée, **le PC**
+la télécharge tout seul et affiche « Cockpit X est prête » avec **Redémarrer** (laissée de côté, elle
+s'installe à la prochaine ouverture). **Le téléphone** affiche « Cockpit X est disponible » avec
+**Installer** : il la télécharge, puis Android te demande de confirmer (la première fois, il demande aussi
+d'autoriser Cockpit à installer des applis). Paramètres (ou Réglages sur le téléphone) › **Version** ›
+**Rechercher une mise à jour** regarde tout de suite. Sans Internet, rien ne change : Cockpit marche comme
+avant.
 
 ## 12. Sur ton téléphone
 

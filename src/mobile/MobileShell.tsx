@@ -22,6 +22,7 @@ import { useModeFollowsPage, useSwitchMode } from '@/app/use-mode';
 import { useCompanion } from '@/domains/companion/store';
 import { useGoogleAutoSync } from '@/domains/google/hooks';
 import { useAutoSync } from '@/domains/sync/hooks';
+import { useUpdateNotifier } from '@/domains/update/hooks';
 import { transitionFor } from '@/ui/motion/presets';
 import { Toaster } from '@/ui/overlays/Toaster';
 
@@ -136,6 +137,8 @@ export function MobileShell() {
   useAutoSync();
   useGoogleAutoSync();
   useModeFollowsPage();
+  // Une nouvelle version sur GitHub : « Installer » (l'écran d'Android, à confirmer).
+  useUpdateNotifier();
   const reduced = useReducedMotion();
   const navigate = useNavigate();
   const mode = useUiStore((state) => state.mode);

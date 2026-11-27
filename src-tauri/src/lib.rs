@@ -21,6 +21,7 @@ mod now;
 #[cfg(desktop)]
 mod presence;
 mod sync;
+mod update;
 mod vault;
 
 use backup::BackupDirs;
@@ -87,6 +88,9 @@ pub fn run() {
         sync::sync_download,
         sync::sync_upload,
         link::link_code,
+        update::desktop::update_pending,
+        update::desktop::update_check,
+        update::desktop::update_install,
     ]);
     // Le téléphone : la base, les notifications, Google (reçu du PC) et la synchronisation.
     #[cfg(mobile)]
@@ -110,6 +114,8 @@ pub fn run() {
         sync::sync_upload,
         link::link_apply,
         link::link_forget,
+        update::mobile::update_check,
+        update::mobile::update_download,
     ]);
 
     builder
@@ -187,6 +193,9 @@ mod desktop {
             )
             // Lancé par Windows, Cockpit reçoit `--autostart` et démarre caché.
             .plugin(tauri_plugin_autostart::Builder::new().app_name("Cockpit").arg(presence::AUTOSTART_ARG).build())
+            // Mises à jour par GitHub (update.rs).
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .manage(super::update::UpdateState::default())
             .manage(Presence::from_args())
             .on_window_event(|window, event| {
                 presence::on_window_event(window, event);
@@ -199,6 +208,8 @@ mod desktop {
         // La fenêtre est affichée par l'interface après son premier rendu (`window_ready`).
         // Filet de sécurité : si ce rendu échoue, on l'affiche quand même.
         presence::reveal_after_timeout(app.handle());
+        // Une nouvelle version publiée sur GitHub se télécharge en arrière-plan.
+        super::update::start(app.handle());
         Ok(())
     }
 }

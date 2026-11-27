@@ -5,6 +5,7 @@ import { useNotificationScheduler } from '@/domains/notifications';
 import { usePresence } from '@/domains/presence';
 import { useGoogleAutoSync } from '@/domains/google/hooks';
 import { useAutoSync } from '@/domains/sync/hooks';
+import { useUpdateNotifier } from '@/domains/update/hooks';
 import { PageTransition } from '@/ui/motion/PageTransition';
 import { Toaster } from '@/ui/overlays/Toaster';
 import { usePreferencesSync } from '../preferences';
@@ -34,6 +35,8 @@ export function AppShell() {
   // Synchronisation entre appareils : chaque minute et à la fermeture de la fenêtre, si elle est activée.
   useAutoSync();
   usePreferencesSync();
+  // Une nouvelle version publiée sur GitHub : « Redémarrer » quand elle est prête.
+  useUpdateNotifier();
   useEffect(announceRestoreIfDone, []);
 
   return (

@@ -1,6 +1,6 @@
 [package]
 name = "cockpit"
-version = "2.6.2"
+version = "2.7.0"
 description = "Cockpit — centre de pilotage personnel"
 edition = "2021"
 
@@ -33,6 +33,8 @@ chacha20poly1305 = "0.10"
 tauri-plugin-window-state = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
+# Mises à jour par GitHub : installateur signé, vérifié avant installation.
+tauri-plugin-updater = "2"
 keyring = { version = "3", features = ["windows-native"] }
 
 # Téléphone seulement : lire le code QR affiché par le PC.
