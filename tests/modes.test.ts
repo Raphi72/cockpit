@@ -27,7 +27,9 @@ describe('modes Travail et Cours', () => {
       expect(new Set(digits).size).toBe(digits.length);
     }
     expect(shortcutTarget('work', '2')?.to).toBe('/projects');
-    expect(shortcutTarget('school', '4')?.to).toBe('/calendar');
+    // En mode Cours, le calendrier (et son emploi du temps) vient juste après les devoirs.
+    expect(shortcutTarget('school', '3')?.to).toBe('/calendar');
+    expect(shortcutTarget('school', '4')?.to).toBe('/exams');
     expect(shortcutTarget('work', '4')?.to).toBe('/calendar');
     // Chaque page une seule fois dans la palette.
     const paths = allNavItems().map((item) => item.to);

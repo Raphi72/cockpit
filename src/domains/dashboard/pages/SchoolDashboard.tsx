@@ -34,12 +34,17 @@ import { UpcomingDays } from '../components/UpcomingDays';
 import { dayMarks, dayTasksHeading, upcomingWithTasks } from '../model';
 import { homeworkForDay, schoolDaySummary, schoolUpcomingItems } from '../school-model';
 
-function SectionHeading({ title, link }: { title: string; link?: { to: '/timetable' | '/homework' | '/exams'; label: string } }) {
+function SectionHeading({ title, link }: { title: string; link?: { to: '/calendar' | '/homework' | '/exams'; label: string } }) {
   return (
     <div className="mb-1.5 flex items-baseline gap-2.5">
       <h2 className="font-semibold">{title}</h2>
       {link && (
-        <Link to={link.to} className="ml-auto text-meta text-ink-3 hover:text-ink">
+        <Link
+          to={link.to}
+          // Le calendrier s'ouvre en emploi du temps.
+          search={link.to === '/calendar' ? { timetable: true } : undefined}
+          className="ml-auto text-meta text-ink-3 hover:text-ink"
+        >
           {link.label} →
         </Link>
       )}
@@ -177,16 +182,12 @@ function ClassesSection(props: { day: string; today: string; lines: CourseLine[]
 
   return (
     <section>
-      <SectionHeading title={heading} link={{ to: '/timetable', label: 'Emploi du temps' }} />
+      <SectionHeading title={heading} link={{ to: '/calendar', label: 'Emploi du temps' }} />
       {props.holidayName ? (
         <p className="py-2 text-ink-3">{props.holidayName} : pas de cours.</p>
       ) : !props.hasSlots && props.lines.length === 0 ? (
         <p className="py-2 text-ink-3">
-          Ton emploi du temps est vide.{' '}
-          <Link to="/timetable" className="text-accent">
-            Le remplir
-          </Link>
-          , ou marque ton agenda des cours dans Paramètres › Google Agenda.
+          Ton emploi du temps est vide : marque ton agenda des cours dans Paramètres › Google Agenda.
         </p>
       ) : props.lines.length === 0 ? (
         <p className="py-2 text-ink-3">Pas de cours ce jour-là.</p>

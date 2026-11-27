@@ -164,7 +164,7 @@ export function GradesPage() {
           )}
           {list.length === 0 && (
             <p className="mt-8 text-meta text-ink-3">
-              Pour une moyenne par semestre, ajoute tes semestres dans Emploi du temps › Semestres et vacances.
+              Pour une moyenne par semestre, ajoute tes semestres dans Calendrier › Emploi du temps › Semestres et vacances.
             </p>
           )}
         </>

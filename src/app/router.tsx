@@ -4,6 +4,7 @@ import {
   createRoute,
   createRouter,
   lazyRouteComponent,
+  redirect,
 } from '@tanstack/react-router';
 import { validateCalendarSearch } from '@/domains/agenda/search';
 import { validatePlanningSearch } from '@/domains/agenda/timeline/search';
@@ -98,7 +99,10 @@ const routes = [
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/timetable',
-    component: lazyRouteComponent(() => import('@/domains/school/pages/TimetablePage'), 'TimetablePage'),
+    // L'emploi du temps est un mode du calendrier (retours du 27/11/2026) : l'ancienne adresse y mène.
+    beforeLoad: () => {
+      throw redirect({ to: '/calendar', search: { timetable: true } });
+    },
   }),
   createRoute({
     getParentRoute: () => rootRoute,

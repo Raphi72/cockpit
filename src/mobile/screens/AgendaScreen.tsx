@@ -1,9 +1,10 @@
 import { useSearch } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { CalendarClock, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useCreateStore } from '@/app/create-store';
+import { useUiStore } from '@/app/ui-store';
 import { addDaysISO, isISODate, timeToMinutes } from '@/core/dates';
 import { useMinutesOfDay, useToday } from '@/core/use-today';
 import { useWeekStartsOn } from '@/core/week-start';
@@ -16,9 +17,11 @@ const longDate = (day: string) => format(new Date(`${day}T12:00:00`), 'EEEE d MM
 
 /**
  * Ce que l'agenda du téléphone montre : ni les blocs (dans Journée), ni l'argent (choix de l'étape 10),
- * ni les simples débuts de tâche (dans Tâches). Une deadline, le jour où elle tombe.
+ * ni les simples débuts de tâche (dans Tâches). Une deadline, le jour où elle tombe. En emploi du temps :
+ * seulement les cours.
  */
-function shownOn(item: AgendaItem, day: string): boolean {
+function shownOn(item: AgendaItem, day: string, timetable: boolean): boolean {
+  if (timetable) return item.kind === 'class' && !item.allDay;
   if (item.source === 'block' || item.source === 'payment' || item.kind === 'task_scheduled') return false;
   return !isDeadlineItem(item) || deadlineDay(item) === day;
 }
@@ -78,16 +81,20 @@ function ItemLine({ item, today, time, now }: { item: AgendaItem; today: string;
 export function AgendaScreen() {
   const today = useToday();
   const minutes = useMinutesOfDay();
-  const search: { day?: unknown } = useSearch({ strict: false });
-  const [day, setDay] = useState(() => (typeof search.day === 'string' && isISODate(search.day) ? search.day : today));
+  const search: { day?: unknown; date?: unknown; timetable?: unknown } = useSearch({ strict: false });
+  const asked = search.date ?? search.day;
+  const [day, setDay] = useState(() => (typeof asked === 'string' && isISODate(asked) ? asked : today));
+  // L'emploi du temps (un mode de l'agenda, comme sur le PC) : la semaine avec seulement les cours.
+  const [timetable, setTimetable] = useState(search.timetable === true);
+  const mode = useUiStore((state) => state.mode);
   const weekStartsOn = useWeekStartsOn();
   const week = useMemo(() => viewDays('week', day, weekStartsOn), [day, weekStartsOn]);
   const { data: agenda = [] } = useAgenda(useMemo(() => ({ from: week[0] ?? day, to: addDaysISO(week[6] ?? day, 1) }), [week, day]));
   const openCreate = useCreateStore((state) => state.openCreate);
 
   const byDay = groupByDay(agenda, week);
-  const busy = new Set(week.filter((d) => (byDay.get(d) ?? []).some((item) => shownOn(item, d))));
-  const items = (byDay.get(day) ?? []).filter((item) => shownOn(item, day));
+  const busy = new Set(week.filter((d) => (byDay.get(d) ?? []).some((item) => shownOn(item, d, timetable))));
+  const items = (byDay.get(day) ?? []).filter((item) => shownOn(item, day, timetable));
   const allDay = items.filter((item) => item.allDay);
   const timed = items.filter((item) => !item.allDay).sort((a, b) => a.start.localeCompare(b.start));
   const isNow = (item: AgendaItem) => {
@@ -100,7 +107,7 @@ export function AgendaScreen() {
   return (
     <>
       <ScreenHeader
-        title="Agenda"
+        title={timetable ? 'Emploi du temps' : 'Agenda'}
         subtitle={day === today ? `Aujourd’hui, ${longDate(day)}` : longDate(day)}
         actions={
           <div className="flex shrink-0 items-center gap-0.5">
@@ -111,15 +118,24 @@ export function AgendaScreen() {
         }
       />
       <WeekStrip week={week} day={day} today={today} busy={busy} onPick={setDay} />
-      {!week.includes(today) && (
-        <div className="-mt-2 px-5 pb-5">
-          <Button variant="secondary" onClick={() => setDay(today)}>
-            Revenir à aujourd’hui
-          </Button>
+      {(!week.includes(today) || timetable || mode === 'school') && (
+        <div className="-mt-2 flex flex-wrap gap-2 px-5 pb-5">
+          {(timetable || mode === 'school') && (
+            <Button variant={timetable ? 'secondary' : 'ghost'} icon={CalendarClock} aria-pressed={timetable} onClick={() => setTimetable(!timetable)}>
+              Emploi du temps
+            </Button>
+          )}
+          {!week.includes(today) && (
+            <Button variant="secondary" onClick={() => setDay(today)}>
+              Revenir à aujourd’hui
+            </Button>
+          )}
         </div>
       )}
 
-      {allDay.length === 0 && timed.length === 0 && <p className="px-5 text-ink-3">Rien de prévu ce jour-là.</p>}
+      {allDay.length === 0 && timed.length === 0 && (
+        <p className="px-5 text-ink-3">{timetable ? 'Pas de cours ce jour-là.' : 'Rien de prévu ce jour-là.'}</p>
+      )}
 
       {allDay.length > 0 && (
         <ScreenSection title="Toute la journée">

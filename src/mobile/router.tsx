@@ -2,6 +2,7 @@ import { createHashHistory, createRootRoute, createRoute, createRouter, lazyRout
 import { ErrorScreen } from '@/app/shell/ErrorScreen';
 import { DashboardPage } from '@/domains/dashboard/pages/DashboardPage';
 import { validateDashboardSearch } from '@/domains/dashboard/search';
+import { validateCalendarSearch } from '@/domains/agenda/search';
 import { validateDaySearch } from '@/domains/day/search';
 import { validateProjectsSearch } from '@/domains/projects/search';
 import { validateHomeworkSearch } from '@/domains/school/homework/model';
@@ -33,8 +34,9 @@ export const mobileRouter = createRouter({
     route('/subjects', lazyRouteComponent(() => import('@/domains/school/pages/SubjectsPage'), 'SubjectsPage')),
     route('/subjects/$subjectId', lazyRouteComponent(() => import('@/domains/school/pages/SubjectDetailPage'), 'SubjectDetailPage')),
     route('/day', lazyRouteComponent(() => import('@/domains/day/pages/DayPage'), 'DayPage'), validateDaySearch),
-    route('/calendar', AgendaScreen, validateDaySearch),
-    route('/timetable', AgendaScreen, validateDaySearch),
+    route('/calendar', AgendaScreen, validateCalendarSearch),
+    // L'ancienne page Emploi du temps : l'Agenda, en emploi du temps.
+    route('/timetable', AgendaScreen, (search) => ({ ...validateCalendarSearch(search), timetable: true })),
     route('/pages', PagesScreen),
     route('/pages/$pageId', PageScreen),
     route('/settings', SettingsScreen),
