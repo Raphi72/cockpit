@@ -43,8 +43,10 @@ android {
             // (~/.android/debug.keystore, créée par Android Studio, jamais dans le dépôt). Les mises à jour
             // doivent venir de ce même PC.
             signingConfig = signingConfigs.getByName("debug")
+            // Pas d'optimisation R8 : elle abîme ML Kit (lecture du code QR), et l'appli plantait dès
+            // l'ouverture de la caméra (NullPointerException dans mlkit_vision_common, 27/11/2026).
             optimization {
-               enable = true
+               enable = false
             }
             proguardFiles(
                 *fileTree(".") {
